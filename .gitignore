@@ -23,6 +23,9 @@ appsettings.Development.json
 appsettings.local.json
 .env
 
+## FodyWeavers
+FodyWeavers.xsd
+
 ## OS generated files
 .DS_Store
 .DS_Store?
@@ -31,3 +34,4 @@ appsettings.local.json
 .Trashes
 ehthumbs.db
 Thumbs.db
+launchSettings.json

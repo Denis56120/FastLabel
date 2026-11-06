@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="FastLabel.Core/FastLabel.Core.csproj" />
+  <Project Path="FastLabel.Installer/FastLabel.Installer.csproj" />
+  <Project Path="FastLabel.Service.Plugin/FastLabel.Service.Plugin.csproj" />
+  <Project Path="FastLabel.Service/FastLabel.Service.csproj" />
+  <Project Path="FastLabel.Tray/FastLabel.Tray.csproj" />
+</Solution>

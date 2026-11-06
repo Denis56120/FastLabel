@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\FastLabel.Core\FastLabel.Core.csproj" />
+    <PackageReference Include="Fody" Version="*" PrivateAssets="All" />
+    <PackageReference Include="Costura.Fody" Version="*" PrivateAssets="All" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
