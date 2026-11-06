@@ -11,7 +11,7 @@ public class PluginEntryPoint : IFastLabelPlugin
     private CancellationTokenSource? _cts;
     private HttpListener? _wsListener;
 
-    public void Launch(string[] args)
+    public void Launch()
     {
         Console.WriteLine("[Plugin] Initialisation (Impression réseau dynamique par IP/Port)...");
         _cts = new CancellationTokenSource();
