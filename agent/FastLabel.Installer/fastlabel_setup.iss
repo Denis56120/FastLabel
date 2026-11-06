@@ -3,7 +3,7 @@ AppName=FastLabel Printing Agent
 AppVersion=1.0.0
 DefaultDirName={autopf}\FastLabel
 DefaultGroupName=FastLabel
-OutputDir=userdocs:FastLabel Output
+OutputDir=.
 OutputBaseFilename=FastLabel_Setup_v1.0.0
 Compression=lzma
 SolidCompression=yes
@@ -11,7 +11,7 @@ PrivilegesRequired=admin
 
 [Files]
 ; Copie l'unique fichier exécutable du service dans le dossier d'installation
-Source: "..\FastLabel.Service\bin\Release\net10.0\publish\FastLabel.Service.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\FastLabel.Service\bin\Release\net10.0\win-x64\publish\FastLabel.Service.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 [Run]
 ; 1. Enregistre le service Windows

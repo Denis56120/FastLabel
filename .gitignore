@@ -35,3 +35,4 @@ FodyWeavers.xsd
 ehthumbs.db
 Thumbs.db
 launchSettings.json
+*.exe
