@@ -44,7 +44,6 @@ git clone [https://github.com/ton-compte/fastlabel-agent.git](https://github.com
 
 ```bash
 #!/bin/bash
-
 dotnet build -c Release
 ```
 

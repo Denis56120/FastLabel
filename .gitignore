@@ -3,6 +3,7 @@
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
+publish/
 
 ## Visual Studio user files and settings
 *.rsuser
@@ -36,3 +37,4 @@ ehthumbs.db
 Thumbs.db
 launchSettings.json
 *.exe
+*.db*
