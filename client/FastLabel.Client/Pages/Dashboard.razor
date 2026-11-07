@@ -1,0 +1,48 @@
+@page "/dashboard"
+@inject HttpClient Http
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+@using FastLabel.Client.Services
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>FastLabel - Tableau de bord</h2>
+        <button class="btn btn-outline-danger btn-sm" @onclick="HandleLogout">Déconnexion</button>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">Agents & Imprimantes ZPL</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Gestion et état de vos agents Windows connectés pour l'impression thermique.</p>
+                    
+                    <!-- Ici, nous brancherons l'appel API pour lister les agents -->
+                    <div class="alert alert-info" role="alert">
+                        Aucun agent actif pour le moment. Le service d'écoute ZPL communiquera bientôt ici.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        // Sécurisation basique de la route : redirection vers le login si non connecté
+        var isAuthenticated = await AuthService.IsAuthenticatedAsync();
+        if (!isAuthenticated)
+        {
+            Navigation.NavigateTo("/login");
+        }
+    }
+
+    private async Task HandleLogout()
+    {
+        await AuthService.LogoutAsync();
+        Navigation.NavigateTo("/login");
+    }
+}

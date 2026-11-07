@@ -5,10 +5,38 @@ using System.Text.Json;
 using FastLabel.Backend.Data;
 using FastLabel.Backend.Endpoints;
 using FastLabel.Backend.Models;
+using FastLabel.Backend.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 
 var dbPath = Path.Combine(Directory.GetCurrentDirectory(), "FastLabel.Server.db");
+
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowBlazorClient", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
+builder.Services.AddControllers();
+builder.Services.AddScoped<TokenService>();
+builder.Services.AddAuthentication("Bearer")
+    .AddJwtBearer(options =>
+    {
+        var secretKey = builder.Configuration["Jwt:SecretKey"] ?? "SUPER_SECRET_KEY_MIN_32_CHARS_FASTLABEL_2026!";
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+            ValidateIssuer = false,
+            ValidateAudience = false
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 // Configuration de la BDD SQLite
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -198,8 +226,19 @@ app.MapPost("/api/print", async (PrintRequest request, AppDbContext db) =>
 app.MapPrinterEndpoints();
 app.MapTemplateEndpoints();
 
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.UseCors("AllowBlazorClient");
+
+app.MapControllers();
+
 // Lancement de l'application
-app.Run("http://localhost:5000");
+app.Run("http://localhost:6000");
+
+internal class JwtBearerDefaults
+{
+}
 
 // ==========================================
 // DTOs (Records)
