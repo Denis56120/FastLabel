@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
@@ -9,115 +10,126 @@ namespace FastLabel.Service.Plugin;
 public class PluginEntryPoint : IFastLabelPlugin
 {
     private CancellationTokenSource? _cts;
-    private HttpListener? _wsListener;
 
-    public void Launch()
+    public void Launch(string baseUrl)
     {
-        Console.WriteLine("[Plugin] Initialisation (Impression réseau dynamique par IP/Port)...");
+        Console.WriteLine("[Plugin] Initialisation (Connexion WebSocket sortante vers le cloud)...");
         _cts = new CancellationTokenSource();
 
-        Task.Run(() => StartWebSocketListenerAsync(_cts.Token));
+        Task.Run(() => ConnectToCloudWebSocketAsync(baseUrl, _cts.Token));
     }
 
     public void Stop()
     {
-        Console.WriteLine("[Plugin] Arrêt du serveur WebSocket et nettoyage...");
+        Console.WriteLine("[Plugin] Arrêt du client WebSocket et nettoyage...");
         _cts?.Cancel();
-        _wsListener?.Stop();
         _cts?.Dispose();
     }
 
-    private async Task StartWebSocketListenerAsync(CancellationToken token)
+    private async Task ConnectToCloudWebSocketAsync(string baseUrl, CancellationToken token)
     {
-        try
-        {
-            _wsListener = new HttpListener();
-            _wsListener.Prefixes.Add("http://localhost:8181/print/");
-            _wsListener.Start();
-            Console.WriteLine("[Plugin WebSocket] Écoute active sur ws://localhost:8181/print/...");
+        string wsUrl = $"wss://{baseUrl}/agent-ws";
 
-            while (!token.IsCancellationRequested)
+        while (!token.IsCancellationRequested)
+        {
+            using var ws = new ClientWebSocket();
+            try
             {
-                var context = await _wsListener.GetContextAsync();
-                if (context.Request.IsWebSocketRequest)
+                Console.WriteLine($"[Plugin WebSocket] Tentative de connexion à {wsUrl}...");
+                await ws.ConnectAsync(new Uri(wsUrl), token);
+                Console.WriteLine("[Plugin WebSocket] Connecté avec succès au serveur distant !");
+
+                byte[] buffer = new byte[8192];
+
+                while (ws.State == WebSocketState.Open && !token.IsCancellationRequested)
                 {
-                    _ = Task.Run(() => HandleWebSocketClientAsync(context, token), token);
-                }
-                else
-                {
-                    context.Response.StatusCode = 400;
-                    context.Response.Close();
+                    var result = await ws.ReceiveAsync(new ArraySegment<byte>(buffer), token);
+
+                    if (result.MessageType == WebSocketMessageType.Close)
+                    {
+                        await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Fermeture demandée par le serveur", token);
+                        break;
+                    }
+                    else if (result.MessageType == WebSocketMessageType.Text)
+                    {
+                        string jsonMessage = Encoding.UTF8.GetString(buffer, 0, result.Count);
+                        bool success = false;
+                        string responseMessage = "Impression échouée";
+
+                        try
+                        {
+                            // Structure JSON attendue en provenance du site : { "ip": "192.168.1.50", "port": 9100, "data": "^XA...^XZ" }
+                            using var doc = JsonDocument.Parse(jsonMessage);
+                            var root = doc.RootElement;
+
+                            if (root.TryGetProperty("ip", out var ipProp) && 
+                                root.TryGetProperty("port", out var portProp) && 
+                                root.TryGetProperty("data", out var dataProp))
+                            {
+                                string ip = ipProp.GetString() ?? string.Empty;
+                                int port = portProp.GetInt32();
+                                string data = dataProp.GetString() ?? string.Empty;
+
+                                if (!string.IsNullOrEmpty(ip) && port > 0 && !string.IsNullOrEmpty(data))
+                                {
+                                    // Envoi vers l'imprimante réseau locale
+                                    success = await SendBytesToIpAsync(ip, port, data);
+                                    responseMessage = success ? $"Imprimé avec succès sur {ip}:{port}" : $"Impossible de joindre {ip}:{port}";
+                                }
+                                else
+                                {
+                                    responseMessage = "Paramètres IP, port ou data invalides.";
+                                }
+                            }
+                            else
+                            {
+                                responseMessage = "Format JSON invalide : 'ip', 'port' ou 'data' manquant.";
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            responseMessage = $"Erreur de traitement : {ex.Message}";
+                        }
+
+                        // Retourner le statut de l'impression au serveur via la même socket
+                        string jsonResponse = JsonSerializer.Serialize(new { status = success ? "success" : "error", message = responseMessage });
+                        byte[] responseBytes = Encoding.UTF8.GetBytes(jsonResponse);
+                        await ws.SendAsync(new ArraySegment<byte>(responseBytes), WebSocketMessageType.Text, true, token);
+                    }
                 }
             }
-        }
-        catch (OperationCanceledException) { }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"[Plugin WebSocket] Erreur : {ex.Message}");
+            catch (Exception ex) when (!token.IsCancellationRequested)
+            {
+                Console.WriteLine($"[Plugin WebSocket] Connexion perdue : {ex.Message}. Nouvelle tentative dans 5 secondes...");
+                try
+                {
+                    await Task.Delay(5000, token);
+                }
+                catch (OperationCanceledException) { }
+            }
         }
     }
 
-    private async Task HandleWebSocketClientAsync(HttpListenerContext context, CancellationToken token)
+    private static async Task<bool> SendBytesToIpAsync(string ipAddress, int port, string data)
     {
-        WebSocketContext wsContext = await context.AcceptWebSocketAsync(subProtocol: null);
-        WebSocket webSocket = wsContext.WebSocket;
+        byte[] bytes = Encoding.UTF8.GetBytes(data);
 
-        byte[] buffer = new byte[8192];
+        using var client = new TcpClient();
+        using var cts = new CancellationTokenSource(3000);
 
-        while (webSocket.State == WebSocketState.Open && !token.IsCancellationRequested)
+        try
         {
-            var result = await webSocket.ReceiveAsync(new ArraySegment<byte>(buffer), token);
+            await client.ConnectAsync(ipAddress, port, cts.Token);
 
-            if (result.MessageType == WebSocketMessageType.Close)
-            {
-                await webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Fermeture demandée", token);
-            }
-            else if (result.MessageType == WebSocketMessageType.Text)
-            {
-                string jsonMessage = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                bool success = false;
-                string responseMessage = "Impression échouée";
+            using var stream = client.GetStream();
+            await stream.WriteAsync(bytes, cts.Token);
+            await stream.FlushAsync(cts.Token);
 
-                try
-                {
-                    // Structure JSON attendue : { "ip": "192.168.1.50", "port": 9100, "data": "^XA...^XZ" }
-                    using var doc = JsonDocument.Parse(jsonMessage);
-                    var root = doc.RootElement;
-
-                    if (root.TryGetProperty("ip", out var ipProp) && 
-                        root.TryGetProperty("port", out var portProp) && 
-                        root.TryGetProperty("data", out var dataProp))
-                    {
-                        string ip = ipProp.GetString() ?? string.Empty;
-                        int port = portProp.GetInt32();
-                        string zplData = dataProp.GetString() ?? string.Empty;
-
-                        if (!string.IsNullOrEmpty(ip) && port > 0 && !string.IsNullOrEmpty(zplData))
-                        {
-                            // Connexion éphémère, envoi, puis fermeture immédiate de la socket
-                            success = await NetworkPrinterHelper.SendDataToIpAsync(ip, port, zplData);
-                            responseMessage = success ? $"Imprimé avec succès sur {ip}:{port}" : $"Impossible de joindre {ip}:{port}";
-                        }
-                        else
-                        {
-                            responseMessage = "Paramètres IP, port ou data invalides.";
-                        }
-                    }
-                    else
-                    {
-                        responseMessage = "Format JSON invalide : 'ip', 'port' ou 'data' manquant.";
-                    }
-                }
-                catch (Exception ex)
-                {
-                    responseMessage = $"Erreur de traitement : {ex.Message}";
-                }
-
-                // Réponse au client WebSocket
-                string jsonResponse = $"{{\"status\":\"{(success ? "success" : "error")}\",\"message\":\"{responseMessage}\"}}";
-                byte[] responseBytes = Encoding.UTF8.GetBytes(jsonResponse);
-                await webSocket.SendAsync(new ArraySegment<byte>(responseBytes), WebSocketMessageType.Text, true, token);
-            }
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
         }
     }
 }

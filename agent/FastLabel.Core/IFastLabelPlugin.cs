@@ -2,6 +2,6 @@ namespace FastLabel.Core;
 
 public interface IFastLabelPlugin
 {
-    void Launch();
+    void Launch(string baseUrl);
     void Stop();
 }

@@ -79,7 +79,7 @@ public class ServiceHostWorker(ILogger<ServiceHostWorker> logger) : BackgroundSe
     {
         try
         {
-            string apiUrl = $"{baseUrl}/api/version";
+            string apiUrl = $"https://{baseUrl}/api/version";
 
             using var httpClient = new HttpClient();
 
@@ -350,7 +350,7 @@ public class ServiceHostWorker(ILogger<ServiceHostWorker> logger) : BackgroundSe
 
         // Instanciation dynamique et appel de Launch()
         _activePlugin = (IFastLabelPlugin?)Activator.CreateInstance(pluginType);
-        _activePlugin?.Launch();
+        _activePlugin?.Launch(baseUrl);
 
         _logger.LogInformation("Plugin métier chargé et méthode Launch() exécutée avec succès.");
     }
