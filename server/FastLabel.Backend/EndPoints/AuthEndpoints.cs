@@ -15,7 +15,8 @@ public static class AuthEndpoints
         {
             var user = await db.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
             
-            if (user == null || user.PasswordHash != request.Password)
+            // Correction : Utilisation de BCrypt.Verify
+            if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
             {
                 return Results.BadRequest(new { message = "Identifiants invalides." });
             }

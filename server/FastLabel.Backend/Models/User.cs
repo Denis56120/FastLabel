@@ -19,6 +19,8 @@ public class User
     [Required]
     public string PasswordHash { get; set; } = string.Empty;
 
+    public bool IsAdmin { get; set; } = false;
+
     public int PreferredLanguageId { get; set; }
 
     [ForeignKey(nameof(PreferredLanguageId))]

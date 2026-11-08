@@ -16,8 +16,16 @@ public class TokenService(IConfiguration config)
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Email, user.Email)
+            new(ClaimTypes.Email, user.Email),
+            new(ClaimTypes.Name, user.Name),
+            new("IsAdmin", user.IsAdmin.ToString().ToLower())
         };
+
+        // Si l'utilisateur est admin, on lui ajoute le rôle .NET standard
+        if (user.IsAdmin)
+        {
+            claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+        }
 
         var tokenDescriptor = new SecurityTokenDescriptor
         {

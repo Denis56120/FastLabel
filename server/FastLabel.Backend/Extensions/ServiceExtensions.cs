@@ -32,7 +32,7 @@ public static class ServiceExtensions
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
-                var secretKey = configuration["Jwt:SecretKey"] 
+                var secretKey = configuration["Jwt:SecretKey"]
                                 ?? throw new InvalidOperationException("Jwt:SecretKey is not configured.");
                 options.TokenValidationParameters = new TokenValidationParameters
                 {
@@ -43,7 +43,10 @@ public static class ServiceExtensions
                 };
             });
 
-        services.AddAuthorization();
+        services.AddAuthorization(options =>
+        {
+            options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+        });
 
         // 4. Base de données SQLite
         services.AddDbContext<AppDbContext>(options =>

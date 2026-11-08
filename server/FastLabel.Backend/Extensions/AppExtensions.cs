@@ -38,8 +38,7 @@ public static class AppExtensions
         app.MapAuthEndpoints();
         app.MapAgentWebSocketEndpoints();
         app.MapPrintEndpoints();
-
-        app.MapControllers();
+        app.MapUserEndpoints();
 
         return app;
     }
