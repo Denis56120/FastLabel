@@ -1,12 +1,29 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
+
 namespace FastLabel.Backend.Models;
 
+[Index(nameof(ApiKey), IsUnique = true)]
 public class Agent
 {
+    [Key]
     public int Id { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string ApiKey { get; set; } = Guid.NewGuid().ToString("N");
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime? LastSeenAt { get; set; }
 
-    public ICollection<PrintJob> PrintJobs { get; set; } = new List<PrintJob>();
+    public int AgentTypeId { get; set; }
+
+    [ForeignKey(nameof(AgentTypeId))]
+    public AgentType AgentType { get; set; } = null!;
+
+    public int UserId { get; set; }
+
+    [ForeignKey(nameof(UserId))]
+    public User User { get; set; } = null!;
+
+    [Required]
+    public string ApiKey { get; set; } = string.Empty;
+
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public DateTime? LastSeenAt { get; set; }
 }

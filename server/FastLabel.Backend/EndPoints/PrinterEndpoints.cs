@@ -2,11 +2,11 @@ using FastLabel.Backend.Data;
 using FastLabel.Backend.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace FastLabel.Backend.Endpoints; // <- Le namespace doit correspondre au using dans Program.cs
+namespace FastLabel.Backend.Endpoints;
 
-public static class PrinterEndpoints // <- La classe doit être static
+public static class PrinterEndpoints
 {
-    public static void MapPrinterEndpoints(this IEndpointRouteBuilder routes) // <- Doit être public static avec 'this'
+    public static void MapPrinterEndpoints(this IEndpointRouteBuilder routes)
     {
         var group = routes.MapGroup("/api/printers");
 
@@ -34,13 +34,14 @@ public static class PrinterEndpoints // <- La classe doit être static
             var printer = await db.Printers.FindAsync(id);
             if (printer is null) return Results.NotFound();
 
+            // Aligné avec les propriétés réelles du modèle Printer
             printer.Name = updatedPrinter.Name;
             printer.Location = updatedPrinter.Location;
-            printer.Ip = updatedPrinter.Ip;
+            printer.IP = updatedPrinter.IP;       // IP en majuscule
             printer.Port = updatedPrinter.Port;
-            printer.Protocol = updatedPrinter.Protocol;
-            printer.ResolutionDpi = updatedPrinter.ResolutionDpi;
-            printer.IsActive = updatedPrinter.IsActive;
+            printer.ProtocolId = updatedPrinter.ProtocolId;       // Relation ID
+            printer.ResolutionDpiId = updatedPrinter.ResolutionDpiId; // Relation ID
+            printer.BasicStatusId = updatedPrinter.BasicStatusId;     
 
             await db.SaveChangesAsync();
             return Results.Ok(printer);

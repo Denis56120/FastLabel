@@ -6,24 +6,30 @@ namespace FastLabel.Backend.Models;
 public class Subscription
 {
     [Key]
-    public Guid Id { get; set; } = Guid.NewGuid();
+    public int Id { get; set; }
 
-    public Guid UserId { get; set; }
+    public int UserId { get; set; }
+
     [ForeignKey(nameof(UserId))]
     public User User { get; set; } = null!;
 
-    [Required, MaxLength(100)]
-    public string StripeCustomerId { get; set; } = string.Empty;
+    public int PlanId { get; set; }
 
-    [MaxLength(100)]
-    public string? StripeSubscriptionId { get; set; }
+    [ForeignKey(nameof(PlanId))]
+    public Plan Plan { get; set; } = null!;
 
-    [Required, MaxLength(50)]
-    public string Status { get; set; } = "trialing"; // active, trialing, canceled, past_due
+    [Required]
+    public int SubscriptionPeriod { get; set; } // En mois
 
-    [MaxLength(50)]
-    public string PlanId { get; set; } = "starter_monthly";
+    public int SubscriptionTypeId { get; set; }
 
-    public DateTime CurrentPeriodEnd { get; set; }
+    [ForeignKey(nameof(SubscriptionTypeId))]
+    public SubscriptionType SubscriptionType { get; set; } = null!;
+
+    public int StripeId { get; set; }
+
+    [ForeignKey(nameof(StripeId))]
+    public Stripe Stripe { get; set; } = null!;
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

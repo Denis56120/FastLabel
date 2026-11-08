@@ -24,22 +24,18 @@ public static class TemplateEndpoints
 
         group.MapPost("/", async (LabelTemplate template, AppDbContext db) =>
         {
-            template.CreatedAt = DateTime.UtcNow;
-            template.UpdatedAt = DateTime.UtcNow;
-
             db.LabelTemplates.Add(template);
             await db.SaveChangesAsync();
             return Results.Created($"/api/templates/{template.Id}", template);
         });
 
-        group.MapPut("/{id:int}", async (int id, LabelTemplate updatedTemplate, AppDbContext db) =>
+        group.MapPut("/{id:int}", async (int id, LabelTemplate updated, AppDbContext db) =>
         {
             var template = await db.LabelTemplates.FindAsync(id);
             if (template is null) return Results.NotFound();
 
-            template.Name = updatedTemplate.Name;
-            template.JsonData = updatedTemplate.JsonData;
-            template.UpdatedAt = DateTime.UtcNow;
+            template.Name = updated.Name;
+            template.JsonData = updated.JsonData;
 
             await db.SaveChangesAsync();
             return Results.Ok(template);

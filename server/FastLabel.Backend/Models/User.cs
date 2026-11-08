@@ -1,28 +1,37 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
 
 namespace FastLabel.Backend.Models;
 
+[Index(nameof(Email), IsUnique = true)]
 public class User
 {
     [Key]
-    public Guid Id { get; set; } = Guid.NewGuid();
+    public int Id { get; set; }
 
-    [Required, EmailAddress, MaxLength(256)]
+    [Required]
+    public string Name { get; set; } = string.Empty;
+
+    [Required]
     public string Email { get; set; } = string.Empty;
 
     [Required]
     public string PasswordHash { get; set; } = string.Empty;
 
-    [MaxLength(10)]
-    public string PreferredLanguage { get; set; } = "en"; // "fr" ou "en" pour le bilinguisme
+    public int PreferredLanguageId { get; set; }
+
+    [ForeignKey(nameof(PreferredLanguageId))]
+    public PreferredLanguage PreferredLanguage { get; set; } = null!;
+
+    public string? PasswordResetToken { get; set; }
+
+    public DateTime? ResetTokenExpired { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public string? PasswordResetToken { get; set; }
-    public DateTime? ResetTokenExpires { get; set; }
+    public int BasicStatusId { get; set; }
 
-    // Relations
-    public Subscription? Subscription { get; set; }
-    public ICollection<Agent> Agents { get; set; } = new List<Agent>();
-    public ICollection<LabelTemplate> LabelTemplates { get; set; } = new List<LabelTemplate>();
+    [ForeignKey(nameof(BasicStatusId))]
+    public BasicStatus BasicStatus { get; set; } = null!;
 }

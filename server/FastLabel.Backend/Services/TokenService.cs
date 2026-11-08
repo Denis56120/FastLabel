@@ -8,18 +8,15 @@ namespace FastLabel.Backend.Services;
 
 public class TokenService(IConfiguration config)
 {
-    private readonly IConfiguration _config = config;
-
     public string GenerateToken(User user)
     {
-        var secretKey = _config["Jwt:SecretKey"] ?? "SUPER_SECRET_KEY_MIN_32_CHARS_FASTLABEL_2026!";
+        var secretKey = config["Jwt:SecretKey"] ?? throw new InvalidOperationException("Jwt:SecretKey is not configured.");
         var key = Encoding.UTF8.GetBytes(secretKey);
 
         var claims = new List<Claim>
         {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Email, user.Email),
-            new("lang", user.PreferredLanguage)
+            new(ClaimTypes.Email, user.Email)
         };
 
         var tokenDescriptor = new SecurityTokenDescriptor
