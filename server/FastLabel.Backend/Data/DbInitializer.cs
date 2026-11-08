@@ -158,27 +158,27 @@ public static class DbInitializer
             var planProText = await CreateTextWithTranslationsAsync("plan.pro.name", "Pro Plan", new() { { "fr_FR", "Plan Professionnel" }, { "en_GB", "Pro Plan" } });
             var planEnterpriseText = await CreateTextWithTranslationsAsync("plan.enterprise.name", "Enterprise Plan", new() { { "fr_FR", "Plan Entreprise" }, { "en_GB", "Enterprise Plan" } });
 
-            var activeStatus = await context.BasicStatuses.FirstOrDefaultAsync(); 
+            var activeStatus = await context.BasicStatuses.FirstOrDefaultAsync();
             int statusId = activeStatus?.Id ?? 1;
 
             context.Plans.AddRange(
-                new Plan 
-                { 
-                    NameTextId = planFreeText.Id, 
-                    DescriptionJson = "{\"price\": 0, \"currency\": \"EUR\", \"billing\": \"monthly\", \"max_printers\": 2, \"features\": [\"Basic printing\", \"Up to 2 printers\"]}", 
-                    BasicStatusId = statusId 
+                new Plan
+                {
+                    NameTextId = planFreeText.Id,
+                    DescriptionJson = "{\"price\": 0, \"currency\": \"EUR\", \"billing\": \"monthly\", \"max_printers\": 2, \"features\": [\"Basic printing\", \"Up to 2 printers\"]}",
+                    BasicStatusId = statusId
                 },
-                new Plan 
-                { 
-                    NameTextId = planProText.Id, 
-                    DescriptionJson = "{\"price\": 29, \"currency\": \"EUR\", \"billing\": \"monthly\", \"max_printers\": 10, \"features\": [\"Unlimited printing\", \"Multiple agents\", \"Priority support\"]}", 
-                    BasicStatusId = statusId 
+                new Plan
+                {
+                    NameTextId = planProText.Id,
+                    DescriptionJson = "{\"price\": 29, \"currency\": \"EUR\", \"billing\": \"monthly\", \"max_printers\": 10, \"features\": [\"Unlimited printing\", \"Multiple agents\", \"Priority support\"]}",
+                    BasicStatusId = statusId
                 },
-                new Plan 
-                { 
-                    NameTextId = planEnterpriseText.Id, 
-                    DescriptionJson = "{\"price\": 99, \"currency\": \"EUR\", \"billing\": \"monthly\", \"max_printers\": -1, \"features\": [\"Unlimited printers\", \"Multi-site\", \"Dedicated API\", \"24/7 support\"]}", 
-                    BasicStatusId = statusId 
+                new Plan
+                {
+                    NameTextId = planEnterpriseText.Id,
+                    DescriptionJson = "{\"price\": 99, \"currency\": \"EUR\", \"billing\": \"monthly\", \"max_printers\": -1, \"features\": [\"Unlimited printers\", \"Multi-site\", \"Dedicated API\", \"24/7 support\"]}",
+                    BasicStatusId = statusId
                 }
             );
             await context.SaveChangesAsync();
@@ -188,21 +188,36 @@ public static class DbInitializer
         if (!await context.Users.AnyAsync())
         {
             var frenchLang = await context.PreferredLanguages.FirstOrDefaultAsync(l => l.Locale == "fr_FR");
-            int langId = frenchLang?.Id ?? 1;
+            int langId1 = frenchLang?.Id ?? 1;
+
+            var englishLang = await context.PreferredLanguages.FirstOrDefaultAsync(l => l.Locale == "en_GB");
+            int langId2 = englishLang?.Id ?? 1;
 
             var activeStatus = await context.BasicStatuses.FirstOrDefaultAsync();
             int statusId = activeStatus?.Id ?? 1;
 
-            context.Users.Add(new User
-            {
-                Name = "Denis Clouet",
-                Email = "denis.clouet@gmail.com",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("08071979"),
-                PreferredLanguageId = langId,
-                BasicStatusId = statusId,
-                CreatedAt = DateTime.UtcNow,
-                IsAdmin = true
-            });
+            context.Users.AddRange(
+                new User
+                {
+                    Name = "Denis Clouet",
+                    Email = "denis.clouet@gmail.com",
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("08071979"),
+                    PreferredLanguageId = langId1, // Corrigé : langId1 au lieu de langId
+                    BasicStatusId = statusId,
+                    CreatedAt = DateTime.UtcNow,
+                    IsAdmin = true
+                },
+                new User
+                {
+                    Name = "George Harrison",
+                    Email = "georges.harrison4@gmail.com",
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("08071979"),
+                    PreferredLanguageId = langId2,
+                    BasicStatusId = statusId,
+                    CreatedAt = DateTime.UtcNow,
+                    IsAdmin = false
+                }
+            );
 
             await context.SaveChangesAsync();
         }
