@@ -26,7 +26,7 @@ public class PluginEntryPoint : IFastLabelPlugin
         _cts?.Dispose();
     }
 
-    private async Task ConnectToCloudWebSocketAsync(string baseUrl, CancellationToken token)
+    private static async Task ConnectToCloudWebSocketAsync(string baseUrl, CancellationToken token)
     {
         string wsUrl = $"wss://{baseUrl}/agent-ws";
 

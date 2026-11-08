@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="FastLabel.Core/FastLabel.Core.csproj" />
+  <Project Path="FastLabel.DockerAgent/FastLabel.DockerAgent.csproj" />
   <Project Path="FastLabel.Installer/FastLabel.Installer.csproj" />
   <Project Path="FastLabel.Service.Plugin/FastLabel.Service.Plugin.csproj" />
   <Project Path="FastLabel.Service/FastLabel.Service.csproj" />
