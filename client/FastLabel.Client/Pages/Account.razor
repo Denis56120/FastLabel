@@ -1,0 +1,93 @@
+@page "/account"
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject FastLabel.Client.Services.AuthService AuthService
+@inject NavigationManager Navigation
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@inject FastLabel.Client.Services.AuthService AuthService
+@inject NavigationManager Navigation
+
+<PageTitle>FastLabel - Mon Compte</PageTitle>
+
+<div class="container mt-4">
+    <h2>Mon Compte</h2>
+    <p class="text-muted">Gérez vos informations personnelles et vos préférences.</p>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success">@successMessage</div>
+    }
+
+    <div class="card shadow-sm p-4 mt-3">
+        <div class="mb-3">
+            <label class="form-label">Adresse e-mail</label>
+            <input type="email" class="form-control" value="@email" readonly />
+            <div class="form-text">L'e-mail ne peut pas être modifié directement.</div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Identifiant utilisateur (ID)</label>
+            <input type="text" class="form-control font-monospace" value="@userId" readonly />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Langue préférée</label>
+            <select class="form-select" @bind="preferredLanguage">
+                <option value="fr">Français</option>
+                <option value="en">English</option>
+            </select>
+        </div>
+
+        <div class="mt-4">
+            <button class="btn btn-primary" @onclick="SavePreferences">Enregistrer</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string email = "";
+    private string userId = "";
+    private string preferredLanguage = "fr";
+    private string? errorMessage;
+    private string? successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            // Remplace GetCurrentUserAsync par la méthode réelle de ton AuthService si elle a un autre nom (ex: GetUser, etc.)
+            var currentUser = await AuthService.GetCurrentUserAsync();
+            if (currentUser != null)
+            {
+                email = currentUser.Email;
+                userId = currentUser.UserId.ToString();
+                preferredLanguage = currentUser.PreferredLanguage;
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Impossible de charger le profil : " + ex.Message;
+        }
+    }
+
+    private async Task SavePreferences()
+    {
+        errorMessage = null;
+        successMessage = null;
+
+        try
+        {
+            successMessage = "Préférences enregistrées avec succès.";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Erreur lors de la mise à jour : " + ex.Message;
+        }
+    }
+}

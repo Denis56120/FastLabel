@@ -17,4 +17,8 @@
     <PackageReference Include="System.Security.Cryptography.Pkcs" Version="9.0.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\shared\FastLabel.Shared\FastLabel.Shared.csproj" />
+  </ItemGroup>
+
 </Project>

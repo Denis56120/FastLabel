@@ -1,9 +1,12 @@
+using System.Net.Http.Json;
 using Microsoft.JSInterop;
+using FastLabel.Backend.DTOs;
 
 namespace FastLabel.Client.Services;
 
-public class AuthService(IJSRuntime jsRuntime)
+public class AuthService(HttpClient httpClient, IJSRuntime jsRuntime)
 {
+    private readonly HttpClient _httpClient = httpClient;
     private readonly IJSRuntime _jsRuntime = jsRuntime;
     private string? _token;
 
@@ -39,5 +42,17 @@ public class AuthService(IJSRuntime jsRuntime)
     {
         var token = await GetTokenAsync();
         return !string.IsNullOrEmpty(token);
+    }
+
+    public async Task<AuthResponseDto?> GetCurrentUserAsync()
+    {
+        // Optionnel : s'assurer que le token est injecté dans les en-têtes si l'API est sécurisée par Bearer
+        var token = await GetTokenAsync();
+        if (!string.IsNullOrEmpty(token))
+        {
+            _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+        }
+
+        return await _httpClient.GetFromJsonAsync<AuthResponseDto>("api/auth/me");
     }
 }
