@@ -12,6 +12,6 @@ dotnet publish FastLabel.DockerAgent\FastLabel.DockerAgent.csproj ^
     /p:UseAppHost=true
 
 echo.
-echo Publication terminée avec succès !
+echo Publication OK !
 echo Le binaire unique se trouve dans : FastLabel.DockerAgent\bin\Release\net10.0\linux-x64\publish\
 pause
