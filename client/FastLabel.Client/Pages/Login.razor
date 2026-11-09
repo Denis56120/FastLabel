@@ -4,6 +4,7 @@
 @inject AuthService AuthService
 @using Microsoft.AspNetCore.Components.Forms
 @using FastLabel.Client.Services
+@using FastLabel.Shared.DTOs
 
 <div class="row justify-content-center mt-5">
     <div class="col-md-4">
@@ -23,12 +24,12 @@
 
                     <div class="mb-3">
                         <label class="form-label">Email</label>
-                        <InputText @bind-value="_loginModel.Email" class="form-control" placeholder="nom@exemple.com" />
+                        <InputText @bind-Value="_loginModel.Email" class="form-control" placeholder="nom@exemple.com" />
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">Mot de passe</label>
-                        <InputText type="password" @bind-value="_loginModel.Password" class="form-control" placeholder="••••••••" />
+                        <InputText type="password" @bind-Value="_loginModel.Password" class="form-control" placeholder="••••••••" />
                     </div>
 
                     <div class="d-grid mb-3">
@@ -76,26 +77,5 @@
         {
             _errorMessage = "Impossible de joindre le serveur.";
         }
-    }
-
-    public class LoginDto
-    {
-        public string Email { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
-    }
-
-    // Aligné exactement avec le DTO du backend
-    private class AuthResponseDto
-    {
-        public string Token { get; set; } = string.Empty;
-        public int Id { get; set; }
-        public string Email { get; set; } = string.Empty;
-        public string PreferredLanguage { get; set; } = string.Empty;
-        public DateTime ExpiresAt { get; set; }
-    }
-
-    private class ErrorResponseDto
-    {
-        public string Message { get; set; } = string.Empty;
     }
 }

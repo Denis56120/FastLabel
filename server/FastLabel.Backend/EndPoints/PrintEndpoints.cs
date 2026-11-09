@@ -2,7 +2,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using FastLabel.Backend.Data;
-using FastLabel.Backend.DTOs;
+using FastLabel.Shared.DTOs;
 using FastLabel.Backend.Models;
 using FastLabel.Backend.Services;
 using Microsoft.EntityFrameworkCore;

@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace FastLabel.Backend.DTOs;
+namespace FastLabel.Shared.DTOs;
 
 public class RegisterDto
 {

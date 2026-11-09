@@ -1,4 +1,4 @@
-namespace FastLabel.Backend.DTOs;
+namespace FastLabel.Shared.DTOs;
 
 public class RegisterRequest
 {

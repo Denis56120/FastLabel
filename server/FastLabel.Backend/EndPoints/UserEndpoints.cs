@@ -1,6 +1,6 @@
 using System.Security.Claims;
 using FastLabel.Backend.Data;
-using FastLabel.Backend.DTOs;
+using FastLabel.Shared.DTOs;
 using Microsoft.EntityFrameworkCore;
 
 namespace FastLabel.Backend.Endpoints;

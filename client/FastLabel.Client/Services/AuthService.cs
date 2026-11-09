@@ -1,6 +1,6 @@
 using System.Net.Http.Json;
 using Microsoft.JSInterop;
-using FastLabel.Backend.DTOs;
+using FastLabel.Shared.DTOs;
 
 namespace FastLabel.Client.Services;
 

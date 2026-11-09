@@ -1,5 +1,5 @@
 using FastLabel.Backend.Data;
-using FastLabel.Backend.DTOs;
+using FastLabel.Shared.DTOs;
 using FastLabel.Backend.Services;
 using Microsoft.EntityFrameworkCore;
 
