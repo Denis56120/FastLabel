@@ -1,26 +1,28 @@
 @page "/dashboard"
 @attribute [Authorize]
+@inject TranslationService Translation
+@inject NavigationManager Navigation
+@inject AuthService AuthServiceImpl
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using global::FastLabel.Client.Services
 
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>FastLabel - Tableau de bord</h2>
-        <button class="btn btn-outline-danger btn-sm" @onclick="HandleLogout">Déconnexion</button>
+        <h2>@Translation.GetString("dashboard.title")</h2>
     </div>
 
     <div class="row">
         <div class="col-md-12">
             <div class="card shadow-sm">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">Agents & Imprimantes ZPL</h5>
+                    <h5 class="mb-0">@Translation.GetString("dashboard.agents_header")</h5>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">Gestion et état de vos agents Windows connectés pour l'impression thermique.</p>
+                    <p class="text-muted">@Translation.GetString("dashboard.agents_description")</p>
                     
                     <div class="alert alert-info" role="alert">
-                        Aucun agent actif pour le moment. Le service d'écoute ZPL communiquera bientôt ici.
+                        @Translation.GetString("dashboard.no_active_agents")
                     </div>
                 </div>
             </div>
@@ -29,8 +31,6 @@
 </div>
 
 @code {
-    [Inject] private AuthService AuthServiceImpl { get; set; } = default!;
-    [Inject] private NavigationManager Navigation { get; set; } = default!;
     [Inject] private AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
 
     protected override async Task OnInitializedAsync()
@@ -41,14 +41,7 @@
 
         if (user.Identity?.IsAuthenticated != true)
         {
-            Navigation.NavigateTo("/login");
+            Navigation.NavigateTo("/login", forceLoad: true);
         }
-    }
-
-    private async Task HandleLogout()
-    {
-        // Appel de la déconnexion de votre service (ex: suppression du token)
-        await AuthServiceImpl.LogoutAsync();
-        Navigation.NavigateTo("/login", forceLoad: true);
     }
 }

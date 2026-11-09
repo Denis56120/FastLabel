@@ -49,7 +49,6 @@ public static class AgentWebSocketEndpoints
             using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
             
             broker.ActiveAgents[agent.Id] = webSocket;
-            Console.WriteLine($"[WS] Agent (ID: {agent.Id}) connecté.");
 
             var buffer = new byte[8192];
             try
@@ -92,12 +91,10 @@ public static class AgentWebSocketEndpoints
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"[WS Erreur] Agent (ID: {agent.Id}) : {ex.Message}");
             }
             finally
             {
                 broker.ActiveAgents.TryRemove(agent.Id, out _);
-                Console.WriteLine($"[WS] Agent (ID: {agent.Id}) déconnecté.");
             }
         });
     }

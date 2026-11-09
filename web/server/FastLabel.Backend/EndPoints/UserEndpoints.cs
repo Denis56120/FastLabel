@@ -35,6 +35,7 @@ public static class UserEndpoints
         });
 
         // 2. Mettre à jour les préférences de langue
+        // 2. Mettre à jour les préférences de l'utilisateur
         group.MapPut("/me/preferences", async (UpdatePreferencesDto dto, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
             var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -45,20 +46,15 @@ public static class UserEndpoints
             if (user == null)
                 return Results.NotFound(new { message = "User not found." });
 
-            var language = await db.PreferredLanguages
-                .FirstOrDefaultAsync(l => l.Locale == dto.PreferredLanguage);
-
-            if (language == null)
-            {
-                return Results.BadRequest(new { message = "Preferred language not found." });
-            }
+            // Mets à jour ici les propriétés que tu souhaites persister (ex: notifications, imprimante, etc.)
+            // user.ReceiveEmailNotifications = dto.ReceiveEmailNotifications;
+            // user.DefaultPrinterName = dto.DefaultPrinterName;
 
             await db.SaveChangesAsync();
 
             return Results.Ok(new
             {
-                message = "Preferences updated successfully.",
-                preferredLanguage = language.Locale
+                message = "Preferences updated successfully."
             });
         });
     }

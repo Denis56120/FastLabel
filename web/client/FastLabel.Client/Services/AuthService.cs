@@ -4,16 +4,24 @@ using FastLabel.Shared.DTOs;
 
 namespace FastLabel.Client.Services;
 
-public class AuthService(IHttpClientFactory clientFactory, IJSRuntime jsRuntime, AuthenticationStateProvider authStateProvider)
+public class AuthService(
+    IHttpClientFactory clientFactory,
+    IJSRuntime jsRuntime,
+    AuthenticationStateProvider authStateProvider,
+    TokenContainer tokenContainer,
+    CookieService cookieService) // 1. Injection du CookieService dans le constructeur primaire
 {
     private readonly HttpClient _httpClient = clientFactory.CreateClient("AuthClient");
     private readonly IJSRuntime _jsRuntime = jsRuntime;
     private readonly AuthenticationStateProvider _authProvider = authStateProvider;
+    private readonly TokenContainer _tokenContainer = tokenContainer;
+    private readonly CookieService _cookieService = cookieService; // 2. Stockage de l'instance
     private string? _token;
 
     public async Task SetTokenAsync(string token)
     {
         _token = token;
+        _tokenContainer.Token = token;
         await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", token);
 
         if (_authProvider is CustomAuthenticationStateProvider customProvider)
@@ -29,10 +37,11 @@ public class AuthService(IHttpClientFactory clientFactory, IJSRuntime jsRuntime,
             try
             {
                 _token = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+                _tokenContainer.Token = _token;
             }
             catch
             {
-                // Ignorer si le JS n'est pas encore disponible (rendu prerender)
+                // Ignorer si le JS n'est pas encore disponible
             }
         }
         return _token;
@@ -41,6 +50,7 @@ public class AuthService(IHttpClientFactory clientFactory, IJSRuntime jsRuntime,
     public async Task LogoutAsync()
     {
         _token = null;
+        _tokenContainer.Token = null;
         await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", "authToken");
 
         if (_authProvider is CustomAuthenticationStateProvider customProvider)
@@ -57,12 +67,6 @@ public class AuthService(IHttpClientFactory clientFactory, IJSRuntime jsRuntime,
 
     public async Task<AuthResponseDto?> GetCurrentUserAsync()
     {
-        var token = await GetTokenAsync();
-        if (!string.IsNullOrEmpty(token))
-        {
-            _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-        }
-
         return await _httpClient.GetFromJsonAsync<AuthResponseDto>("api/auth/me");
     }
 }

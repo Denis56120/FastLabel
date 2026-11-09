@@ -1,5 +1,4 @@
 using FastLabel.Client.Services;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 
 namespace FastLabel.Client.Extensions;
@@ -9,26 +8,19 @@ public static class DependencyInjectionExtensions
     public static IServiceCollection AddAppServices(this IServiceCollection services, IConfiguration configuration)
     {
         var serverAddress = configuration["ServerUrl"] ?? "http://localhost:6000";
-        
+
         // 1. Composants Blazor
         services.AddRazorComponents()
             .AddInteractiveServerComponents();
 
-        // Services d'authentification et d'autorisation
-        services.AddAuthentication(options =>
-        {
-            options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-        })
-        .AddCookie(options =>
-        {
-            options.Cookie.Name = "authToken";
-            options.LoginPath = "/login";
-        });
+        // Indispensable pour lire les cookies directement dans le HttpContext des layouts
+        services.AddHttpContextAccessor();
 
-        services.AddAuthorization();
+        // 2. Authentification et Autorisation Blazor
+        services.AddAuthentication();
+        services.AddAuthorizationCore(); 
 
-        // 2. Configuration des clients HTTP nommés
+        // 3. Configuration des clients HTTP nommés
         services.AddTransient<CustomAuthorizationMessageHandler>();
 
         // Client public (pour login, register, etc.)
@@ -44,12 +36,12 @@ public static class DependencyInjectionExtensions
         })
         .AddHttpMessageHandler<CustomAuthorizationMessageHandler>();
 
-        // 3. Services métiers
+        // 4. Services métiers
         services.AddScoped<AuthService>();
         services.AddScoped<TranslationService>();
         services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
-
-        services.AddSingleton<TranslationService>();
+        services.AddScoped<CookieService>();
+        services.AddScoped<TokenContainer>();
 
         return services;
     }

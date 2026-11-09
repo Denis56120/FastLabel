@@ -1,11 +1,14 @@
 using System.Net.Http.Json;
+using FastLabel.Client.Services;
 using FastLabel.Shared.DTOs;
+// Assure-toi d'importer le namespace de ton service de cookies (ex: FastLabel.Client.Services)
 
 public class TranslationService
 {
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly CookieService _cookieService; // Injection de ton CookieService
     private Dictionary<string, string> _translations = new(StringComparer.OrdinalIgnoreCase);
-    private string _currentCulture = "fr_fr";
+    private string _currentCulture = "fr-FR";
 
     public event Action? OnChange;
 
@@ -13,21 +16,36 @@ public class TranslationService
 
     public string this[string key] => GetString(key);
 
-    public TranslationService(IHttpClientFactory httpClientFactory)
+    public TranslationService(IHttpClientFactory httpClientFactory, CookieService cookieService)
     {
         _httpClientFactory = httpClientFactory;
+        _cookieService = cookieService;
+    }
+
+    // Nouvelle méthode sans paramètre qui lit le cookie automatiquement
+    public async Task InitializeAsync()
+    {
+        string culture = _currentCulture;
+
+        try
+        {
+            var cookieValue = await _cookieService.GetCookieAsync("preferred_language"); 
+            if (!string.IsNullOrEmpty(cookieValue))
+            {
+                culture = cookieValue;
+            }
+        }
+        catch
+        {
+            // Ignore pendant le prerendering, on garde la culture actuelle
+        }
+
+        await InitializeAsync(culture);
     }
 
     public async Task InitializeAsync(string culture)
     {
-        var targetCulture = string.IsNullOrEmpty(culture) ? _currentCulture : culture.ToLower();
-
-        // Si c'equivalent et qu'on a déjà des traductions, on évite de redéclencher inutilement
-        if (_currentCulture.Equals(targetCulture, StringComparison.OrdinalIgnoreCase) && _translations.Count > 0)
-        {
-            return;
-        }
-
+        var targetCulture = string.IsNullOrEmpty(culture) ? _currentCulture : culture;
         _currentCulture = targetCulture;
 
         try
@@ -51,7 +69,7 @@ public class TranslationService
             _translations = [];
         }
 
-        // On prévient une seule fois la fin du chargement
+        // Déclenche l'événement pour forcer la mise à jour des layouts et du routeur
         OnChange?.Invoke();
     }
 

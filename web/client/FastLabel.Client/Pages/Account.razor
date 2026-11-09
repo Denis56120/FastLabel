@@ -1,19 +1,23 @@
 @page "/account"
 @attribute [Authorize]
+@inject IHttpClientFactory ClientFactory
+@inject NavigationManager Navigation
+@inject TranslationService Translation
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.Forms
-@using Microsoft.AspNetCore.Components.Web
+@using FastLabel.Shared.DTOs
+@using System.Net
 
 <div class="container mt-4">
-    <h2>Mon Compte</h2>
+    <h2>@Translation.GetString("account.title")</h2>
     <hr />
 
     @if (isLoading)
     {
         <div class="d-flex justify-content-center my-5">
             <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">Chargement...</span>
+                <span class="visually-hidden">@Translation.GetString("common.loading")</span>
             </div>
         </div>
     }
@@ -24,15 +28,15 @@
             <div class="col-md-6 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">Informations personnelles</h5>
+                        <h5 class="mb-0">@Translation.GetString("account.personal_info")</h5>
                     </div>
                     <div class="card-body">
                         <div class="mb-3">
-                            <label class="form-label text-muted">Adresse Email</label>
+                            <label class="form-label text-muted">@Translation.GetString("account.email_label")</label>
                             <input type="text" class="form-control" value="@userEmail" disabled />
                         </div>
                         <div class="mb-3">
-                            <label class="form-label text-muted">Rôle / Plan</label>
+                            <label class="form-label text-muted">@Translation.GetString("account.role_label")</label>
                             <input type="text" class="form-control" value="@userRole" disabled />
                         </div>
                     </div>
@@ -43,7 +47,7 @@
             <div class="col-md-6 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-header bg-secondary text-white">
-                        <h5 class="mb-0">Préférences utilisateur</h5>
+                        <h5 class="mb-0">@Translation.GetString("account.preferences_title")</h5>
                     </div>
                     <div class="card-body">
                         @if (!string.IsNullOrEmpty(successMessage))
@@ -66,12 +70,12 @@
                             <div class="mb-3 form-check">
                                 <InputCheckbox id="emailNotifications" class="form-check-input" @bind-Value="preferencesModel.ReceiveEmailNotifications" />
                                 <label class="form-check-label" for="emailNotifications">
-                                    Recevoir les notifications par email
+                                    @Translation.GetString("account.email_notifications")
                                 </label>
                             </div>
 
                             <div class="mb-3">
-                                <label for="defaultPrinter" class="form-label">Imprimante ZPL par défaut</label>
+                                <label for="defaultPrinter" class="form-label">@Translation.GetString("account.default_printer")</label>
                                 <InputText id="defaultPrinter" class="form-control" @bind-Value="preferencesModel.DefaultPrinterName" placeholder="Ex: Zebra ZD420" />
                             </div>
 
@@ -79,11 +83,11 @@
                                 @if (isSaving)
                                 {
                                     <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                    <span>Enregistrement...</span>
+                                    <span>@Translation.GetString("account.saving")</span>
                                 }
                                 else
                                 {
-                                    <span>Enregistrer les modifications</span>
+                                    <span>@Translation.GetString("account.save_button")</span>
                                 }
                             </button>
                         </EditForm>
@@ -104,7 +108,7 @@
     private string? successMessage;
     private string? errorMessage;
 
-    private UserPreferencesModel preferencesModel = new();
+    private UpdatePreferencesDto preferencesModel = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -127,12 +131,21 @@
                 }
             }
 
+            var client = ClientFactory.CreateClient("AuthClient");
+            var result = await client.GetFromJsonAsync<UpdatePreferencesDto>("api/users/me/preferences");
+            if (result != null)
+            {
+                preferencesModel = result;
+            }
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
+        {
+            Navigation.NavigateTo("/login", forceLoad: true);
+        }
+        catch (Exception)
+        {
             preferencesModel.ReceiveEmailNotifications = true;
             preferencesModel.DefaultPrinterName = "Zebra ZT230";
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Erreur lors du chargement du profil : {ex.Message}";
         }
         finally
         {
@@ -148,22 +161,35 @@
 
         try
         {
-            await Task.Delay(600); 
-            successMessage = "Vos préférences ont été enregistrées avec succès.";
+            var client = ClientFactory.CreateClient("AuthClient");
+            var response = await client.PutAsJsonAsync("api/users/me/preferences", preferencesModel);
+
+            if (response.IsSuccessStatusCode)
+            {
+                successMessage = Translation.CurrentCulture.StartsWith("fr") 
+                    ? "Vos préférences ont été enregistrées avec succès." 
+                    : "Your preferences have been successfully saved.";
+            }
+            else if (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden)
+            {
+                Navigation.NavigateTo("/login", forceLoad: true);
+            }
+            else
+            {
+                errorMessage = Translation.CurrentCulture.StartsWith("fr") 
+                    ? "Erreur lors de l'enregistrement des préférences." 
+                    : "Error while saving preferences.";
+            }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            errorMessage = $"Une erreur est survenue lors de l'enregistrement : {ex.Message}";
+            errorMessage = Translation.CurrentCulture.StartsWith("fr") 
+                ? "Impossible de joindre le serveur." 
+                : "Unable to reach the server.";
         }
         finally
         {
             isSaving = false;
         }
-    }
-
-    public class UserPreferencesModel
-    {
-        public bool ReceiveEmailNotifications { get; set; }
-        public string DefaultPrinterName { get; set; } = string.Empty;
     }
 }

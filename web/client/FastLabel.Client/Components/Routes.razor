@@ -1,5 +1,6 @@
 ﻿@rendermode InteractiveServer
-@using Microsoft.AspNetCore.Components.Web
+@inject TranslationService Translation
+@implements IDisposable
 
 <CascadingAuthenticationState>
     <Router AppAssembly="@typeof(Program).Assembly">
@@ -18,3 +19,15 @@
         </NotFound>
     </Router>
 </CascadingAuthenticationState>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Translation.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        Translation.OnChange -= StateHasChanged;
+    }
+}

@@ -1,6 +1,5 @@
 @page "/register"
 @layout PublicLayout
-@implements IDisposable
 @inject IHttpClientFactory ClientFactory
 @inject NavigationManager Navigation
 @inject TranslationService Translation
@@ -10,88 +9,59 @@
 @using FastLabel.Client.Services
 @using FastLabel.Shared.DTOs
 
-@if (!_isReady)
-{
-    <div class="d-flex justify-content-center align-items-center w-100" style="min-height: 300px;">
-        <!-- Garde anti-clignotement transparente -->
-    </div>
-}
-else
-{
-    <div style="width: 100%; max-width: 450px;">
-        <div class="card shadow border-0">
-            <div class="card-body p-4">
-                <h3 class="card-title text-center mb-4">@Translation.GetString("auth.register_title")</h3>
+<div style="width: 100%; max-width: 450px;">
+    <div class="card shadow border-0">
+        <div class="card-body p-4">
+            <h3 class="card-title text-center mb-4">@Translation.GetString("auth.register_title")</h3>
 
-                @if (!string.IsNullOrEmpty(_errorMessage))
-                {
-                    <div class="alert alert-danger" role="alert">
-                        @_errorMessage
+            @if (!string.IsNullOrEmpty(_errorMessage))
+            {
+                <div class="alert alert-danger" role="alert">
+                    @_errorMessage
+                </div>
+            }
+
+            <EditForm Model="_registerModel" OnValidSubmit="HandleRegister">
+                <DataAnnotationsValidator />
+
+                <div class="mb-3">
+                    <label class="form-label">@Translation.GetString("auth.email")</label>
+                    <InputText @bind-Value="_registerModel.Email" class="form-control" placeholder="@Translation.GetString("auth.email_placeholder")" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">@Translation.GetString("auth.password")</label>
+                    <div class="input-group">
+                        <input type="@PasswordInputType" 
+                               @bind="_registerModel.Password" 
+                               @bind:event="oninput"
+                               class="form-control"
+                               placeholder="••••••••" />
+                        <button type="button" class="btn btn-outline-secondary" @onclick="TogglePasswordVisibility">
+                            <i class="bi @PasswordIconClass" style="pointer-events: none;"></i>
+                        </button>
                     </div>
-                }
+                </div>
 
-                <EditForm Model="_registerModel" OnValidSubmit="HandleRegister">
-                    <DataAnnotationsValidator />
+                <div class="d-grid mb-3">
+                    <button type="submit" class="btn btn-success">@Translation.GetString("auth.register_button")</button>
+                </div>
 
-                    <div class="mb-3">
-                        <label class="form-label">@Translation.GetString("auth.email")</label>
-                        <InputText @bind-Value="_registerModel.Email" class="form-control" placeholder="@Translation.GetString("auth.email_placeholder")" />
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">@Translation.GetString("auth.password")</label>
-                        <div class="input-group">
-                            <input type="@PasswordInputType" 
-                                   @bind="_registerModel.Password" 
-                                   @bind:event="oninput"
-                                   class="form-control"
-                                   placeholder="••••••••" />
-                            <button type="button" class="btn btn-outline-secondary" @onclick="TogglePasswordVisibility">
-                                <i class="bi @PasswordIconClass" style="pointer-events: none;"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="d-grid mb-3">
-                        <button type="submit" class="btn btn-success">@Translation.GetString("auth.register_button")</button>
-                    </div>
-
-                    <div class="text-center">
-                        <a href="/login">@Translation.GetString("auth.already_have_account")</a>
-                    </div>
-                </EditForm>
-            </div>
+                <div class="text-center">
+                    <a href="/login">@Translation.GetString("auth.already_have_account")</a>
+                </div>
+            </EditForm>
         </div>
     </div>
-}
+</div>
 
 @code {
     private RegisterDto _registerModel = new();
     private string? _errorMessage;
-    private bool _isReady = false;
 
     private bool _showPassword = false;
     private string PasswordInputType => _showPassword ? "text" : "password";
     private string PasswordIconClass => _showPassword ? "bi-eye-slash" : "bi-eye";
-
-    protected override void OnInitialized()
-    {
-        Translation.OnChange += OnTranslationChanged;
-        
-        // Si le layout a déjà chargé le dictionnaire au démarrage, on s'affiche instantanément
-        _isReady = !string.IsNullOrEmpty(Translation.GetString("auth.register_title"));
-    }
-
-    private void OnTranslationChanged()
-    {
-        _isReady = true;
-        InvokeAsync(StateHasChanged);
-    }
-
-    public void Dispose()
-    {
-        Translation.OnChange -= OnTranslationChanged;
-    }
 
     private void TogglePasswordVisibility()
     {
@@ -104,7 +74,7 @@ else
 
         try
         {
-            var client = ClientFactory.CreateClient("PublicClient");
+            var client = ClientFactory.CreateClient("PublicClient"); // ou ClientFactory.CreateClient selon ton injection
             var response = await client.PostAsJsonAsync("api/auth/register", _registerModel);
 
             if (response.IsSuccessStatusCode)
@@ -114,12 +84,14 @@ else
             else
             {
                 var errorContent = await response.Content.ReadFromJsonAsync<ErrorResponseDto>();
-                _errorMessage = errorContent?.Message ?? "Erreur lors de l'inscription.";
+                _errorMessage = errorContent?.Message != null 
+                    ? Translation.GetString(errorContent.Message) 
+                    : (Translation.CurrentCulture.StartsWith("fr") ? "Erreur lors de l'inscription." : "An error occurred during registration.");
             }
         }
         catch (Exception)
         {
-            _errorMessage = "Impossible de joindre le serveur.";
+            _errorMessage = Translation.CurrentCulture.StartsWith("fr") ? "Impossible de joindre le serveur." : "Unable to reach the server.";
         }
     }
 }

@@ -62,15 +62,15 @@ public static class DbInitializer
         }
 
         // 1. Création préalable des Textes de description des langues (pour satisfaire la FK)
-        var descFr = await CreateTextWithTranslationsAsync("lang.fr.desc", "French language", new() { { "fr_FR", "Langue française" }, { "en_GB", "French language" } });
-        var descEn = await CreateTextWithTranslationsAsync("lang.en.desc", "English language", new() { { "fr_FR", "Langue anglaise" }, { "en_GB", "English language" } });
+        var descFr = await CreateTextWithTranslationsAsync("lang.fr.desc", "French language", new() { { "fr-FR", "Langue française" }, { "en-GB", "French language" } });
+        var descEn = await CreateTextWithTranslationsAsync("lang.en.desc", "English language", new() { { "fr-FR", "Langue anglaise" }, { "en-GB", "English language" } });
 
         // 2. Langues préférées (PreferredLanguage) insérées APRÈS leurs textes de description
         if (!await context.PreferredLanguages.AnyAsync())
         {
             context.PreferredLanguages.AddRange(
-                new PreferredLanguage { Locale = "fr_FR", DescriptionTextId = descFr.Id, Flag = null },
-                new PreferredLanguage { Locale = "en_GB", DescriptionTextId = descEn.Id, Flag = null }
+                new PreferredLanguage { Locale = "fr-FR", DescriptionTextId = descFr.Id, Flag = null },
+                new PreferredLanguage { Locale = "en-GB", DescriptionTextId = descEn.Id, Flag = null }
             );
             await context.SaveChangesAsync();
         }
@@ -78,8 +78,8 @@ public static class DbInitializer
         // 3. Protocoles d'impression (Protocol)
         if (!await context.Protocols.AnyAsync())
         {
-            var p1 = await CreateTextWithTranslationsAsync("protocol.rasterized_zpl", "Rasterized ZPL", new() { { "fr_FR", "ZPL Rasterisé" }, { "en_GB", "Rasterized ZPL" } });
-            var p2 = await CreateTextWithTranslationsAsync("protocol.native_zpl", "Native ZPL", new() { { "fr_FR", "ZPL Natif" }, { "en_GB", "Native ZPL" } });
+            var p1 = await CreateTextWithTranslationsAsync("protocol.rasterized_zpl", "Rasterized ZPL", new() { { "fr-FR", "ZPL Rasterisé" }, { "en-GB", "Rasterized ZPL" } });
+            var p2 = await CreateTextWithTranslationsAsync("protocol.native_zpl", "Native ZPL", new() { { "fr-FR", "ZPL Natif" }, { "en-GB", "Native ZPL" } });
 
             context.Protocols.AddRange(
                 new Protocol { NameTextId = p1.Id },
@@ -102,9 +102,9 @@ public static class DbInitializer
         // 5. Types d'agents (AgentType)
         if (!await context.AgentTypes.AnyAsync())
         {
-            var a1 = await CreateTextWithTranslationsAsync("agenttype.windows", "FastLabel Windows Agent", new() { { "fr_FR", "Agent Windows FastLabel" }, { "en_GB", "FastLabel Windows Agent" } });
-            var a2 = await CreateTextWithTranslationsAsync("agenttype.linux", "FastLabel Linux Agent", new() { { "fr_FR", "Agent Linux FastLabel" }, { "en_GB", "FastLabel Linux Agent" } });
-            var a3 = await CreateTextWithTranslationsAsync("agenttype.browser", "Web Browser", new() { { "fr_FR", "Navigateur Web" }, { "en_GB", "Web Browser" } });
+            var a1 = await CreateTextWithTranslationsAsync("agenttype.windows", "FastLabel Windows Agent", new() { { "fr-FR", "Agent Windows FastLabel" }, { "en-GB", "FastLabel Windows Agent" } });
+            var a2 = await CreateTextWithTranslationsAsync("agenttype.linux", "FastLabel Linux Agent", new() { { "fr-FR", "Agent Linux FastLabel" }, { "en-GB", "FastLabel Linux Agent" } });
+            var a3 = await CreateTextWithTranslationsAsync("agenttype.browser", "Web Browser", new() { { "fr-FR", "Navigateur Web" }, { "en-GB", "Web Browser" } });
 
             context.AgentTypes.AddRange(
                 new AgentType { NameTextId = a1.Id },
@@ -117,8 +117,8 @@ public static class DbInitializer
         // 6. Statuts de base (BasicStatus)
         if (!await context.BasicStatuses.AnyAsync())
         {
-            var s1 = await CreateTextWithTranslationsAsync("status.active", "Active", new() { { "fr_FR", "Actif" }, { "en_GB", "Active" } });
-            var s2 = await CreateTextWithTranslationsAsync("status.inactive", "Inactive", new() { { "fr_FR", "Inactif" }, { "en_GB", "Inactive" } });
+            var s1 = await CreateTextWithTranslationsAsync("status.active", "Active", new() { { "fr-FR", "Actif" }, { "en-GB", "Active" } });
+            var s2 = await CreateTextWithTranslationsAsync("status.inactive", "Inactive", new() { { "fr-FR", "Inactif" }, { "en-GB", "Inactive" } });
 
             context.BasicStatuses.AddRange(
                 new BasicStatus { NameTextId = s1.Id },
@@ -130,10 +130,10 @@ public static class DbInitializer
         // 7. Statuts des tâches d'impression (PrintJobStatus)
         if (!await context.PrintJobStatuses.AnyAsync())
         {
-            var j1 = await CreateTextWithTranslationsAsync("jobstatus.created", "Created", new() { { "fr_FR", "Créé" }, { "en_GB", "Created" } });
-            var j2 = await CreateTextWithTranslationsAsync("jobstatus.inprogress", "In Progress", new() { { "fr_FR", "En Cours" }, { "en_GB", "In Progress" } });
-            var j3 = await CreateTextWithTranslationsAsync("jobstatus.completed", "Completed", new() { { "fr_FR", "Terminé" }, { "en_GB", "Completed" } });
-            var j4 = await CreateTextWithTranslationsAsync("jobstatus.suspended", "Suspended", new() { { "fr_FR", "Suspendu" }, { "en_GB", "Suspended" } });
+            var j1 = await CreateTextWithTranslationsAsync("jobstatus.created", "Created", new() { { "fr-FR", "Créé" }, { "en-GB", "Created" } });
+            var j2 = await CreateTextWithTranslationsAsync("jobstatus.inprogress", "In Progress", new() { { "fr-FR", "En Cours" }, { "en-GB", "In Progress" } });
+            var j3 = await CreateTextWithTranslationsAsync("jobstatus.completed", "Completed", new() { { "fr-FR", "Terminé" }, { "en-GB", "Completed" } });
+            var j4 = await CreateTextWithTranslationsAsync("jobstatus.suspended", "Suspended", new() { { "fr-FR", "Suspendu" }, { "en-GB", "Suspended" } });
 
             context.PrintJobStatuses.AddRange(
                 new PrintJobStatus { NameTextId = j1.Id },
@@ -147,8 +147,8 @@ public static class DbInitializer
         // 8. Types d'abonnements (SubscriptionType)
         if (!await context.SubscriptionTypes.AnyAsync())
         {
-            var sub1 = await CreateTextWithTranslationsAsync("subtype.paid", "Paid", new() { { "fr_FR", "Payé" }, { "en_GB", "Paid" } });
-            var sub2 = await CreateTextWithTranslationsAsync("subtype.trial", "Trial", new() { { "fr_FR", "Essai" }, { "en_GB", "Trial" } });
+            var sub1 = await CreateTextWithTranslationsAsync("subtype.paid", "Paid", new() { { "fr-FR", "Payé" }, { "en-GB", "Paid" } });
+            var sub2 = await CreateTextWithTranslationsAsync("subtype.trial", "Trial", new() { { "fr-FR", "Essai" }, { "en-GB", "Trial" } });
 
             context.SubscriptionTypes.AddRange(
                 new SubscriptionType { NameTextId = sub1.Id },
@@ -160,9 +160,9 @@ public static class DbInitializer
         // 9. Plans d'abonnement (Plan)
         if (!await context.Plans.AnyAsync())
         {
-            var planFreeText = await CreateTextWithTranslationsAsync("plan.free.name", "Free Plan", new() { { "fr_FR", "Plan Gratuit" }, { "en_GB", "Free Plan" } });
-            var planProText = await CreateTextWithTranslationsAsync("plan.pro.name", "Pro Plan", new() { { "fr_FR", "Plan Professionnel" }, { "en_GB", "Pro Plan" } });
-            var planEnterpriseText = await CreateTextWithTranslationsAsync("plan.enterprise.name", "Enterprise Plan", new() { { "fr_FR", "Plan Entreprise" }, { "en_GB", "Enterprise Plan" } });
+            var planFreeText = await CreateTextWithTranslationsAsync("plan.free.name", "Free Plan", new() { { "fr-FR", "Plan Gratuit" }, { "en-GB", "Free Plan" } });
+            var planProText = await CreateTextWithTranslationsAsync("plan.pro.name", "Pro Plan", new() { { "fr-FR", "Plan Professionnel" }, { "en-GB", "Pro Plan" } });
+            var planEnterpriseText = await CreateTextWithTranslationsAsync("plan.enterprise.name", "Enterprise Plan", new() { { "fr-FR", "Plan Entreprise" }, { "en-GB", "Enterprise Plan" } });
 
             var activeStatus = await context.BasicStatuses.FirstOrDefaultAsync();
             int statusId = activeStatus?.Id ?? 1;
@@ -220,30 +220,45 @@ public static class DbInitializer
             await context.SaveChangesAsync();
 
             // 11. Textes UI
-            await CreateTextWithTranslationsAsync("nav.home", "Home", new() { { "fr_FR", "Accueil" }, { "en_GB", "Home" } });
-            await CreateTextWithTranslationsAsync("nav.templates", "Label Templates", new() { { "fr_FR", "Modèles d'étiquettes" }, { "en_GB", "Label Templates" } });
-            await CreateTextWithTranslationsAsync("nav.printers", "Printers", new() { { "fr_FR", "Imprimantes" }, { "en_GB", "Printers" } });
-            await CreateTextWithTranslationsAsync("nav.agents", "Agents", new() { { "fr_FR", "Agents" }, { "en_GB", "Agents" } });
-            await CreateTextWithTranslationsAsync("nav.users", "Users", new() { { "fr_FR", "Utilisateurs" }, { "en_GB", "Users" } });
-            await CreateTextWithTranslationsAsync("nav.history", "History", new() { { "fr_FR", "Historique" }, { "en_GB", "History" } });
-            await CreateTextWithTranslationsAsync("nav.my_account", "My Account", new() { { "fr_FR", "Mon Compte" }, { "en_GB", "My Account" } });
-            await CreateTextWithTranslationsAsync("nav.logout", "Logout", new() { { "fr_FR", "Déconnexion" }, { "en_GB", "Logout" } });
+            await CreateTextWithTranslationsAsync("nav.home", "Home", new() { { "fr-FR", "Accueil" }, { "en-GB", "Home" } });
+            await CreateTextWithTranslationsAsync("nav.templates", "Label Templates", new() { { "fr-FR", "Modèles d'étiquettes" }, { "en-GB", "Label Templates" } });
+            await CreateTextWithTranslationsAsync("nav.printers", "Printers", new() { { "fr-FR", "Imprimantes" }, { "en-GB", "Printers" } });
+            await CreateTextWithTranslationsAsync("nav.agents", "Agents", new() { { "fr-FR", "Agents" }, { "en-GB", "Agents" } });
+            await CreateTextWithTranslationsAsync("nav.users", "Users", new() { { "fr-FR", "Utilisateurs" }, { "en-GB", "Users" } });
+            await CreateTextWithTranslationsAsync("nav.history", "History", new() { { "fr-FR", "Historique" }, { "en-GB", "History" } });
+            await CreateTextWithTranslationsAsync("nav.my_account", "My Account", new() { { "fr-FR", "Mon Compte" }, { "en-GB", "My Account" } });
+            await CreateTextWithTranslationsAsync("nav.logout", "Logout", new() { { "fr-FR", "Déconnexion" }, { "en-GB", "Logout" } });
 
-            await CreateTextWithTranslationsAsync("auth.login_title", "Login", new() { { "fr_FR", "Connexion" }, { "en_GB", "Login" } });
-            await CreateTextWithTranslationsAsync("auth.email", "Email", new() { { "fr_FR", "Email" }, { "en_GB", "Email" } });
-            await CreateTextWithTranslationsAsync("auth.password", "Password", new() { { "fr_FR", "Mot de passe" }, { "en_GB", "Password" } });
-            await CreateTextWithTranslationsAsync("auth.submit", "Sign In", new() { { "fr_FR", "Se connecter" }, { "en_GB", "Sign In" } });
-            await CreateTextWithTranslationsAsync("auth.create_account", "Create an account", new() { { "fr_FR", "Créer un compte" }, { "en_GB", "Create an account" } });
-            await CreateTextWithTranslationsAsync("auth.forgot_password", "Forgot password?", new() { { "fr_FR", "Mot de passe oublié ?" }, { "en_GB", "Forgot password?" } });
-            await CreateTextWithTranslationsAsync("auth.register_title", "Register", new() { { "fr_FR", "Inscription" }, { "en_GB", "Register" } });
-            await CreateTextWithTranslationsAsync("auth.register_button", "Sign Up", new() { { "fr_FR", "S'inscrire" }, { "en_GB", "Sign Up" } });
-            await CreateTextWithTranslationsAsync("auth.already_have_account", "Already have an account? Sign in", new() { { "fr_FR", "Déjà un compte ? Connectez-vous" }, { "en_GB", "Already have an account? Sign in" } });
-            await CreateTextWithTranslationsAsync("auth.forgot_heading", "Forgot password", new() { { "fr_FR", "Mot de passe oublié" }, { "en_GB", "Forgot password" } });
-            await CreateTextWithTranslationsAsync("auth.forgot_instruction", "Enter your email address to receive password reset instructions.", new() { { "fr_FR", "Entre ton adresse email pour recevoir les instructions de réinitialisation." }, { "en_GB", "Enter your email address to receive password reset instructions." } });
-            await CreateTextWithTranslationsAsync("auth.email_placeholder", "name@example.com", new() { { "fr_FR", "nom@exemple.com" }, { "en_GB", "name@example.com" } });
-            await CreateTextWithTranslationsAsync("auth.send_link_button", "Send Link", new() { { "fr_FR", "Envoyer le lien" }, { "en_GB", "Send Link" } });
-            await CreateTextWithTranslationsAsync("auth.back_to_login", "Back to login", new() { { "fr_FR", "Retour à la connexion" }, { "en_GB", "Back to login" } });
-            await CreateTextWithTranslationsAsync("auth.email_placeholder_alt", "votre@email.com", new() { { "fr_FR", "votre@email.com" }, { "en_GB", "your@email.com" } });
+            await CreateTextWithTranslationsAsync("account.title", "My Account", new() { { "fr-FR", "Mon Compte" }, { "en-GB", "My Account" } });
+            await CreateTextWithTranslationsAsync("account.personal_info", "Personal Information", new() { { "fr-FR", "Informations personnelles" }, { "en-GB", "Personal Information" } });
+            await CreateTextWithTranslationsAsync("account.email_label", "Email Address", new() { { "fr-FR", "Adresse Email" }, { "en-GB", "Email Address" } });
+            await CreateTextWithTranslationsAsync("account.role_label", "Role / Plan", new() { { "fr-FR", "Rôle / Plan" }, { "en-GB", "Role / Plan" } });
+            await CreateTextWithTranslationsAsync("account.preferences_title", "User Preferences", new() { { "fr-FR", "Préférences utilisateur" }, { "en-GB", "User Preferences" } });
+            await CreateTextWithTranslationsAsync("account.email_notifications", "Receive email notifications", new() { { "fr-FR", "Recevoir les notifications par email" }, { "en-GB", "Receive email notifications" } });
+            await CreateTextWithTranslationsAsync("account.default_printer", "Default ZPL Printer", new() { { "fr-FR", "Imprimante ZPL par défaut" }, { "en-GB", "Default ZPL Printer" } });
+            await CreateTextWithTranslationsAsync("account.saving", "Saving...", new() { { "fr-FR", "Enregistrement..." }, { "en-GB", "Saving..." } });
+            await CreateTextWithTranslationsAsync("account.save_button", "Save Changes", new() { { "fr-FR", "Enregistrer les modifications" }, { "en-GB", "Save Changes" } });
+
+            await CreateTextWithTranslationsAsync("dashboard.title", "FastLabel - Dashboard", new() { { "fr-FR", "FastLabel - Tableau de bord" }, { "en-GB", "FastLabel - Dashboard" } });
+            await CreateTextWithTranslationsAsync("dashboard.agents_header", "ZPL Agents & Printers", new() { { "fr-FR", "Agents & Imprimantes ZPL" }, { "en-GB", "ZPL Agents & Printers" } });
+            await CreateTextWithTranslationsAsync("dashboard.agents_description", "Management and status of your connected Windows agents for thermal printing.", new() { { "fr-FR", "Gestion et état de vos agents Windows connectés pour l'impression thermique." }, { "en-GB", "Management and status of your connected Windows agents for thermal printing." } });
+            await CreateTextWithTranslationsAsync("dashboard.no_active_agents", "No active agents at the moment. The ZPL listening service will communicate here soon.", new() { { "fr-FR", "Aucun agent actif pour le moment. Le service d'écoute ZPL communiquera bientôt ici." }, { "en-GB", "No active agents at the moment. The ZPL listening service will communicate here soon." } });
+
+            await CreateTextWithTranslationsAsync("auth.login_title", "Login", new() { { "fr-FR", "Connexion" }, { "en-GB", "Login" } });
+            await CreateTextWithTranslationsAsync("auth.email", "Email", new() { { "fr-FR", "Email" }, { "en-GB", "Email" } });
+            await CreateTextWithTranslationsAsync("auth.password", "Password", new() { { "fr-FR", "Mot de passe" }, { "en-GB", "Password" } });
+            await CreateTextWithTranslationsAsync("auth.submit", "Sign In", new() { { "fr-FR", "Se connecter" }, { "en-GB", "Sign In" } });
+            await CreateTextWithTranslationsAsync("auth.create_account", "Create an account", new() { { "fr-FR", "Créer un compte" }, { "en-GB", "Create an account" } });
+            await CreateTextWithTranslationsAsync("auth.forgot_password", "Forgot password?", new() { { "fr-FR", "Mot de passe oublié ?" }, { "en-GB", "Forgot password?" } });
+            await CreateTextWithTranslationsAsync("auth.register_title", "Register", new() { { "fr-FR", "Inscription" }, { "en-GB", "Register" } });
+            await CreateTextWithTranslationsAsync("auth.register_button", "Sign Up", new() { { "fr-FR", "S'inscrire" }, { "en-GB", "Sign Up" } });
+            await CreateTextWithTranslationsAsync("auth.already_have_account", "Already have an account? Sign in", new() { { "fr-FR", "Déjà un compte ? Connectez-vous" }, { "en-GB", "Already have an account? Sign in" } });
+            await CreateTextWithTranslationsAsync("auth.forgot_heading", "Forgot password", new() { { "fr-FR", "Mot de passe oublié" }, { "en-GB", "Forgot password" } });
+            await CreateTextWithTranslationsAsync("auth.forgot_instruction", "Enter your email address to receive password reset instructions.", new() { { "fr-FR", "Entre ton adresse email pour recevoir les instructions de réinitialisation." }, { "en-GB", "Enter your email address to receive password reset instructions." } });
+            await CreateTextWithTranslationsAsync("auth.email_placeholder", "name@example.com", new() { { "fr-FR", "nom@exemple.com" }, { "en-GB", "name@example.com" } });
+            await CreateTextWithTranslationsAsync("auth.send_link_button", "Send Link", new() { { "fr-FR", "Envoyer le lien" }, { "en-GB", "Send Link" } });
+            await CreateTextWithTranslationsAsync("auth.back_to_login", "Back to login", new() { { "fr-FR", "Retour à la connexion" }, { "en-GB", "Back to login" } });
+            await CreateTextWithTranslationsAsync("auth.email_placeholder_alt", "votre@email.com", new() { { "fr-FR", "votre@email.com" }, { "en-GB", "your@email.com" } });
         }
     }
 }

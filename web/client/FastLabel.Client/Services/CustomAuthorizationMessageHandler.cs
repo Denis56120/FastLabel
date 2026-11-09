@@ -1,29 +1,22 @@
-using FastLabel.Client.Services;
-using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Headers;
+using FastLabel.Client.Services;
 
 public class CustomAuthorizationMessageHandler : DelegatingHandler
 {
-    private readonly IServiceProvider _serviceProvider;
+    private readonly TokenContainer _tokenContainer;
 
-    public CustomAuthorizationMessageHandler(IServiceProvider serviceProvider)
+    public CustomAuthorizationMessageHandler(TokenContainer tokenContainer)
     {
-        _serviceProvider = serviceProvider;
+        _tokenContainer = tokenContainer;
     }
 
-    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        // Résolution dynamique pour éviter la dépendance circulaire au démarrage
-        using var scope = _serviceProvider.CreateScope();
-        var authService = scope.ServiceProvider.GetRequiredService<AuthService>();
-
-        var token = await authService.GetTokenAsync(); // Récupérez votre token ici
-
-        if (!string.IsNullOrEmpty(token))
+        if (!string.IsNullOrEmpty(_tokenContainer.Token))
         {
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _tokenContainer.Token);
         }
 
-        return await base.SendAsync(request, cancellationToken);
+        return base.SendAsync(request, cancellationToken);
     }
 }

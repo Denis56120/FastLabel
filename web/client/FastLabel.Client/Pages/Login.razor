@@ -1,9 +1,9 @@
 @page "/login"
 @layout PublicLayout
-@implements IDisposable
 @inject IHttpClientFactory ClientFactory
 @inject NavigationManager Navigation
 @inject AuthService AuthService
+@inject CookieService CookieService
 @inject TranslationService Translation
 @using FastLabel.Client.Components.Layout
 @using Microsoft.AspNetCore.Components.Forms
@@ -11,92 +11,62 @@
 @using FastLabel.Client.Services
 @using FastLabel.Shared.DTOs
 
-@if (!_isReady)
-{
-    <div class="d-flex justify-content-center align-items-center w-100" style="min-height: 300px;">
-        <!-- Laisse un espace vide ou transparent pour éviter tout hoquet de layout -->
-    </div>
-}
-else
-{
-    <div class="d-flex justify-content-center align-items-center w-100">
-        <div style="width: 100%; max-width: 420px;">
-            <div class="card shadow border-0">
-                <div class="card-body p-4">
-                    <h3 class="card-title text-center mb-4">@Translation.GetString("auth.login_title")</h3>
+<div class="d-flex justify-content-center align-items-center w-100">
+    <div style="width: 100%; max-width: 420px;">
+        <div class="card shadow border-0">
+            <div class="card-body p-4">
+                <h3 class="card-title text-center mb-4">@Translation.GetString("auth.login_title")</h3>
 
-                    @if (!string.IsNullOrEmpty(_errorMessage))
-                    {
-                        <div class="alert alert-danger" role="alert">
-                            @_errorMessage
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <div class="alert alert-danger" role="alert">
+                        @_errorMessage
+                    </div>
+                }
+
+                <EditForm Model="_loginModel" OnValidSubmit="HandleLogin">
+                    <DataAnnotationsValidator />
+
+                    <div class="mb-3">
+                        <label class="form-label">@Translation.GetString("auth.email")</label>
+                        <InputText @bind-Value="_loginModel.Email" class="form-control" placeholder="@Translation.GetString("auth.email_placeholder")" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">@Translation.GetString("auth.password")</label>
+                        <div class="input-group">
+                            <input type="@PasswordInputType" 
+                                   @bind="_loginModel.Password" 
+                                   @bind:event="oninput"
+                                   class="form-control"
+                                   placeholder="••••••••" />
+                            <button type="button" class="btn btn-outline-secondary" @onclick="TogglePasswordVisibility">
+                                <i class="bi @PasswordIconClass" style="pointer-events: none;"></i>
+                            </button>
                         </div>
-                    }
+                    </div>
 
-                    <EditForm Model="_loginModel" OnValidSubmit="HandleLogin">
-                        <DataAnnotationsValidator />
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-primary">@Translation.GetString("auth.submit")</button>
+                    </div>
 
-                        <div class="mb-3">
-                            <label class="form-label">@Translation.GetString("auth.email")</label>
-                            <InputText @bind-Value="_loginModel.Email" class="form-control" placeholder="@Translation.GetString("auth.email_placeholder")" />
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label">@Translation.GetString("auth.password")</label>
-                            <div class="input-group">
-                                <input type="@PasswordInputType" 
-                                       @bind="_loginModel.Password" 
-                                       @bind:event="oninput"
-                                       class="form-control"
-                                       placeholder="••••••••" />
-                                <button type="button" class="btn btn-outline-secondary" @onclick="TogglePasswordVisibility">
-                                    <i class="bi @PasswordIconClass" style="pointer-events: none;"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="d-grid mb-3">
-                            <button type="submit" class="btn btn-primary">@Translation.GetString("auth.submit")</button>
-                        </div>
-
-                        <div class="d-flex justify-content-between text-center">
-                            <a href="/register">@Translation.GetString("auth.create_account")</a>
-                            <a href="/forgot-password" class="text-muted">@Translation.GetString("auth.forgot_password")</a>
-                        </div>
-                    </EditForm>
-                </div>
+                    <div class="d-flex justify-content-between text-center">
+                        <a href="/register">@Translation.GetString("auth.create_account")</a>
+                        <a href="/forgot-password" class="text-muted">@Translation.GetString("auth.forgot_password")</a>
+                    </div>
+                </EditForm>
             </div>
         </div>
     </div>
-}
+</div>
 
 @code {
     private LoginDto _loginModel = new();
     private string? _errorMessage;
-    private bool _isReady = false;
-
     private bool _showPassword = false;
-    
+
     private string PasswordInputType => _showPassword ? "text" : "password";
     private string PasswordIconClass => _showPassword ? "bi-eye-slash" : "bi-eye";
-
-    protected override void OnInitialized()
-    {
-        Translation.OnChange += OnTranslationChanged;
-        
-        // Si le layout a déjà chargé les traductions, on s'affiche instantanément sans hoquet
-        _isReady = !string.IsNullOrEmpty(Translation.GetString("auth.login_title"));
-    }
-
-    private void OnTranslationChanged()
-    {
-        _isReady = true;
-        InvokeAsync(StateHasChanged);
-    }
-
-    public void Dispose()
-    {
-        Translation.OnChange -= OnTranslationChanged;
-    }
 
     private void TogglePasswordVisibility()
     {
@@ -118,19 +88,35 @@ else
                 if (result != null && !string.IsNullOrEmpty(result.Token))
                 {
                     await AuthService.SetTokenAsync(result.Token);
+                    
+                    try
+                    {
+                        await CookieService.SetCookieAsync("preferred_language", Translation.CurrentCulture, days: 365);
+                    }
+                    catch
+                    {
+                        // Ignore
+                    }
+
                     Navigation.NavigateTo("/", forceLoad: true);
                 }
             }
             else
             {
                 var errorContent = await response.Content.ReadFromJsonAsync<ErrorResponseDto>();
-                _errorMessage = errorContent?.Message ?? "Identifiants invalides.";
+                _errorMessage = errorContent?.Message != null 
+                    ? Translation.GetString(errorContent.Message) 
+                    : Translation.GetString("auth.invalid_credentials");
+                
+                if (_errorMessage == "auth.invalid_credentials")
+                {
+                    _errorMessage = Translation.CurrentCulture.StartsWith("fr") ? "Identifiants invalides." : "Invalid credentials.";
+                }
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Erreur lors du login : {ex.Message}");
-            _errorMessage = "Impossible de joindre le serveur.";
+            _errorMessage = Translation.CurrentCulture.StartsWith("fr") ? "Impossible de joindre le serveur." : "Unable to reach the server.";
         }
         
         StateHasChanged();

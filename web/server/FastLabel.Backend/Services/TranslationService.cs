@@ -41,7 +41,6 @@ public class TranslationService
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Erreur lors du chargement des traductions : {ex.Message}");
         }
     }
 

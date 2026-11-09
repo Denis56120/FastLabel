@@ -1,5 +1,7 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+﻿@inject IHttpContextAccessor HttpContextAccessor
+
+<!DOCTYPE html>
+<html lang="@GetLang()">
 
 <head>
     <meta charset="utf-8" />
@@ -19,6 +21,26 @@
     <Routes />
     <ReconnectModal />
     <script src="@Assets["_framework/blazor.web.js"]"></script>
+    <script src="js/appInterop.js"></script>
 </body>
 
 </html>
+
+@code {
+    private string GetLang()
+    {
+        try
+        {
+            var cookieValue = HttpContextAccessor.HttpContext?.Request.Cookies["preferred_language"];
+            if (!string.IsNullOrEmpty(cookieValue))
+            {
+                return cookieValue.StartsWith("fr", StringComparison.OrdinalIgnoreCase) ? "fr" : "en";
+            }
+        }
+        catch
+        {
+            // Ignore
+        }
+        return "fr";
+    }
+}

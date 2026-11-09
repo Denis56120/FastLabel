@@ -1,84 +1,89 @@
 @inherits LayoutComponentBase
 @inject NavigationManager Navigation
-@inject IJSRuntime JS
 @inject TranslationService Translation
+@inject CookieService CookieService
 @implements IDisposable
 
 <PageTitle>FastLabel - @GetSafePageTitle()</PageTitle>
 
-<div class="d-flex flex-column min-vh-100 bg-light">
-    <header class="navbar navbar-expand-lg navbar-light bg-white border-bottom px-4 shadow-sm">
-        <div class="container-fluid">
-            <a class="navbar-brand fw-bold text-primary" href="/">FastLabel</a>
+@if (!_isLoaded)
+{
+    <div class="d-flex justify-content-center align-items-center vh-100 bg-light">
+        <div class="spinner-border text-primary" role="status"></div>
+    </div>
+}
+else
+{
+    <div class="d-flex flex-column min-vh-100 bg-light">
+        <header class="navbar navbar-expand-lg navbar-light bg-white border-bottom px-4 shadow-sm">
+            <div class="container-fluid">
+                <a class="navbar-brand fw-bold text-primary" href="/">FastLabel</a>
 
-            <div class="d-flex align-items-center">
-                <div class="dropdown @(_isDropdownOpen ? "show" : "")">
-                    <button class="btn btn-outline-secondary dropdown-toggle btn-sm d-flex align-items-center"
-                            type="button" @onclick="ToggleDropdown">
-                        <i class="bi bi-globe me-1"></i>
-                        <span>@(_currentCulture.StartsWith("fr", StringComparison.OrdinalIgnoreCase) ? "Français" : "English")</span>
-                    </button>
+                <div class="d-flex align-items-center">
+                    <div class="dropdown @(_isDropdownOpen ? "show" : "")">
+                        <button class="btn btn-outline-secondary dropdown-toggle btn-sm d-flex align-items-center"
+                                type="button" @onclick="ToggleDropdown">
+                            <i class="bi bi-globe me-1"></i>
+                            <span>@(Translation.CurrentCulture.StartsWith("fr", StringComparison.OrdinalIgnoreCase) ? "Français" : "English")</span>
+                        </button>
 
-                    <ul class="dropdown-menu dropdown-menu-end shadow-sm @(_isDropdownOpen ? "show" : "")"
-                        style="position: absolute; right: 0; left: auto;">
-                        <li>
-                            <button class="dropdown-item @(_currentCulture.Equals("fr_FR", StringComparison.OrdinalIgnoreCase) ? "active" : "")" type="button"
-                                    @onclick='() => ChangeLanguage("fr_FR")'>
-                                🇫🇷 Français (FR)
-                            </button>
-                        </li>
-                        <li>
-                            <button class="dropdown-item @(_currentCulture.Equals("en_GB", StringComparison.OrdinalIgnoreCase) ? "active" : "")" type="button"
-                                    @onclick='() => ChangeLanguage("en_GB")'>
-                                🇬🇧 English (EN)
-                            </button>
-                        </li>
-                    </ul>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm @(_isDropdownOpen ? "show" : "")"
+                            style="position: absolute; right: 0; left: auto;">
+                            <li>
+                                <button class="dropdown-item @(Translation.CurrentCulture.Equals("fr-FR", StringComparison.OrdinalIgnoreCase) ? "active" : "")" type="button"
+                                        @onclick='() => ChangeLanguage("fr-FR")'>
+                                    🇫🇷 Français (FR)
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item @(Translation.CurrentCulture.Equals("en-GB", StringComparison.OrdinalIgnoreCase) ? "active" : "")" type="button"
+                                        @onclick='() => ChangeLanguage("en-GB")'>
+                                    🇬🇧 English (EN)
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
-        </div>
-    </header>
+        </header>
 
-    <div class="container d-flex justify-content-center align-items-center flex-grow-1 py-4">
-        <div class="w-100" style="max-width: 450px;">
-            @Body
+        <div class="container d-flex justify-content-center align-items-center flex-grow-1 py-4">
+            <div class="w-100" style="max-width: 450px;">
+                @Body
+            </div>
         </div>
     </div>
-</div>
+}
 
 @code {
-    private string _currentCulture = "fr_FR";
     private bool _isDropdownOpen = false;
-    private bool _isInitialized = false;
+    private bool _isLoaded = false;
 
     protected override async Task OnInitializedAsync()
     {
         Translation.OnChange += OnTranslationChanged;
         Navigation.LocationChanged += OnLocationChanged;
 
-        // Si le service connaît déjà une culture (ex: en venant du MainLayout), on l'adopte instantanément
-        if (!string.IsNullOrEmpty(Translation.CurrentCulture))
+        try
         {
-            _currentCulture = Translation.CurrentCulture;
-        }
-        else
-        {
-            try
+            // Lecture directe et unique du cookie prioritaire
+            var cookieLang = await CookieService.GetCookieAsync("preferred_language");
+            
+            if (!string.IsNullOrEmpty(cookieLang))
             {
-                var savedCulture = await JS.InvokeAsync<string>("localStorage.getItem", "preferred_language");
-                if (!string.IsNullOrEmpty(savedCulture))
-                {
-                    _currentCulture = savedCulture;
-                }
+                await Translation.InitializeAsync(cookieLang);
             }
-            catch
+            else
             {
-                // Ignore si JS n'est pas encore dispo (SSR initial)
+                await Translation.InitializeAsync();
             }
         }
-
-        await Translation.InitializeAsync(_currentCulture);
-        _isInitialized = true;
+        catch
+        {
+            await Translation.InitializeAsync();
+        }
+        
+        _isLoaded = true;
         StateHasChanged();
     }
 
@@ -89,26 +94,26 @@
         if (uri.Contains("/login"))
         {
             var title = Translation.GetString("auth.login_title");
-            return title == "auth.login_title" ? (_currentCulture.StartsWith("fr") ? "Connexion" : "Sign In") : title;
+            return title == "auth.login_title" ? (Translation.CurrentCulture.StartsWith("fr") ? "Connexion" : "Sign In") : title;
         }
         if (uri.Contains("/register"))
         {
             var title = Translation.GetString("auth.register_title");
-            return title == "auth.register_title" ? (_currentCulture.StartsWith("fr") ? "Inscription" : "Register") : title;
+            return title == "auth.register_title" ? (Translation.CurrentCulture.StartsWith("fr") ? "Inscription" : "Register") : title;
         }
         if (uri.Contains("/forgot-password"))
         {
             var title = Translation.GetString("auth.forgot_heading");
-            return title == "auth.forgot_heading" ? (_currentCulture.StartsWith("fr") ? "Mot de passe oublié" : "Forgot Password") : title;
+            return title == "auth.forgot_heading" ? (Translation.CurrentCulture.StartsWith("fr") ? "Mot de passe oublié" : "Forgot Password") : title;
         }
 
         var defaultTitle = Translation.GetString("nav.home");
-        return defaultTitle == "nav.home" ? (_currentCulture.StartsWith("fr") ? "Accueil" : "Home") : defaultTitle;
+        return defaultTitle == "nav.home" ? (Translation.CurrentCulture.StartsWith("fr") ? "Accueil" : "Home") : defaultTitle;
     }
 
     private void OnTranslationChanged()
     {
-        if (_isInitialized)
+        if (_isLoaded)
         {
             InvokeAsync(StateHasChanged);
         }
@@ -132,19 +137,17 @@
 
     private async Task ChangeLanguage(string cultureCode)
     {
-        _currentCulture = cultureCode;
         _isDropdownOpen = false;
 
         try
         {
-            await JS.InvokeVoidAsync("localStorage.setItem", "preferred_language", cultureCode);
+            await CookieService.SetCookieAsync("preferred_language", cultureCode, days: 365);
         }
         catch
         {
             // Ignore
         }
 
-        await Translation.InitializeAsync(_currentCulture);
-        StateHasChanged();
+        await Translation.InitializeAsync(cultureCode);
     }
 }

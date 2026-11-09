@@ -9,9 +9,7 @@ public static class TranslationEndpoints
     public static void MapTranslationEndpoints(this IEndpointRouteBuilder routes)
     {
         routes.MapGet("api/translations/{culture}", async (string culture, AppDbContext db) =>
-        {
-            Console.WriteLine($"Culture reçue : {culture}");
-            
+        {           
             var cultureLower = culture.ToLower();
 
             var translations = await db.Texts
@@ -24,8 +22,6 @@ public static class TranslationEndpoints
                         .FirstOrDefault() ?? t.DefaultTranslation
                 })
                 .ToListAsync();
-
-            Console.WriteLine($"Traductions renvoyées : {translations.Count}");
 
             return Results.Ok(translations);
         });
