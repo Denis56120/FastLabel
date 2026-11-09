@@ -19,7 +19,6 @@ public static class UserEndpoints
                 return Results.Unauthorized();
 
             var user = await db.Users
-                .Include(u => u.PreferredLanguage)
                 .FirstOrDefaultAsync(u => u.Id == userId);
 
             if (user == null)
@@ -31,7 +30,6 @@ public static class UserEndpoints
                 name = user.Name,
                 email = user.Email,
                 isAdmin = user.IsAdmin,
-                preferredLanguage = user.PreferredLanguage?.Locale ?? "en_GB",
                 createdAt = user.CreatedAt
             });
         });
@@ -55,7 +53,6 @@ public static class UserEndpoints
                 return Results.BadRequest(new { message = "Preferred language not found." });
             }
 
-            user.PreferredLanguageId = language.Id;
             await db.SaveChangesAsync();
 
             return Results.Ok(new

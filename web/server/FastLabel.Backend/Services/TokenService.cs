@@ -18,7 +18,6 @@ public class TokenService(IConfiguration config)
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Email, user.Email),
             new(ClaimTypes.Name, user.Name),
-            new("IsAdmin", user.IsAdmin.ToString().ToLower())
         };
 
         // Si l'utilisateur est admin, on lui ajoute le rôle .NET standard

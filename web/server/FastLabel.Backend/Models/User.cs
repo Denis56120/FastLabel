@@ -21,11 +21,6 @@ public class User
 
     public bool IsAdmin { get; set; } = false;
 
-    public int PreferredLanguageId { get; set; }
-
-    [ForeignKey(nameof(PreferredLanguageId))]
-    public PreferredLanguage PreferredLanguage { get; set; } = null!;
-
     public string? PasswordResetToken { get; set; }
 
     public DateTime? ResetTokenExpired { get; set; }

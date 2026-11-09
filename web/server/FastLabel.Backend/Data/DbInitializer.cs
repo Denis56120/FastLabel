@@ -25,9 +25,10 @@ public static class DbInitializer
                     DefaultTranslation = defaultEnglishVal
                 };
                 context.Texts.Add(textEntity);
-                await context.SaveChangesAsync();
+                await context.SaveChangesAsync(); // Sauvegarde pour obtenir l'ID
             }
 
+            // On vérifie et ajoute les traductions manquantes pour chaque langue
             foreach (var kvp in translations)
             {
                 var langCode = kvp.Key;
@@ -36,10 +37,10 @@ public static class DbInitializer
                 var lang = await context.PreferredLanguages.FirstOrDefaultAsync(l => l.Locale == langCode);
                 if (lang != null)
                 {
-                    bool translationExists = await context.Translations
-                        .AnyAsync(tr => tr.TextId == textEntity.Id && tr.PreferredLanguageId == lang.Id);
+                    var existingTranslation = textEntity.Translations
+                        .FirstOrDefault(tr => tr.PreferredLanguageId == lang.Id);
 
-                    if (!translationExists)
+                    if (existingTranslation == null)
                     {
                         context.Translations.Add(new Translation
                         {
@@ -47,6 +48,11 @@ public static class DbInitializer
                             PreferredLanguageId = lang.Id,
                             TranslatedValue = translatedValue
                         });
+                    }
+                    else if (existingTranslation.TranslatedValue != translatedValue)
+                    {
+                        // Optionnel : met à jour si la valeur a changé dans ton code
+                        existingTranslation.TranslatedValue = translatedValue;
                     }
                 }
             }
@@ -187,12 +193,6 @@ public static class DbInitializer
         // 10. Compte Administrateur par défaut
         if (!await context.Users.AnyAsync())
         {
-            var frenchLang = await context.PreferredLanguages.FirstOrDefaultAsync(l => l.Locale == "fr_FR");
-            int langId1 = frenchLang?.Id ?? 1;
-
-            var englishLang = await context.PreferredLanguages.FirstOrDefaultAsync(l => l.Locale == "en_GB");
-            int langId2 = englishLang?.Id ?? 1;
-
             var activeStatus = await context.BasicStatuses.FirstOrDefaultAsync();
             int statusId = activeStatus?.Id ?? 1;
 
@@ -202,7 +202,6 @@ public static class DbInitializer
                     Name = "Denis Clouet",
                     Email = "denis.clouet@gmail.com",
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword("08071979"),
-                    PreferredLanguageId = langId1, // Corrigé : langId1 au lieu de langId
                     BasicStatusId = statusId,
                     CreatedAt = DateTime.UtcNow,
                     IsAdmin = true
@@ -212,7 +211,6 @@ public static class DbInitializer
                     Name = "George Harrison",
                     Email = "georges.harrison4@gmail.com",
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword("08071979"),
-                    PreferredLanguageId = langId2,
                     BasicStatusId = statusId,
                     CreatedAt = DateTime.UtcNow,
                     IsAdmin = false
@@ -221,8 +219,16 @@ public static class DbInitializer
 
             await context.SaveChangesAsync();
 
-            // 11. Textes UI / Authentification (Login, Register, ForgotPassword)
-            // Exemple de DbInitializer mis à jour avec des tags propres et structurés
+            // 11. Textes UI
+            await CreateTextWithTranslationsAsync("nav.home", "Home", new() { { "fr_FR", "Accueil" }, { "en_GB", "Home" } });
+            await CreateTextWithTranslationsAsync("nav.templates", "Label Templates", new() { { "fr_FR", "Modèles d'étiquettes" }, { "en_GB", "Label Templates" } });
+            await CreateTextWithTranslationsAsync("nav.printers", "Printers", new() { { "fr_FR", "Imprimantes" }, { "en_GB", "Printers" } });
+            await CreateTextWithTranslationsAsync("nav.agents", "Agents", new() { { "fr_FR", "Agents" }, { "en_GB", "Agents" } });
+            await CreateTextWithTranslationsAsync("nav.users", "Users", new() { { "fr_FR", "Utilisateurs" }, { "en_GB", "Users" } });
+            await CreateTextWithTranslationsAsync("nav.history", "History", new() { { "fr_FR", "Historique" }, { "en_GB", "History" } });
+            await CreateTextWithTranslationsAsync("nav.my_account", "My Account", new() { { "fr_FR", "Mon Compte" }, { "en_GB", "My Account" } });
+            await CreateTextWithTranslationsAsync("nav.logout", "Logout", new() { { "fr_FR", "Déconnexion" }, { "en_GB", "Logout" } });
+
             await CreateTextWithTranslationsAsync("auth.login_title", "Login", new() { { "fr_FR", "Connexion" }, { "en_GB", "Login" } });
             await CreateTextWithTranslationsAsync("auth.email", "Email", new() { { "fr_FR", "Email" }, { "en_GB", "Email" } });
             await CreateTextWithTranslationsAsync("auth.password", "Password", new() { { "fr_FR", "Mot de passe" }, { "en_GB", "Password" } });

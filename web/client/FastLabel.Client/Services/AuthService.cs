@@ -1,18 +1,25 @@
 using Microsoft.JSInterop;
+using Microsoft.AspNetCore.Components.Authorization;
 using FastLabel.Shared.DTOs;
 
 namespace FastLabel.Client.Services;
 
-public class AuthService(IHttpClientFactory clientFactory, IJSRuntime jsRuntime)
+public class AuthService(IHttpClientFactory clientFactory, IJSRuntime jsRuntime, AuthenticationStateProvider authStateProvider)
 {
     private readonly HttpClient _httpClient = clientFactory.CreateClient("AuthClient");
     private readonly IJSRuntime _jsRuntime = jsRuntime;
+    private readonly AuthenticationStateProvider _authProvider = authStateProvider;
     private string? _token;
 
     public async Task SetTokenAsync(string token)
     {
         _token = token;
         await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", token);
+
+        if (_authProvider is CustomAuthenticationStateProvider customProvider)
+        {
+            customProvider.NotifyUserAuthentication(token);
+        }
     }
 
     public async Task<string?> GetTokenAsync()
@@ -35,6 +42,11 @@ public class AuthService(IHttpClientFactory clientFactory, IJSRuntime jsRuntime)
     {
         _token = null;
         await _jsRuntime.InvokeVoidAsync("localStorage.removeItem", "authToken");
+
+        if (_authProvider is CustomAuthenticationStateProvider customProvider)
+        {
+            customProvider.NotifyUserLogout();
+        }
     }
 
     public async Task<bool> IsAuthenticatedAsync()
@@ -45,7 +57,6 @@ public class AuthService(IHttpClientFactory clientFactory, IJSRuntime jsRuntime)
 
     public async Task<AuthResponseDto?> GetCurrentUserAsync()
     {
-        // Optionnel : s'assurer que le token est injecté dans les en-têtes si l'API est sécurisée par Bearer
         var token = await GetTokenAsync();
         if (!string.IsNullOrEmpty(token))
         {

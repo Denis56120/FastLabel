@@ -1,4 +1,5 @@
 using FastLabel.Client.Services;
+using Microsoft.AspNetCore.Components.Authorization;
 
 namespace FastLabel.Client.Extensions;
 
@@ -31,6 +32,7 @@ public static class DependencyInjectionExtensions
         // 3. Services métiers
         services.AddScoped<AuthService>();
         services.AddScoped<TranslationService>();
+        services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 
         return services;
     }
