@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/client/">
+    <Project Path="client/FastLabel.Client/FastLabel.Client.csproj" />
+  </Folder>
+  <Folder Name="/server/">
+    <Project Path="server/FastLabel.Backend/FastLabel.Backend.csproj" />
+  </Folder>
+  <Folder Name="/shared/">
+    <Project Path="shared/FastLabel.Shared/FastLabel.Shared.csproj" />
+  </Folder>
+</Solution>
