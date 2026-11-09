@@ -1,8 +1,8 @@
 @page "/dashboard"
-@inject HttpClient Http
-@inject AuthService AuthService
-@inject NavigationManager Navigation
-@using FastLabel.Client.Services
+@attribute [Authorize]
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using global::FastLabel.Client.Services
 
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -19,7 +19,6 @@
                 <div class="card-body">
                     <p class="text-muted">Gestion et état de vos agents Windows connectés pour l'impression thermique.</p>
                     
-                    <!-- Ici, nous brancherons l'appel API pour lister les agents -->
                     <div class="alert alert-info" role="alert">
                         Aucun agent actif pour le moment. Le service d'écoute ZPL communiquera bientôt ici.
                     </div>
@@ -30,11 +29,17 @@
 </div>
 
 @code {
+    [Inject] private AuthService AuthServiceImpl { get; set; } = default!;
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+    [Inject] private AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
+
     protected override async Task OnInitializedAsync()
     {
-        // Sécurisation basique de la route : redirection vers le login si non connecté
-        var isAuthenticated = await AuthService.IsAuthenticatedAsync();
-        if (!isAuthenticated)
+        // Vérification de l'état d'authentification via le fournisseur natif Blazor
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated != true)
         {
             Navigation.NavigateTo("/login");
         }
@@ -42,7 +47,8 @@
 
     private async Task HandleLogout()
     {
-        await AuthService.LogoutAsync();
-        Navigation.NavigateTo("/login");
+        // Appel de la déconnexion de votre service (ex: suppression du token)
+        await AuthServiceImpl.LogoutAsync();
+        Navigation.NavigateTo("/login", forceLoad: true);
     }
 }
