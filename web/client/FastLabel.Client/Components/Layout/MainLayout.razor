@@ -1,9 +1,83 @@
 ﻿@inherits LayoutComponentBase
+@inject AuthService AuthService
+@inject NavigationManager Navigation
 
-@Body
+<div class="app-container d-flex flex-column vh-100">
+    <!-- Bandeau supérieur -->
+    <header class="navbar navbar-dark bg-dark px-3 shadow-sm d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+            <NavLink class="navbar-brand fw-bold text-white text-decoration-none" href="/">
+                FastLabel
+            </NavLink>
+        </div>
+        
+        <div class="d-flex align-items-center gap-3">
+            <!-- Sélection de la langue -->
+            <select class="form-select form-select-sm bg-dark text-white border-secondary" aria-label="Langue">
+                <option selected value="fr">Français</option>
+                <option value="en">English</option>
+            </select>
 
-<div id="blazor-error-ui">
-    An unhandled error has occurred.
-    <a href="" class="reload">Reload</a>
-    <a class="dismiss">🗙</a>
+            <!-- Accès Account -->
+            <NavLink class="btn btn-outline-light btn-sm" href="/account">
+                <i class="bi bi-person-circle"></i> Mon Compte
+            </NavLink>
+
+            <!-- Bouton Déconnexion -->
+            <button class="btn btn-outline-danger btn-sm" @onclick="HandleLogout">
+                <i class="bi bi-box-arrow-right"></i> Déconnexion
+            </button>
+        </div>
+    </header>
+
+    <div class="d-flex flex-grow-1 overflow-hidden">
+        <!-- Bandeau latéral gauche -->
+        <nav class="bg-light border-end p-3 d-flex flex-column" style="width: 260px;">
+            <ul class="nav nav-pills flex-column gap-1">
+                <li class="nav-item">
+                    <NavLink class="nav-link text-dark" href="/templates" Match="NavLinkMatch.Prefix">
+                        <i class="bi bi-file-earmark-text me-2"></i> Modèles d'étiquettes
+                    </NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link text-dark" href="/printers" Match="NavLinkMatch.Prefix">
+                        <i class="bi bi-printer me-2"></i> Imprimantes
+                    </NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link text-dark" href="/agents" Match="NavLinkMatch.Prefix">
+                        <i class="bi bi-pc-display me-2"></i> Agents
+                    </NavLink>
+                </li>
+                <AuthorizeView Roles="Admin">
+                    <li class="nav-item">
+                        <NavLink class="nav-link text-dark" href="/users" Match="NavLinkMatch.Prefix">
+                            <i class="bi bi-people me-2"></i> Utilisateurs
+                        </NavLink>
+                    </li>
+                </AuthorizeView>
+                <li class="nav-item">
+                    <NavLink class="nav-link text-dark" href="/history" Match="NavLinkMatch.Prefix">
+                        <i class="bi bi-clock-history me-2"></i> Historique
+                    </NavLink>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Zone de contenu dynamique (Dashboard) -->
+        <main class="flex-grow-1 p-4 overflow-y-auto bg-white">
+            @Body
+        </main>
+    </div>
 </div>
+
+@code {
+    private async Task HandleLogout()
+    {
+        // 1. Supprime le token et le cookie d'authentification
+        await AuthService.LogoutAsync();
+
+        // 2. Redirige vers le login en forçant un rechargement complet pour réinitialiser l'état
+        Navigation.NavigateTo("/login", forceLoad: true);
+    }
+}

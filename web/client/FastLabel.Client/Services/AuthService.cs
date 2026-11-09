@@ -3,9 +3,9 @@ using FastLabel.Shared.DTOs;
 
 namespace FastLabel.Client.Services;
 
-public class AuthService(HttpClient httpClient, IJSRuntime jsRuntime)
+public class AuthService(IHttpClientFactory clientFactory, IJSRuntime jsRuntime)
 {
-    private readonly HttpClient _httpClient = httpClient;
+    private readonly HttpClient _httpClient = clientFactory.CreateClient("AuthClient");
     private readonly IJSRuntime _jsRuntime = jsRuntime;
     private string? _token;
 

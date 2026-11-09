@@ -1,6 +1,9 @@
 @page "/register"
+@layout PublicLayout
 @inject HttpClient Http
 @inject NavigationManager Navigation
+@inject IHttpClientFactory ClientFactory
+@using FastLabel.Client.Components.Layout
 @using FastLabel.Shared.DTOs
 @using Microsoft.AspNetCore.Components.Forms
 
@@ -22,12 +25,14 @@
 
                     <div class="mb-3">
                         <label class="form-label">Email</label>
-                        <InputText @bind-value="_registerModel.Email" class="form-control" placeholder="nom@exemple.com" />
+                        <InputText @bind-value="_registerModel.Email" class="form-control"
+                                   placeholder="nom@exemple.com" />
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">Mot de passe</label>
-                        <InputText type="password" @bind-value="_registerModel.Password" class="form-control" placeholder="••••••••" />
+                        <InputText type="password" @bind-value="_registerModel.Password" class="form-control"
+                                   placeholder="••••••••" />
                     </div>
 
                     <div class="d-grid mb-3">
@@ -53,7 +58,8 @@
 
         try
         {
-            var response = await Http.PostAsJsonAsync("api/auth/register", _registerModel);
+            var client = ClientFactory.CreateClient("PublicClient");
+            var response = await client.PostAsJsonAsync("api/auth/register", _registerModel);
 
             if (response.IsSuccessStatusCode)
             {

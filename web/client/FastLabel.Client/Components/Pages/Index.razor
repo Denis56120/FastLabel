@@ -1,9 +1,42 @@
 @page "/"
 @inject NavigationManager Navigation
+@inject AuthService AuthService
+
+<div class="container mt-4">
+    @if (!_isChecked)
+    {
+        <p>Chargement en cours...</p>
+    }
+    else if (_isAuthenticated)
+    {
+        <h1>Bienvenue sur FastLabel</h1>
+        <p>Vous êtes connecté avec succès !</p>
+    }
+    else
+    {
+        <p>Redirection vers la connexion...</p>
+    }
+</div>
 
 @code {
-    protected override void OnInitialized()
+    private bool _isChecked = false;
+    private bool _isAuthenticated = false;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        Navigation.NavigateTo("/login");
+        if (firstRender)
+        {
+            _isAuthenticated = await AuthService.IsAuthenticatedAsync();
+            _isChecked = true;
+            
+            if (!_isAuthenticated)
+            {
+                Navigation.NavigateTo("/login");
+            }
+            else
+            {
+                StateHasChanged();
+            }
+        }
     }
 }

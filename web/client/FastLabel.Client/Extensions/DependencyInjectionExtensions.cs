@@ -6,30 +6,27 @@ public static class DependencyInjectionExtensions
 {
     public static IServiceCollection AddAppServices(this IServiceCollection services, IConfiguration configuration)
     {
-        var baseAddress = configuration["ApiSettings:BaseUrl"] ?? "http://localhost:5000";
+        var serverAddress = configuration["ServerUrl"] ?? "http://localhost:6000";
         
         // 1. Composants Blazor
         services.AddRazorComponents()
             .AddInteractiveServerComponents();
 
-        // 2. Configuration des clients HTTP (avec les clients nommés pour éviter les conflits)
+        // 2. Configuration des clients HTTP nommés
         services.AddTransient<CustomAuthorizationMessageHandler>();
 
-        // 3. Client public
+        // Client public (pour login, register, etc.)
         services.AddHttpClient("PublicClient", client =>
         {
-            client.BaseAddress = new Uri(baseAddress);
+            client.BaseAddress = new Uri(serverAddress);
         });
 
-        // 4. Client sécurisé (qui hérite de la même URL)
+        // Client sécurisé (pour les appels authentifiés)
         services.AddHttpClient("AuthClient", client =>
         {
-            client.BaseAddress = new Uri(baseAddress);
+            client.BaseAddress = new Uri(serverAddress);
         })
         .AddHttpMessageHandler<CustomAuthorizationMessageHandler>();
-
-        // Si tu veux que le HttpClient par défaut soit le sécurisé
-        services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("AuthClient"));
 
         // 3. Services métiers
         services.AddScoped<AuthService>();

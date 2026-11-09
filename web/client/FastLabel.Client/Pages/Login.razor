@@ -1,15 +1,17 @@
 @page "/login"
-@inject HttpClient Http
+@layout PublicLayout
+@inject IHttpClientFactory ClientFactory
 @inject NavigationManager Navigation
 @inject AuthService AuthService
+@using FastLabel.Client.Components.Layout
 @using Microsoft.AspNetCore.Components.Forms
 @using FastLabel.Client.Services
 @using FastLabel.Shared.DTOs
 
-<div class="row justify-content-center mt-5">
-    <div class="col-md-4">
-        <div class="card shadow">
-            <div class="card-body">
+<div class="d-flex justify-content-center align-items-center w-100">
+    <div style="width: 100%; max-width: 420px;">
+        <div class="card shadow border-0">
+            <div class="card-body p-4">
                 <h3 class="card-title text-center mb-4">FastLabel - Connexion</h3>
 
                 @if (!string.IsNullOrEmpty(_errorMessage))
@@ -29,7 +31,8 @@
 
                     <div class="mb-3">
                         <label class="form-label">Mot de passe</label>
-                        <InputText type="password" @bind-Value="_loginModel.Password" class="form-control" placeholder="••••••••" />
+                        <InputText type="password" @bind-Value="_loginModel.Password" class="form-control"
+                                   placeholder="••••••••" />
                     </div>
 
                     <div class="d-grid mb-3">
@@ -56,15 +59,22 @@
 
         try
         {
-            var response = await Http.PostAsJsonAsync("api/auth/login", _loginModel);
+            var client = ClientFactory.CreateClient("PublicClient");
+            var response = await client.PostAsJsonAsync("api/auth/login", _loginModel);
 
             if (response.IsSuccessStatusCode)
             {
                 var result = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
                 if (result != null && !string.IsNullOrEmpty(result.Token))
                 {
+                    // 1. Sauvegarde du token
                     await AuthService.SetTokenAsync(result.Token);
-                    Navigation.NavigateTo("/dashboard");
+                    
+                    // 2. Log de vérification (regardez votre console VS / dotnet watch)
+                    Console.WriteLine("Login réussi, redirection vers l'accueil...");
+
+                    // 3. Navigation (avec forceLoad: true pour forcer le rechargement complet si le routeur bloque)
+                    Navigation.NavigateTo("/", forceLoad: true);
                 }
             }
             else
@@ -73,9 +83,14 @@
                 _errorMessage = errorContent?.Message ?? "Identifiants invalides.";
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            // Affichez l'erreur exacte dans les logs si la sauvegarde ou autre chose plante
+            Console.WriteLine($"Erreur lors du login : {ex.Message}");
             _errorMessage = "Impossible de joindre le serveur.";
         }
+        
+        // Force le réaffichage du composant pour afficher l'erreur s'il y en a une
+        StateHasChanged();
     }
 }
