@@ -1,7 +1,146 @@
 @inherits LayoutComponentBase
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@inject TranslationService Translation
+@implements IDisposable
 
-<div class="container d-flex justify-content-center align-items-center min-vh-100">
-    <div class="w-100" style="max-width: 450px;">
-        @Body
+@if (!_isLoaded)
+{
+    <!-- Écran de chargement épuré qui bloque le rendu tant que les traductions ne sont pas en mémoire -->
+    <div class="d-flex justify-content-center align-items-center min-vh-100 bg-light">
+        <div class="spinner-border text-primary" role="status"></div>
     </div>
-</div>
+}
+else
+{
+    <div class="d-flex flex-column min-vh-100 bg-light">
+        <!-- Bandeau supérieur public -->
+        <header class="navbar navbar-expand-lg navbar-light bg-white border-bottom px-4 shadow-sm">
+            <div class="container-fluid">
+                <!-- Nom ou Logo de l'application -->
+                <a class="navbar-brand fw-bold text-primary" href="/">FastLabel</a>
+
+                <!-- Sélecteur de langue 100% Blazor -->
+                <div class="d-flex align-items-center">
+                    <div class="dropdown @(_isDropdownOpen ? "show" : "")">
+                        <!-- Bouton principal -->
+                        <button class="btn btn-outline-secondary dropdown-toggle btn-sm d-flex align-items-center"
+                                type="button" @onclick="ToggleDropdown">
+                            <i class="bi bi-globe me-1"></i>
+                            <span>@(_currentCulture.StartsWith("fr", StringComparison.OrdinalIgnoreCase) ? "Français" : "English")</span>
+                        </button>
+
+                        <!-- La liste déroulante -->
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm @(_isDropdownOpen ? "show" : "")"
+                            style="position: absolute; right: 0; left: auto;">
+                            <li>
+                                <button class="dropdown-item @(_currentCulture.Equals("fr_FR", StringComparison.OrdinalIgnoreCase) ? "active" : "")" type="button"
+                                        @onclick='() => ChangeLanguage("fr_FR")'>
+                                    🇫🇷 Français (FR)
+                                </button>
+                            </li>
+                            <li>
+                                <button class="dropdown-item @(_currentCulture.Equals("en_GB", StringComparison.OrdinalIgnoreCase) ? "active" : "")" type="button"
+                                        @onclick='() => ChangeLanguage("en_GB")'>
+                                    🇬🇧 English (EN)
+                                </button>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Conteneur centré pour le contenu des pages -->
+        <div class="container d-flex justify-content-center align-items-center flex-grow-1 py-4">
+            <div class="w-100" style="max-width: 450px;">
+                @Body
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private string _currentCulture = "fr_FR";
+    private bool _isDropdownOpen = false;
+    private bool _isLoaded = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Translation.OnChange += OnTranslationChanged;
+
+        try
+        {
+            // 1. On cherche d'abord dans le localStorage
+            var savedCulture = await JS.InvokeAsync<string>("localStorage.getItem", "preferred_language");
+            
+            if (!string.IsNullOrEmpty(savedCulture))
+            {
+                _currentCulture = savedCulture;
+            }
+            else
+            {
+                // 2. Si rien n'est stocké, on interroge le navigateur (ex: "fr-FR", "en-US", etc.)
+                var browserLang = await JS.InvokeAsync<string>("eval", "navigator.language || navigator.userLanguage");
+            
+            if (!string.IsNullOrEmpty(browserLang))
+            {
+                // On vérifie si ça commence par "fr" ou "en" pour mapper avec les cultures (fr_FR ou en_GB)
+                if (browserLang.StartsWith("fr", StringComparison.OrdinalIgnoreCase))
+                {
+                    _currentCulture = "fr_FR";
+                }
+                else if (browserLang.StartsWith("en", StringComparison.OrdinalIgnoreCase))
+                {
+                    _currentCulture = "en_GB";
+                }
+            }
+        }
+    }
+    catch
+    {
+        // Garde la valeur par défaut en cas de pépin JS
+    }
+
+    await Translation.InitializeAsync(_currentCulture);
+    _isLoaded = true;
+}
+
+    private void OnTranslationChanged()
+    {
+        _isLoaded = true;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Translation.OnChange -= OnTranslationChanged;
+    }
+
+    private void ToggleDropdown()
+    {
+        _isDropdownOpen = !_isDropdownOpen;
+    }
+
+    private async Task ChangeLanguage(string cultureCode)
+    {
+        _currentCulture = cultureCode;
+        _isDropdownOpen = false;
+
+        try
+        {
+            // 1. On enregistre la préférence
+            await JS.InvokeVoidAsync("localStorage.setItem", "preferred_language", cultureCode);
+        }
+        catch
+        {
+            // Ignore
+        }
+
+        // 2. On charge les nouvelles traductions dans le service
+        await Translation.InitializeAsync(cultureCode);
+
+        // 3. PLUS DE FORCE LOAD : On prévient juste le layout de se rafraîchir proprement
+        StateHasChanged();
+    }
+}

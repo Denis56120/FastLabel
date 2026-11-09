@@ -1,6 +1,7 @@
 using System.Text;
 using FastLabel.Backend.Data;
 using FastLabel.Backend.Services;
+using FastLabel.Client.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;

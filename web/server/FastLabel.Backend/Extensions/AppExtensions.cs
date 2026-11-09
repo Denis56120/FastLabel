@@ -39,6 +39,7 @@ public static class AppExtensions
         app.MapAgentWebSocketEndpoints();
         app.MapPrintEndpoints();
         app.MapUserEndpoints();
+        app.MapTranslationEndpoints();
 
         return app;
     }

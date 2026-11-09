@@ -220,6 +220,24 @@ public static class DbInitializer
             );
 
             await context.SaveChangesAsync();
+
+            // 11. Textes UI / Authentification (Login, Register, ForgotPassword)
+            // Exemple de DbInitializer mis à jour avec des tags propres et structurés
+            await CreateTextWithTranslationsAsync("auth.login_title", "Login", new() { { "fr_FR", "Connexion" }, { "en_GB", "Login" } });
+            await CreateTextWithTranslationsAsync("auth.email", "Email", new() { { "fr_FR", "Email" }, { "en_GB", "Email" } });
+            await CreateTextWithTranslationsAsync("auth.password", "Password", new() { { "fr_FR", "Mot de passe" }, { "en_GB", "Password" } });
+            await CreateTextWithTranslationsAsync("auth.submit", "Sign In", new() { { "fr_FR", "Se connecter" }, { "en_GB", "Sign In" } });
+            await CreateTextWithTranslationsAsync("auth.create_account", "Create an account", new() { { "fr_FR", "Créer un compte" }, { "en_GB", "Create an account" } });
+            await CreateTextWithTranslationsAsync("auth.forgot_password", "Forgot password?", new() { { "fr_FR", "Mot de passe oublié ?" }, { "en_GB", "Forgot password?" } });
+            await CreateTextWithTranslationsAsync("auth.register_title", "Register", new() { { "fr_FR", "Inscription" }, { "en_GB", "Register" } });
+            await CreateTextWithTranslationsAsync("auth.register_button", "Sign Up", new() { { "fr_FR", "S'inscrire" }, { "en_GB", "Sign Up" } });
+            await CreateTextWithTranslationsAsync("auth.already_have_account", "Already have an account? Sign in", new() { { "fr_FR", "Déjà un compte ? Connectez-vous" }, { "en_GB", "Already have an account? Sign in" } });
+            await CreateTextWithTranslationsAsync("auth.forgot_heading", "Forgot password", new() { { "fr_FR", "Mot de passe oublié" }, { "en_GB", "Forgot password" } });
+            await CreateTextWithTranslationsAsync("auth.forgot_instruction", "Enter your email address to receive password reset instructions.", new() { { "fr_FR", "Entre ton adresse email pour recevoir les instructions de réinitialisation." }, { "en_GB", "Enter your email address to receive password reset instructions." } });
+            await CreateTextWithTranslationsAsync("auth.email_placeholder", "name@example.com", new() { { "fr_FR", "nom@exemple.com" }, { "en_GB", "name@example.com" } });
+            await CreateTextWithTranslationsAsync("auth.send_link_button", "Send Link", new() { { "fr_FR", "Envoyer le lien" }, { "en_GB", "Send Link" } });
+            await CreateTextWithTranslationsAsync("auth.back_to_login", "Back to login", new() { { "fr_FR", "Retour à la connexion" }, { "en_GB", "Back to login" } });
+            await CreateTextWithTranslationsAsync("auth.email_placeholder_alt", "votre@email.com", new() { { "fr_FR", "votre@email.com" }, { "en_GB", "your@email.com" } });
         }
     }
 }

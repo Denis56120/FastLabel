@@ -30,6 +30,7 @@ public static class DependencyInjectionExtensions
 
         // 3. Services métiers
         services.AddScoped<AuthService>();
+        services.AddScoped<TranslationService>();
 
         return services;
     }
