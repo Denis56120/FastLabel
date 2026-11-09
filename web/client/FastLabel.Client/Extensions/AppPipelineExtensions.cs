@@ -12,6 +12,11 @@ public static class AppPipelineExtensions
         }
 
         app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+
+        // AJOUT : Indispensable pour que le cookie d'authentification soit lu et validé
+        app.UseAuthentication();
+        app.UseAuthorization();
+
         app.UseAntiforgery();
 
         app.MapStaticAssets();

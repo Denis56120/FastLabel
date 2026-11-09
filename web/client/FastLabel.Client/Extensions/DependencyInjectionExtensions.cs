@@ -1,4 +1,5 @@
 using FastLabel.Client.Services;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 
 namespace FastLabel.Client.Extensions;
@@ -12,6 +13,20 @@ public static class DependencyInjectionExtensions
         // 1. Composants Blazor
         services.AddRazorComponents()
             .AddInteractiveServerComponents();
+
+        // Services d'authentification et d'autorisation
+        services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+        })
+        .AddCookie(options =>
+        {
+            options.Cookie.Name = "authToken";
+            options.LoginPath = "/login";
+        });
+
+        services.AddAuthorization();
 
         // 2. Configuration des clients HTTP nommés
         services.AddTransient<CustomAuthorizationMessageHandler>();
@@ -33,6 +48,8 @@ public static class DependencyInjectionExtensions
         services.AddScoped<AuthService>();
         services.AddScoped<TranslationService>();
         services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
+
+        services.AddSingleton<TranslationService>();
 
         return services;
     }

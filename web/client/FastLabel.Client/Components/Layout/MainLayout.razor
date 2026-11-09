@@ -5,6 +5,8 @@
 @inject TranslationService Translation
 @implements IDisposable
 
+<PageTitle>FastLabel - @GetCurrentPageTitle()</PageTitle>
+
 @if (!_isLoaded)
 {
     <div class="d-flex justify-content-center align-items-center vh-100 bg-light">
@@ -121,21 +123,49 @@ else
     {
         Translation.OnChange += OnTranslationChanged;
 
-        try
+        // Si le service connaît déjà une culture (ex: en venant du PublicLayout), on l'adopte instantanément
+        if (!string.IsNullOrEmpty(Translation.CurrentCulture))
         {
-            var savedCulture = await JS.InvokeAsync<string>("localStorage.getItem", "preferred_language");
-            if (!string.IsNullOrEmpty(savedCulture))
-            {
-                _currentCulture = savedCulture;
-            }
+            _currentCulture = Translation.CurrentCulture;
         }
-        catch
+        else
         {
-            // Ignore si JS indisponible
+            try
+            {
+                var savedCulture = await JS.InvokeAsync<string>("localStorage.getItem", "preferred_language");
+                if (!string.IsNullOrEmpty(savedCulture))
+                {
+                    _currentCulture = savedCulture;
+                }
+            }
+            catch
+            {
+                // Ignore
+            }
         }
 
         await Translation.InitializeAsync(_currentCulture);
         _isLoaded = true;
+    }
+
+    private string GetCurrentPageTitle()
+    {
+        var uri = Navigation.Uri.ToLower();
+
+        if (uri.Contains("/account"))
+            return Translation.GetString("nav.my_account");
+        if (uri.Contains("/templates"))
+            return Translation.GetString("nav.templates");
+        if (uri.Contains("/printers"))
+            return Translation.GetString("nav.printers");
+        if (uri.Contains("/agents"))
+            return Translation.GetString("nav.agents");
+        if (uri.Contains("/users"))
+            return Translation.GetString("nav.users");
+        if (uri.Contains("/history"))
+            return Translation.GetString("nav.history");
+
+        return Translation.GetString("nav.home");
     }
 
     private void ToggleDropdown()
@@ -145,8 +175,10 @@ else
 
     private void OnTranslationChanged()
     {
-        _isLoaded = true;
-        InvokeAsync(StateHasChanged);
+        if (_isLoaded)
+        {
+            InvokeAsync(StateHasChanged);
+        }
     }
 
     public void Dispose()
@@ -157,7 +189,7 @@ else
     private async Task ChangeLanguage(string cultureCode)
     {
         _currentCulture = cultureCode;
-        _isDropdownOpen = false; // Ferme le menu après sélection
+        _isDropdownOpen = false;
 
         try
         {

@@ -9,6 +9,10 @@ public class TranslationService
 
     public event Action? OnChange;
 
+    public string CurrentCulture => _currentCulture;
+
+    public string this[string key] => GetString(key);
+
     public TranslationService(IHttpClientFactory httpClientFactory)
     {
         _httpClientFactory = httpClientFactory;
@@ -16,8 +20,15 @@ public class TranslationService
 
     public async Task InitializeAsync(string culture)
     {
-        _currentCulture = culture.ToLower();
-        Console.WriteLine($"[TranslationService] 🟢 Début InitializeAsync pour la culture : {_currentCulture}");
+        var targetCulture = string.IsNullOrEmpty(culture) ? _currentCulture : culture.ToLower();
+
+        // Si c'equivalent et qu'on a déjà des traductions, on évite de redéclencher inutilement
+        if (_currentCulture.Equals(targetCulture, StringComparison.OrdinalIgnoreCase) && _translations.Count > 0)
+        {
+            return;
+        }
+
+        _currentCulture = targetCulture;
 
         try
         {
@@ -29,27 +40,18 @@ public class TranslationService
             if (result != null)
             {
                 _translations = result.ToDictionary(t => t.Key, t => t.Value, StringComparer.OrdinalIgnoreCase);
-                Console.WriteLine($"[TranslationService] ✅ Succès : {_translations.Count} traductions chargées en mémoire.");
-                
-                // Afficher un aperçu des clés chargées pour vérifier
-                foreach (var kvp in _translations.Take(3))
-                {
-                    Console.WriteLine($"[TranslationService] 📝 Exemple -> Clé: '{kvp.Key}' | Valeur: '{kvp.Value}'");
-                }
             }
             else
             {
-                Console.WriteLine("[TranslationService] ⚠️ Attention : L'API a retourné un résultat NULL.");
                 _translations = [];
             }
         }
-        catch (Exception ex)
+        catch
         {
-            Console.WriteLine($"[TranslationService] ❌ ERREUR lors de l'appel HTTP : {ex.Message}");
             _translations = [];
         }
 
-        Console.WriteLine("[TranslationService] 🔔 Déclenchement de l'événement OnChange.");
+        // On prévient une seule fois la fin du chargement
         OnChange?.Invoke();
     }
 
@@ -59,9 +61,6 @@ public class TranslationService
         {
             return value;
         }
-        
-        // Log pour voir si une clé demandée par l'UI n'existe pas dans le dictionnaire
-        Console.WriteLine($"[TranslationService] 🔍 Clé introuvable dans le dictionnaire : '{key}' (Culture actuelle: {_currentCulture})");
         return key; 
     }
 }
