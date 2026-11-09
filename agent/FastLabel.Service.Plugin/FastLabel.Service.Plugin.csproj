@@ -3,7 +3,7 @@
   <ItemGroup>
     <ProjectReference Include="..\FastLabel.Core\FastLabel.Core.csproj" />
     <PackageReference Include="Fody" Version="6.8.2" PrivateAssets="All" />
-    <PackageReference Include="Costura.Fody" Version="5.8.0" PrivateAssets="All" />
+    <PackageReference Include="Costura.Fody" Version="6.0.0" PrivateAssets="All" />
   </ItemGroup>
 
   <PropertyGroup>
