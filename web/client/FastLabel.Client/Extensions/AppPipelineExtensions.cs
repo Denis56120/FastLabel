@@ -10,11 +10,9 @@ public static class AppPipelineExtensions
         if (!app.Environment.IsDevelopment())
         {
             app.UseExceptionHandler("/Error", createScopeForErrors: true);
-            app.UseHsts();
         }
 
         app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-        app.UseHttpsRedirection();
         app.UseAntiforgery();
 
         // Routing et Composants
