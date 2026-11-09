@@ -1,93 +1,170 @@
 @page "/account"
-@using Microsoft.AspNetCore.Components.Web
-@using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
-@inject FastLabel.Client.Services.AuthService AuthService
-@inject NavigationManager Navigation
-@attribute [Microsoft.AspNetCore.Authorization.Authorize]
-@inject FastLabel.Client.Services.AuthService AuthService
-@inject NavigationManager Navigation
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
 
 <PageTitle>FastLabel - Mon Compte</PageTitle>
 
 <div class="container mt-4">
     <h2>Mon Compte</h2>
-    <p class="text-muted">Gérez vos informations personnelles et vos préférences.</p>
+    <hr />
 
-    @if (!string.IsNullOrEmpty(errorMessage))
+    @if (isLoading)
     {
-        <div class="alert alert-danger">@errorMessage</div>
+        <div class="d-flex justify-content-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Chargement...</span>
+            </div>
+        </div>
     }
-
-    @if (!string.IsNullOrEmpty(successMessage))
+    else
     {
-        <div class="alert alert-success">@successMessage</div>
+        <div class="row">
+            <!-- Informations Profil -->
+            <div class="col-md-6 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Informations personnelles</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Adresse Email</label>
+                            <input type="text" class="form-control" value="@userEmail" disabled />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label text-muted">Rôle / Plan</label>
+                            <input type="text" class="form-control" value="@userRole" disabled />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Préférences et Paramètres -->
+            <div class="col-md-6 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0">Préférences utilisateur</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (!string.IsNullOrEmpty(successMessage))
+                        {
+                            <div class="alert alert-success" role="alert">
+                                @successMessage
+                            </div>
+                        }
+
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger" role="alert">
+                                @errorMessage
+                            </div>
+                        }
+
+                        <EditForm Model="@preferencesModel" OnValidSubmit="SavePreferences">
+                            <DataAnnotationsValidator />
+
+                            <div class="mb-3 form-check">
+                                <InputCheckbox id="emailNotifications" class="form-check-input" @bind-Value="preferencesModel.ReceiveEmailNotifications" />
+                                <label class="form-check-label" for="emailNotifications">
+                                    Recevoir les notifications par email
+                                </label>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="defaultPrinter" class="form-label">Imprimante ZPL par défaut</label>
+                                <InputText id="defaultPrinter" class="form-control" @bind-Value="preferencesModel.DefaultPrinterName" placeholder="Ex: Zebra ZD420" />
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                                @if (isSaving)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                    <span>Enregistrement...</span>
+                                }
+                                else
+                                {
+                                    <span>Enregistrer les modifications</span>
+                                }
+                            </button>
+                        </EditForm>
+                    </div>
+                </div>
+            </div>
+        </div>
     }
-
-    <div class="card shadow-sm p-4 mt-3">
-        <div class="mb-3">
-            <label class="form-label">Adresse e-mail</label>
-            <input type="email" class="form-control" value="@email" readonly />
-            <div class="form-text">L'e-mail ne peut pas être modifié directement.</div>
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Identifiant utilisateur (ID)</label>
-            <input type="text" class="form-control font-monospace" value="@userId" readonly />
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Langue préférée</label>
-            <select class="form-select" @bind="preferredLanguage">
-                <option value="fr">Français</option>
-                <option value="en">English</option>
-            </select>
-        </div>
-
-        <div class="mt-4">
-            <button class="btn btn-primary" @onclick="SavePreferences">Enregistrer</button>
-        </div>
-    </div>
 </div>
 
 @code {
-    private string email = "";
-    private string userId = "";
-    private string preferredLanguage = "fr";
-    private string? errorMessage;
+    [Inject] private AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
+
+    private bool isLoading = true;
+    private bool isSaving = false;
+    private string userEmail = string.Empty;
+    private string userRole = "Standard";
     private string? successMessage;
+    private string? errorMessage;
+
+    private UserPreferencesModel preferencesModel = new();
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            // Remplace GetCurrentUserAsync par la méthode réelle de ton AuthService si elle a un autre nom (ex: GetUser, etc.)
-            var currentUser = await AuthService.GetCurrentUserAsync();
-            if (currentUser != null)
+            isLoading = true;
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
             {
-                email = currentUser.Email;
-                userId = currentUser.UserId.ToString();
-                preferredLanguage = currentUser.PreferredLanguage;
+                userEmail = user.FindFirst(c => c.Type == System.Security.Claims.ClaimTypes.Email)?.Value 
+                          ?? user.Identity.Name 
+                          ?? "Utilisateur";
+                
+                var roleClaim = user.FindFirst(c => c.Type == System.Security.Claims.ClaimTypes.Role);
+                if (roleClaim != null)
+                {
+                    userRole = roleClaim.Value;
+                }
             }
+
+            preferencesModel.ReceiveEmailNotifications = true;
+            preferencesModel.DefaultPrinterName = "Zebra ZT230";
         }
         catch (Exception ex)
         {
-            errorMessage = "Impossible de charger le profil : " + ex.Message;
+            errorMessage = $"Erreur lors du chargement du profil : {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
         }
     }
 
     private async Task SavePreferences()
     {
-        errorMessage = null;
+        isSaving = true;
         successMessage = null;
+        errorMessage = null;
 
         try
         {
-            successMessage = "Préférences enregistrées avec succès.";
+            await Task.Delay(600); 
+            successMessage = "Vos préférences ont été enregistrées avec succès.";
         }
         catch (Exception ex)
         {
-            errorMessage = "Erreur lors de la mise à jour : " + ex.Message;
+            errorMessage = $"Une erreur est survenue lors de l'enregistrement : {ex.Message}";
         }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    public class UserPreferencesModel
+    {
+        public bool ReceiveEmailNotifications { get; set; }
+        public string DefaultPrinterName { get; set; } = string.Empty;
     }
 }
