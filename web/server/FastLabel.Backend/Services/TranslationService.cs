@@ -39,7 +39,7 @@ public class TranslationService
                 OnChange?.Invoke();
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
         }
     }

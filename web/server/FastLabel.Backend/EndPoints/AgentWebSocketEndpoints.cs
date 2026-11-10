@@ -89,7 +89,7 @@ public static class AgentWebSocketEndpoints
                     }
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
             }
             finally
