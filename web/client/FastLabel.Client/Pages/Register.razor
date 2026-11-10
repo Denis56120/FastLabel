@@ -2,55 +2,67 @@
 @layout PublicLayout
 @inject IHttpClientFactory ClientFactory
 @inject NavigationManager Navigation
+@inject CookieService CookieService
 @inject TranslationService Translation
 @implements IDisposable
 @using FastLabel.Client.Components.Layout
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Web
+@using FastLabel.Client.Services
 @using FastLabel.Shared.DTOs
 
-<div style="width: 100%; max-width: 450px;">
-    <div class="card shadow border-0">
-        <div class="card-body p-4">
-            <h3 class="card-title text-center mb-4">@Translation.GetString("auth.register_title")</h3>
+<div class="d-flex justify-content-center align-items-center w-100">
+    <div style="width: 100%; max-width: 420px;">
+        <div class="card shadow border-0">
+            <div class="card-body p-4">
+                <h3 class="card-title text-center mb-4">@Translation.GetString("auth.register_title")</h3>
 
-            @if (!string.IsNullOrEmpty(_errorMessage))
-            {
-                <div class="alert alert-danger" role="alert">
-                    @_errorMessage
-                </div>
-            }
-
-            <EditForm Model="_registerModel" OnValidSubmit="HandleRegister">
-                <DataAnnotationsValidator />
-
-                <div class="mb-3">
-                    <label class="form-label">@Translation.GetString("auth.email")</label>
-                    <InputText @bind-Value="_registerModel.Email" class="form-control" placeholder="@Translation.GetString("auth.email_placeholder")" />
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">@Translation.GetString("auth.password")</label>
-                    <div class="input-group">
-                        <input type="@PasswordInputType" 
-                               @bind="_registerModel.Password" 
-                               @bind:event="oninput"
-                               class="form-control"
-                               placeholder="••••••••" />
-                        <button type="button" class="btn btn-outline-secondary" @onclick="TogglePasswordVisibility">
-                            <i class="bi @PasswordIconClass" style="pointer-events: none;"></i>
-                        </button>
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <div class="alert alert-danger" role="alert">
+                        @_errorMessage
                     </div>
-                </div>
+                }
 
-                <div class="d-grid mb-3">
-                    <button type="submit" class="btn btn-success">@Translation.GetString("auth.register_button")</button>
-                </div>
+                <EditForm Model="_registerModel" OnValidSubmit="HandleRegister">
+                    <DataAnnotationsValidator />
 
-                <div class="text-center">
-                    <a href="/login">@Translation.GetString("auth.already_have_account")</a>
-                </div>
-            </EditForm>
+                    <div class="mb-3">
+                        <label class="form-label">@Translation.GetString("auth.name")</label>
+                        <InputText @bind-Value="_registerModel.Name" class="form-control" placeholder="@Translation.GetString("auth.name_placeholder")" />
+                        <ValidationMessage For="@(() => _registerModel.Name)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">@Translation.GetString("auth.email")</label>
+                        <InputText @bind-Value="_registerModel.Email" class="form-control" placeholder="@Translation.GetString("auth.email_placeholder")" />
+                        <ValidationMessage For="@(() => _registerModel.Email)" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">@Translation.GetString("auth.password")</label>
+                        <div class="input-group">
+                            <input type="@PasswordInputType" 
+                                   @bind="_registerModel.Password" 
+                                   @bind:event="oninput"
+                                   class="form-control"
+                                   placeholder="••••••••" />
+                            <button type="button" class="btn btn-outline-secondary" @onclick="TogglePasswordVisibility">
+                                <i class="bi @PasswordIconClass" style="pointer-events: none;"></i>
+                            </button>
+                        </div>
+                        <ValidationMessage For="@(() => _registerModel.Password)" />
+                    </div>
+
+                    <div class="d-grid mb-3">
+                        <button type="submit" class="btn btn-success">@Translation.GetString("auth.register_button")</button>
+                    </div>
+
+                    <div class="text-center">
+                        <a href="/login">@Translation.GetString("auth.already_have_account")</a>
+                    </div>
+                </EditForm>
+            </div>
         </div>
     </div>
 </div>
@@ -58,8 +70,8 @@
 @code {
     private RegisterDto _registerModel = new();
     private string? _errorMessage;
-
     private bool _showPassword = false;
+
     private string PasswordInputType => _showPassword ? "text" : "password";
     private string PasswordIconClass => _showPassword ? "bi-eye-slash" : "bi-eye";
 
@@ -87,6 +99,11 @@
     {
         _errorMessage = null;
 
+        // On injecte directement la langue courante gérée par le layout/service juste avant l'envoi
+        _registerModel.Language = !string.IsNullOrEmpty(Translation.CurrentLanguage) 
+            ? Translation.CurrentLanguage 
+            : "en-GB";
+
         try
         {
             var client = ClientFactory.CreateClient("PublicClient");
@@ -94,6 +111,15 @@
 
             if (response.IsSuccessStatusCode)
             {
+                try
+                {
+                    await CookieService.SetCookieAsync("language", Translation.CurrentLanguage, days: 365);
+                }
+                catch
+                {
+                    // Ignore
+                }
+
                 Navigation.NavigateTo("/login");
             }
             else

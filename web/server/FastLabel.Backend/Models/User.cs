@@ -14,7 +14,7 @@ public class User
     public string Name { get; set; } = string.Empty;
 
     [Required]
-    public string Email { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty; 
 
     [Required]
     public string PasswordHash { get; set; } = string.Empty;
@@ -24,6 +24,9 @@ public class User
     public string? PasswordResetToken { get; set; }
 
     public DateTime? ResetTokenExpired { get; set; }
+
+    // Ajouté pour la vérification et l'activation du compte par e-mail
+    public string? EmailVerificationToken { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 

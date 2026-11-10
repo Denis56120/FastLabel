@@ -1,5 +1,7 @@
 using FastLabel.Backend.Data;
 using FastLabel.Backend.Endpoints;
+using FastLabel.Backend.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace FastLabel.Backend.Extensions;
@@ -15,10 +17,15 @@ public static class AppExtensions
         try
         {
             var dbContext = services.GetRequiredService<AppDbContext>();
-            DbInitializer.InitializeAsync(dbContext).GetAwaiter().GetResult();
+            var passwordHasher = services.GetRequiredService<IPasswordHasher<User>>();
+            
+            DbInitializer.InitializeAsync(dbContext, passwordHasher).GetAwaiter().GetResult();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            // Optionnel : un petit log en cas d'échec pour t'aider à débugger
+            var logger = services.GetRequiredService<ILogger<WebApplication>>();
+            logger.LogError(ex, "An error occurred while initializing the database.");
         }
 
         // Ordre des Middlewares

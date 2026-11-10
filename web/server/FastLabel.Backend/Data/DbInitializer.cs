@@ -1,12 +1,12 @@
 using FastLabel.Backend.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using BCrypt.Net;
 
 namespace FastLabel.Backend.Data;
 
 public static class DbInitializer
 {
-    public static async Task InitializeAsync(AppDbContext context)
+    public static async Task InitializeAsync(AppDbContext context, IPasswordHasher<User>? passwordHasher = null)
     {
         await context.Database.EnsureCreatedAsync();
 
@@ -163,7 +163,7 @@ public static class DbInitializer
             var planProText = await CreateTextWithTranslationsAsync("plan.pro.name", "Pro Plan", new() { { "fr-FR", "Plan Professionnel" }, { "en-GB", "Pro Plan" } });
             var planEnterpriseText = await CreateTextWithTranslationsAsync("plan.enterprise.name", "Enterprise Plan", new() { { "fr-FR", "Plan Entreprise" }, { "en-GB", "Enterprise Plan" } });
 
-            var activeStatus = await context.BasicStatuses.FirstOrDefaultAsync();
+            var activeStatus = await context.BasicStatuses.OrderBy(s => s.Id).FirstOrDefaultAsync();
             int statusId = activeStatus?.Id ?? 1;
 
             context.Plans.AddRange(
@@ -195,31 +195,33 @@ public static class DbInitializer
             var activeStatus = await context.BasicStatuses.FirstOrDefaultAsync();
             int statusId = activeStatus?.Id ?? 1;
 
-            context.Users.AddRange(
-                new User
-                {
-                    Name = "Denis Clouet",
-                    Email = "denis.clouet@gmail.com",
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("08071979"),
-                    BasicStatusId = statusId,
-                    CreatedAt = DateTime.UtcNow,
-                    IsAdmin = true
-                },
-                new User
-                {
-                    Name = "George Harrison",
-                    Email = "georges.harrison4@gmail.com",
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("08071979"),
-                    BasicStatusId = statusId,
-                    CreatedAt = DateTime.UtcNow,
-                    IsAdmin = false
-                }
-            );
+            passwordHasher ??= new PasswordHasher<User>();
 
+            var adminUser = new User
+            {
+                Name = "Denis Clouet",
+                Email = "denis.clouet@gmail.com",
+                BasicStatusId = statusId,
+                CreatedAt = DateTime.UtcNow,
+                IsAdmin = true
+            };
+            adminUser.PasswordHash = passwordHasher.HashPassword(adminUser, "08071979");
+
+            var georgeUser = new User
+            {
+                Name = "George Harrison",
+                Email = "georges.harrison4@gmail.com",
+                BasicStatusId = statusId,
+                CreatedAt = DateTime.UtcNow,
+                IsAdmin = false
+            };
+            georgeUser.PasswordHash = passwordHasher.HashPassword(georgeUser, "08071979");
+
+            context.Users.AddRange(adminUser, georgeUser);
             await context.SaveChangesAsync();
         }
-        
-        // 11. Textes UI (Sorti du bloc Users pour s'exécuter et se mettre à jour à chaque démarrage)
+
+        // 11. Textes UI
         await CreateTextWithTranslationsAsync("history.title", "Print History", new() { { "fr-FR", "Historique des impressions" }, { "en-GB", "Print History" } });
         await CreateTextWithTranslationsAsync("history.description", "Tracking and logs of labels sent to printers.", new() { { "fr-FR", "Suivi et journaux des étiquettes envoyées aux imprimantes." }, { "en-GB", "Tracking and logs of labels sent to printers." } });
         await CreateTextWithTranslationsAsync("history.no_history", "No print history at the moment.", new() { { "fr-FR", "Aucun historique d'impression pour l'instant." }, { "en-GB", "No print history at the moment." } });
@@ -266,7 +268,17 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("dashboard.agents_header", "ZPL Agents & Printers", new() { { "fr-FR", "Agents & Imprimantes ZPL" }, { "en-GB", "ZPL Agents & Printers" } });
         await CreateTextWithTranslationsAsync("dashboard.agents_description", "Management and status of your connected Windows agents for thermal printing.", new() { { "fr-FR", "Gestion et état de vos agents Windows connectés pour l'impression thermique." }, { "en-GB", "Management and status of your connected Windows agents for thermal printing." } });
         await CreateTextWithTranslationsAsync("dashboard.no_active_agents", "No active agents at the moment. The ZPL listening service will communicate here soon.", new() { { "fr-FR", "Aucun agent actif pour le moment. Le service d'écoute ZPL communiquera bientôt ici." }, { "en-GB", "No active agents at the moment. The ZPL listening service will communicate here soon." } });
-                
+
+        await CreateTextWithTranslationsAsync("auth.error.invalid_or_expired_token", "Invalid or expired reset token.", new() { { "fr-FR", "Jeton de réinitialisation invalide ou expiré." }, { "en-GB", "Invalid or expired reset token." } });
+        await CreateTextWithTranslationsAsync("auth.reset_password_title", "Reset your password", new() { { "fr-FR", "Réinitialiser votre mot de passe" }, { "en-GB", "Reset your password" } });
+        await CreateTextWithTranslationsAsync("auth.new_password", "New password", new() { { "fr-FR", "Nouveau mot de passe" }, { "en-GB", "New password" } });
+        await CreateTextWithTranslationsAsync("auth.success.password_reset", "Your password has been successfully reset. You can now log in.", new() { { "fr-FR", "Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter." }, { "en-GB", "Your password has been successfully reset. You can now log in." } });
+        await CreateTextWithTranslationsAsync("auth.error.missing_token", "Invalid or missing reset token.", new() { { "fr-FR", "Jeton de réinitialisation invalide ou manquant." }, { "en-GB", "Invalid or missing reset token." } });
+        await CreateTextWithTranslationsAsync("auth.success.account_activated", "Your account has been successfully activated. You can now log in.", new() { { "fr-FR", "Votre compte a été activé avec succès. Vous pouvez maintenant vous connecter." }, { "en-GB", "Your account has been successfully activated. You can now log in." } });
+        await CreateTextWithTranslationsAsync("auth.error.email_already_taken", "This email is already taken.", new() { { "fr-FR", "Cet email est déjà utilisé." }, { "en-GB", "This email is already taken." } });
+        await CreateTextWithTranslationsAsync("auth.success.registered", "Registration successful.", new() { { "fr-FR", "Inscription réussie." }, { "en-GB", "Registration successful." } });
+        await CreateTextWithTranslationsAsync("auth.name", "Full Name", new() { { "fr-FR", "Nom complet" }, { "en-GB", "Full Name" } });
+        await CreateTextWithTranslationsAsync("auth.name_placeholder", "John Doe", new() { { "fr-FR", "Jean Dupont" }, { "en-GB", "John Doe" } });
         await CreateTextWithTranslationsAsync("auth.error.invalid_credentials", "Invalid credentials.", new() { { "fr-FR", "Identifiants invalides." }, { "en-GB", "Invalid credentials." } });
         await CreateTextWithTranslationsAsync("auth.error.server_unreachable", "Unable to reach the server.", new() { { "fr-FR", "Impossible de joindre le serveur." }, { "en-GB", "Unable to reach the server." } });
         await CreateTextWithTranslationsAsync("auth.sending", "Sending...", new() { { "fr-FR", "Envoi en cours..." }, { "en-GB", "Sending..." } });
@@ -288,5 +300,11 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("auth.send_link_button", "Send Link", new() { { "fr-FR", "Envoyer le lien" }, { "en-GB", "Send Link" } });
         await CreateTextWithTranslationsAsync("auth.back_to_login", "Back to login", new() { { "fr-FR", "Retour à la connexion" }, { "en-GB", "Back to login" } });
         await CreateTextWithTranslationsAsync("auth.email_placeholder_alt", "votre@email.com", new() { { "fr-FR", "votre@email.com" }, { "en-GB", "your@email.com" } });
+
+        // 12. Emails
+        await CreateTextWithTranslationsAsync("email.activation.subject", "Activate your FastLabel account", new() { { "fr-FR", "Activez votre compte FastLabel" }, { "en-GB", "Activate your FastLabel account" } });
+        await CreateTextWithTranslationsAsync("email.activation.body", "Hello {0},\n\nPlease click the following link to activate your account:\n{1}", new() { { "fr-FR", "Bonjour {0},\n\nVeuillez cliquer sur le lien suivant pour activer votre compte :\n{1}" }, { "en-GB", "Hello {0},\n\nPlease click the following link to activate your account:\n{1}" } });
+         await CreateTextWithTranslationsAsync("email.reset.subject", "Reset your FastLabel password", new() { { "fr-FR", "Réinitialisez votre mot de passe FastLabel" }, { "en-GB", "Reset your FastLabel password" } });
+        await CreateTextWithTranslationsAsync("email.reset.body", "Hello {0},\n\nPlease click the following link to reset your password:\n{1}", new() { { "fr-FR", "Bonjour {0},\n\nVeuillez cliquer sur le lien suivant pour réinitialiser votre mot de passe :\n{1}" }, { "en-GB", "Hello {0},\n\nPlease click the following link to reset your password:\n{1}" } });
     }
 }

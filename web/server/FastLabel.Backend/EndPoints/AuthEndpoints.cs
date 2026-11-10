@@ -1,6 +1,8 @@
 using FastLabel.Backend.Data;
 using FastLabel.Shared.DTOs;
 using FastLabel.Backend.Services;
+using FastLabel.Backend.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace FastLabel.Backend.Endpoints;
@@ -11,14 +13,24 @@ public static class AuthEndpoints
     {
         var group = routes.MapGroup("/api/auth");
 
-        group.MapPost("/login", async (LoginRequest request, AppDbContext db, TokenService tokenService) =>
+        group.MapPost("/login", async (LoginRequest request, AppDbContext db, TokenService tokenService, IPasswordHasher<User> passwordHasher) =>
         {
             var user = await db.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
             
-            // Correction : Utilisation de BCrypt.Verify
-            if (user == null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+            if (user == null || passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password) == PasswordVerificationResult.Failed)
             {
                 return Results.BadRequest(new { message = "Identifiants invalides." });
+            }
+
+            var statusTag = await db.Texts
+                .Join(db.BasicStatuses, t => t.Id, bs => bs.NameTextId, (t, bs) => new { bs.Id, t.Tag })
+                .Where(x => x.Id == user.BasicStatusId)
+                .Select(x => x.Tag)
+                .FirstOrDefaultAsync();
+
+            if (statusTag == "status.inactive")
+            {
+                return Results.BadRequest(new { message = "auth.error.account_inactive" });
             }
 
             var token = tokenService.GenerateToken(user);
@@ -30,30 +42,178 @@ public static class AuthEndpoints
             });
         });
 
-        // AJOUT : Endpoint de réinitialisation de mot de passe
-        group.MapPost("/forgot-password", async (ForgotPasswordDto dto, AppDbContext db) =>
+        group.MapPost("/forgot-password", async (ForgotPasswordDto dto, AppDbContext db, IEmailService emailService, IConfiguration configuration) =>
         {
             if (string.IsNullOrWhiteSpace(dto.Email))
             {
-                return Results.BadRequest(new { message = "Email is required." });
+                return Results.BadRequest(new ErrorResponseDto { Message = "auth.error.missing_email" });
             }
 
             var user = await db.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
 
-            // Par mesure de sécurité contre l'énumération d'utilisateurs, on renvoie toujours Ok
+            // Par sécurité, on renvoie un succès même si l'e-mail n'existe pas
             if (user == null)
             {
-                return Results.Ok(new { message = "If the email exists, a reset link has been sent." });
+                return Results.Ok(new { message = "auth.success.forgot_password" });
             }
 
-            // Génération d'un token temporaire (nécessite les propriétés PasswordResetToken et ResetTokenExpires sur ton entité User si tu veux les stocker)
             user.PasswordResetToken = Guid.NewGuid().ToString();
             user.ResetTokenExpired = DateTime.UtcNow.AddHours(2);
             await db.SaveChangesAsync();
 
-            // TODO : Insérer ici l'appel à ton service d'envoi d'e-mail (ex: _emailService.Send...)
+            // Utilisation de ClientUrl pour pointer vers le Front-End Blazor
+            var clientUrl = configuration["ClientUrl"] ?? "http://localhost:5000";
+            var resetLink = $"{clientUrl}/reset-password?token={user.PasswordResetToken}";
 
-            return Results.Ok(new { message = "If the email exists, a reset link has been sent." });
+            var languageCode = string.IsNullOrWhiteSpace(dto.Language) ? "en-GB" : dto.Language;
+
+            var emailTexts = await db.Texts
+                .Where(t => t.Tag == "email.reset.subject" || t.Tag == "email.reset.body")
+                .Select(t => new
+                {
+                    t.Tag,
+                    Value = t.Translations
+                        .Where(tr => tr.Language.Locale.ToLower() == languageCode.ToLower())
+                        .Select(tr => tr.TranslatedValue)
+                        .FirstOrDefault() ?? t.DefaultTranslation
+                })
+                .ToListAsync();
+
+            var subject = emailTexts.FirstOrDefault(t => t.Tag == "email.reset.subject")?.Value
+                        ?? "Reset your FastLabel password";
+
+            var bodyTemplate = emailTexts.FirstOrDefault(t => t.Tag == "email.reset.body")?.Value
+                            ?? "Hello {0},\n\nPlease click the following link to reset your password:\n{1}";
+
+            var message = string.Format(bodyTemplate, user.Name, resetLink);
+
+            await emailService.SendEmailAsync(user.Email, subject, message);
+
+            return Results.Ok(new { message = "auth.success.forgot_password" });
+        });
+
+        group.MapPost("/reset-password", async (ResetPasswordDto dto, AppDbContext db, IPasswordHasher<User> passwordHasher) =>
+        {
+            if (string.IsNullOrWhiteSpace(dto.Token) || string.IsNullOrWhiteSpace(dto.NewPassword))
+            {
+                return Results.BadRequest(new ErrorResponseDto { Message = "auth.error.missing_token" });
+            }
+
+            var user = await db.Users.FirstOrDefaultAsync(u => u.PasswordResetToken == dto.Token);
+
+            if (user == null || user.ResetTokenExpired < DateTime.UtcNow)
+            {
+                return Results.BadRequest(new ErrorResponseDto { Message = "auth.error.invalid_or_expired_token" });
+            }
+
+            // Mise à jour du mot de passe haché et nettoyage du token
+            user.PasswordHash = passwordHasher.HashPassword(user, dto.NewPassword);
+            user.PasswordResetToken = null;
+            user.ResetTokenExpired = null;
+
+            await db.SaveChangesAsync();
+
+            return Results.Ok(new { message = "auth.success.password_reset" });
+        });
+
+        group.MapPost("/register", async (RegisterDto dto, AppDbContext db, IPasswordHasher<User> passwordHasher, IEmailService emailService, IConfiguration configuration) =>
+        {
+            if (await db.Users.AnyAsync(u => u.Email == dto.Email))
+            {
+                return Results.BadRequest(new ErrorResponseDto { Message = "auth.error.email_already_taken" });
+            }
+
+            var user = new User
+            {
+                Name = dto.Name,
+                Email = dto.Email,
+                CreatedAt = DateTime.UtcNow,
+                EmailVerificationToken = Guid.NewGuid().ToString()
+            };
+
+            user.PasswordHash = passwordHasher.HashPassword(user, dto.Password);
+
+            var inactiveStatus = await db.BasicStatuses
+                .Join(db.Texts, bs => bs.NameTextId, t => t.Id, (bs, t) => new { bs, t.Tag })
+                .Where(x => x.Tag == "status.inactive")
+                .Select(x => x.bs)
+                .FirstOrDefaultAsync();
+
+            if (inactiveStatus != null)
+            {
+                user.BasicStatusId = inactiveStatus.Id;
+            }
+            else
+            {
+                var fallbackStatus = await db.BasicStatuses.OrderBy(s => s.Id).Skip(1).FirstOrDefaultAsync();
+                if (fallbackStatus != null)
+                {
+                    user.BasicStatusId = fallbackStatus.Id;
+                }
+            }
+
+            db.Users.Add(user);
+            await db.SaveChangesAsync();
+
+            var serverUrl = configuration["ServerUrl"] ?? "http://localhost:6000";
+            var verificationLink = $"{serverUrl}/api/auth/verify-email?token={user.EmailVerificationToken}";
+
+            var languageCode = string.IsNullOrWhiteSpace(dto.Language) ? "en-GB" : dto.Language;
+
+            var emailTexts = await db.Texts
+                .Where(t => t.Tag == "email.activation.subject" || t.Tag == "email.activation.body")
+                .Select(t => new
+                {
+                    t.Tag,
+                    Value = t.Translations
+                        .Where(tr => tr.Language.Locale.ToLower() == languageCode.ToLower())
+                        .Select(tr => tr.TranslatedValue)
+                        .FirstOrDefault() ?? t.DefaultTranslation
+                })
+                .ToListAsync();
+
+            var subject = emailTexts.FirstOrDefault(t => t.Tag == "email.activation.subject")?.Value
+                        ?? "Activate your FastLabel account";
+
+            var bodyTemplate = emailTexts.FirstOrDefault(t => t.Tag == "email.activation.body")?.Value
+                            ?? "Hello {0},\n\nPlease click the following link to activate your account:\n{1}";
+
+            var message = string.Format(bodyTemplate, user.Name, verificationLink);
+
+            await emailService.SendEmailAsync(user.Email, subject, message);
+
+            return Results.Ok(new { message = "auth.success.registered_check_email" });
+        });
+
+        group.MapGet("/verify-email", async (string token, AppDbContext db, IConfiguration configuration) =>
+        {
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return Results.BadRequest(new { message = "Token invalide." });
+            }
+
+            var user = await db.Users.FirstOrDefaultAsync(u => u.EmailVerificationToken == token);
+            if (user == null)
+            {
+                return Results.BadRequest(new { message = "Jeton de validation invalide ou expiré." });
+            }
+
+            var activeStatus = await db.BasicStatuses
+                .Join(db.Texts, bs => bs.NameTextId, t => t.Id, (bs, t) => new { bs, t.Tag })
+                .Where(x => x.Tag == "status.active")
+                .Select(x => x.bs)
+                .FirstOrDefaultAsync();
+
+            if (activeStatus != null)
+            {
+                user.BasicStatusId = activeStatus.Id;
+            }
+
+            user.EmailVerificationToken = null;
+            await db.SaveChangesAsync();
+
+            var clientUrl = configuration["ClientUrl"] ?? "http://localhost:5000";
+            return Results.Redirect($"{clientUrl}/login?activated=true");
         });
     }
 }

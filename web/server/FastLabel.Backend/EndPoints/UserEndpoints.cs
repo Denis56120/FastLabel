@@ -1,6 +1,9 @@
 using System.Security.Claims;
 using FastLabel.Backend.Data;
+using FastLabel.Backend.Models;
+using FastLabel.Backend.Services;
 using FastLabel.Shared.DTOs;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace FastLabel.Backend.Endpoints;
@@ -9,9 +12,10 @@ public static class UserEndpoints
 {
     public static void MapUserEndpoints(this IEndpointRouteBuilder routes)
     {
+        // 1. Groupe sécurisé pour les utilisateurs connectés (/api/users)
         var group = routes.MapGroup("/api/users").RequireAuthorization();
 
-        // 1. Récupérer le profil de l'utilisateur connecté
+        // Récupérer le profil de l'utilisateur connecté -> Devient /api/users/me
         group.MapGet("/me", async (AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
             var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -34,8 +38,7 @@ public static class UserEndpoints
             });
         });
 
-        // 2. Mettre à jour les préférences de langue
-        // 2. Mettre à jour les préférences de l'utilisateur
+        // Mettre à jour les préférences de l'utilisateur -> Devient /api/users/me/preferences
         group.MapPut("/me/preferences", async (UpdatePreferencesDto dto, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
             var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -45,10 +48,6 @@ public static class UserEndpoints
             var user = await db.Users.FindAsync(userId);
             if (user == null)
                 return Results.NotFound(new { message = "User not found." });
-
-            // Mets à jour ici les propriétés que tu souhaites persister (ex: notifications, imprimante, etc.)
-            // user.ReceiveEmailNotifications = dto.ReceiveEmailNotifications;
-            // user.DefaultPrinterName = dto.DefaultPrinterName;
 
             await db.SaveChangesAsync();
 

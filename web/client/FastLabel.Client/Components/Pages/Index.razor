@@ -9,20 +9,18 @@
 </div>
 
 @code {
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnInitializedAsync()
     {
-        if (firstRender)
+        // On effectue la vérification asynchrone avant le rendu complet
+        var isAuthenticated = await AuthService.IsAuthenticatedAsync();
+        
+        if (isAuthenticated)
         {
-            var isAuthenticated = await AuthService.IsAuthenticatedAsync();
-            
-            if (isAuthenticated)
-            {
-                Navigation.NavigateTo("/dashboard", replace: true);
-            }
-            else
-            {
-                Navigation.NavigateTo("/login", replace: true);
-            }
+            Navigation.NavigateTo("/dashboard", forceLoad: false);
+        }
+        else
+        {
+            Navigation.NavigateTo("/login", forceLoad: false);
         }
     }
 }

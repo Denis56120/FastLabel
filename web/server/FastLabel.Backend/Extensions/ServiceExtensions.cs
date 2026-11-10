@@ -1,9 +1,11 @@
 using System.Text;
 using FastLabel.Backend.Data;
+using FastLabel.Backend.Models;
 using FastLabel.Backend.Services;
 using FastLabel.Client.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -26,6 +28,7 @@ public static class ServiceExtensions
 
         services.AddControllers();
         services.AddScoped<TokenService>();
+        services.AddScoped<IEmailService, EmailService>();
 
         // 2. État partagé (WebSockets / Jobs)
         services.AddSingleton<PrintBrokerService>();
@@ -55,6 +58,8 @@ public static class ServiceExtensions
 
         services.AddAuthorizationBuilder()
             .AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+
+        services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
         // 4. Base de données SQLite
         services.AddDbContext<AppDbContext>(options =>

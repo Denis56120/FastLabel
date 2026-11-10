@@ -18,6 +18,27 @@
             <div class="card-body p-4">
                 <h3 class="card-title text-center mb-4">@Translation.GetString("auth.login_title")</h3>
 
+                @if (_isActivated)
+                {
+                    <div class="alert alert-success" role="alert">
+                        @Translation.GetString("auth.success.account_activated")
+                    </div>
+                }
+
+                @if (_isPasswordResetRequested)
+                {
+                    <div class="alert alert-success" role="alert">
+                        @Translation.GetString("auth.forgot_success_message")
+                    </div>
+                }
+
+                @if (_isPasswordUpdated)
+                {
+                    <div class="alert alert-success" role="alert">
+                        @Translation.GetString("auth.success.password_reset")
+                    </div>
+                }
+
                 @if (!string.IsNullOrEmpty(_errorMessage))
                 {
                     <div class="alert alert-danger" role="alert">
@@ -65,6 +86,18 @@
     private LoginDto _loginModel = new();
     private string? _errorMessage;
     private bool _showPassword = false;
+    private bool _isActivated = false;
+    private bool _isPasswordResetRequested = false;
+    private bool _isPasswordUpdated = false;
+
+    [SupplyParameterFromQuery(Name = "activated")]
+    public bool ActivatedParam { get; set; }
+
+    [SupplyParameterFromQuery(Name = "pwreset")]
+    public bool PwResetParam { get; set; }
+
+    [SupplyParameterFromQuery(Name = "pwupdated")]
+    public bool PwUpdatedParam { get; set; }
 
     private string PasswordInputType => _showPassword ? "text" : "password";
     private string PasswordIconClass => _showPassword ? "bi-eye-slash" : "bi-eye";
@@ -72,6 +105,13 @@
     protected override void OnInitialized()
     {
         Translation.OnChange += OnTranslationChanged;
+    }
+
+    protected override void OnParametersSet()
+    {
+        _isActivated = ActivatedParam;
+        _isPasswordResetRequested = PwResetParam;
+        _isPasswordUpdated = PwUpdatedParam;
     }
 
     private void OnTranslationChanged()
@@ -92,6 +132,9 @@
     private async Task HandleLogin()
     {
         _errorMessage = null;
+        _isActivated = false;
+        _isPasswordResetRequested = false;
+        _isPasswordUpdated = false;
 
         try
         {
@@ -120,8 +163,6 @@
             else
             {
                 var errorContent = await response.Content.ReadFromJsonAsync<ErrorResponseDto>();
-                
-                // Si l'API renvoie une clé connue, on l'utilise, sinon on prend la clé d'erreur par défaut
                 string errorKey = !string.IsNullOrEmpty(errorContent?.Message) ? errorContent.Message : "auth.error.invalid_credentials";
                 _errorMessage = Translation.GetString(errorKey);
             }
