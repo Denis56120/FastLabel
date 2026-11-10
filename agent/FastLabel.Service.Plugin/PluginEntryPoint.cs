@@ -13,7 +13,6 @@ public class PluginEntryPoint : IFastLabelPlugin
 
     public void Launch(string baseUrl)
     {
-        Console.WriteLine("[Plugin] Initialisation (Connexion WebSocket sortante vers le cloud)...");
         _cts = new CancellationTokenSource();
 
         Task.Run(() => ConnectToCloudWebSocketAsync(baseUrl, _cts.Token));
@@ -21,7 +20,6 @@ public class PluginEntryPoint : IFastLabelPlugin
 
     public void Stop()
     {
-        Console.WriteLine("[Plugin] Arrêt du client WebSocket et nettoyage...");
         _cts?.Cancel();
         _cts?.Dispose();
     }
@@ -35,9 +33,7 @@ public class PluginEntryPoint : IFastLabelPlugin
             using var ws = new ClientWebSocket();
             try
             {
-                Console.WriteLine($"[Plugin WebSocket] Tentative de connexion à {wsUrl}...");
                 await ws.ConnectAsync(new Uri(wsUrl), token);
-                Console.WriteLine("[Plugin WebSocket] Connecté avec succès au serveur distant !");
 
                 byte[] buffer = new byte[8192];
 
@@ -98,9 +94,8 @@ public class PluginEntryPoint : IFastLabelPlugin
                     }
                 }
             }
-            catch (Exception ex) when (!token.IsCancellationRequested)
+            catch (Exception) when (!token.IsCancellationRequested)
             {
-                Console.WriteLine($"[Plugin WebSocket] Connexion perdue : {ex.Message}. Nouvelle tentative dans 5 secondes...");
                 try
                 {
                     await Task.Delay(5000, token);

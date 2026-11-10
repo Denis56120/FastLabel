@@ -20,10 +20,6 @@ public class CookieService
         var httpContext = _httpContextAccessor.HttpContext;
         if (httpContext != null)
         {
-            // 🔍 Ajoute ce log pour voir ce que le serveur reçoit réellement en SSR
-            var cookiesList = string.Join(", ", httpContext.Request.Cookies.Select(c => $"{c.Key}={c.Value}"));
-            Console.WriteLine($"[SSR COOKIE DEBUG] Clés cherchée: {key} | Cookies reçus par le serveur: [{cookiesList}]");
-
             if (httpContext.Request.Cookies.TryGetValue(key, out var cookieValue))
             {
                 return cookieValue;
@@ -33,9 +29,7 @@ public class CookieService
 
         try
         {
-            var val = await _jsRuntime.InvokeAsync<string?>("appInterop.getCookie", key);
-            Console.WriteLine($"[CLIENT COOKIE DEBUG] Clé: {key} | Valeur JS: {val}");
-            return val;
+            return await _jsRuntime.InvokeAsync<string?>("appInterop.getCookie", key);
         }
         catch
         {

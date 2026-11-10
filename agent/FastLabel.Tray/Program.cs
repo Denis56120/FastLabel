@@ -97,9 +97,8 @@ public class TrayApplicationContext : ApplicationContext
 
             return response ?? "NoResponse";
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Impossible de joindre le service : {ex.Message}");
             return "Error";
         }
     }

@@ -5,6 +5,7 @@ window.appInterop = {
         ));
         return matches ? decodeURIComponent(matches[1]) : undefined;
     },
+
     setCookie: function (name, value, days) {
         let expires = "";
         if (days) {
@@ -12,7 +13,6 @@ window.appInterop = {
             date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
             expires = "; expires=" + date.toUTCString();
         }
-        // TRÈS IMPORTANT : path=/ force le navigateur à renvoyer le cookie au serveur
         document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Lax";
     }
 };

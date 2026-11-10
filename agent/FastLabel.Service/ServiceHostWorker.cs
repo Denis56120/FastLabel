@@ -176,10 +176,8 @@ public class ServiceHostWorker(ILogger<ServiceHostWorker> logger) : BackgroundSe
                 return assemblyName.Version?.ToString() ?? "Version inconnue";
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            // Gérer ou logger l'erreur si la DLL est introuvable ou inaccessible
-            Console.WriteLine($"Impossible de lire la version de la DLL : {ex.Message}");
         }
 
         return "1.0.0"; // Valeur par défaut de repli

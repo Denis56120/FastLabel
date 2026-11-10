@@ -1,7 +1,7 @@
 ﻿@inject IHttpContextAccessor HttpContextAccessor
 
 <!DOCTYPE html>
-<html lang="@GetLang()">
+<html lang="@GetLanguage()">
 
 <head>
     <meta charset="utf-8" />
@@ -27,7 +27,7 @@
 </html>
 
 @code {
-    private string GetLang()
+    private string GetLanguage()
     {
         try
         {
