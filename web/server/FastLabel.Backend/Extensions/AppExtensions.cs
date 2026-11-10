@@ -17,10 +17,8 @@ public static class AppExtensions
             var dbContext = services.GetRequiredService<AppDbContext>();
             DbInitializer.InitializeAsync(dbContext).GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            var logger = services.GetRequiredService<ILogger<Program>>();
-            logger.LogError(ex, "Une erreur est survenue lors de l'initialisation de la base de données.");
         }
 
         // Ordre des Middlewares

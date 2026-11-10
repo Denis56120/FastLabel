@@ -11,9 +11,8 @@ using FastLabel.Core;
 
 namespace FastLabel.Service;
 
-public class ServiceHostWorker(ILogger<ServiceHostWorker> logger) : BackgroundService
+public class ServiceHostWorker() : BackgroundService
 {
-    private readonly ILogger<ServiceHostWorker> _logger = logger;
     private IFastLabelPlugin? _activePlugin;
     private AssemblyLoadContext? _loadContext;
 
@@ -29,8 +28,6 @@ public class ServiceHostWorker(ILogger<ServiceHostWorker> logger) : BackgroundSe
 
     public override async Task StopAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Arrêt du service demandé par Windows...");
-
         // 1. Stopper le Tray proprement
         StopTrayApplication();
 
@@ -43,14 +40,10 @@ public class ServiceHostWorker(ILogger<ServiceHostWorker> logger) : BackgroundSe
 
     private async Task CheckAndUpdateAndRunAsync(CancellationToken stoppingToken)
     {
-        _logger.LogInformation("Vérification des mises à jour...");
-
         // 1. Vérifier si une MAJ est disponible
         string? zipUrl = await CheckForUpdatesAsync(stoppingToken);
         if (!string.IsNullOrEmpty(zipUrl))
         {
-            _logger.LogInformation("Nouvelle version détectée ! Téléchargement depuis : {Url}", zipUrl);
-
             // 2. Télécharger les nouveaux fichiers dans un dossier temporaire
             await DownloadUpdatesAsync(zipUrl, stoppingToken);
 
@@ -62,10 +55,6 @@ public class ServiceHostWorker(ILogger<ServiceHostWorker> logger) : BackgroundSe
 
             // 5. Copier les nouveaux fichiers par-dessus les anciens
             ApplyDownloadedFiles();
-        }
-        else
-        {
-            _logger.LogInformation("L'application est déjà à jour.");
         }
 
         // 6. Charger et lancer le plugin (version actuelle ou fraîchement mise à jour)
@@ -199,7 +188,6 @@ public class ServiceHostWorker(ILogger<ServiceHostWorker> logger) : BackgroundSe
         // 2. Téléchargement du fichier ZIP
         using (var httpClient = new HttpClient())
         {
-            _logger.LogInformation("Téléchargement de l'archive ZIP...");
             using var response = await httpClient.GetAsync(zipUrl, HttpCompletionOption.ResponseHeadersRead, stoppingToken);
             response.EnsureSuccessStatusCode();
 
@@ -208,13 +196,10 @@ public class ServiceHostWorker(ILogger<ServiceHostWorker> logger) : BackgroundSe
         }
 
         // 3. Le Dézippage (Extraction)
-        _logger.LogInformation("Extraction de l'archive...");
         Directory.CreateDirectory(extractDir);
 
         // C'est ici que la magie de la décompression opère :
         ZipFile.ExtractToDirectory(zipPath, extractDir, overwriteFiles: true);
-
-        _logger.LogInformation("Extraction terminée avec succès dans : {Dir}", extractDir);
     }
 
     private void StopTrayApplication()
@@ -229,11 +214,9 @@ public class ServiceHostWorker(ILogger<ServiceHostWorker> logger) : BackgroundSe
                     process.Kill();
                 }
             }
-            _logger.LogInformation("Application Tray stoppée.");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogWarning(ex, "Impossible d'arrêter proprement l'application Tray.");
         }
     }
 
@@ -247,11 +230,8 @@ public class ServiceHostWorker(ILogger<ServiceHostWorker> logger) : BackgroundSe
 
             if (!Directory.Exists(extractDir))
             {
-                _logger.LogWarning("Le dossier extrait des mises à jour est introuvable : {Dir}", extractDir);
                 return;
             }
-
-            _logger.LogInformation("Copie des fichiers de {Source} vers {Target}...", extractDir, installDir);
 
             // Copie récursive de tous les fichiers et dossiers
             foreach (string newPath in Directory.GetFiles(extractDir, "*.*", SearchOption.AllDirectories))
@@ -270,12 +250,9 @@ public class ServiceHostWorker(ILogger<ServiceHostWorker> logger) : BackgroundSe
                 // Copie et remplace le fichier existant
                 File.Copy(newPath, targetPath, overwrite: true);
             }
-
-            _logger.LogInformation("Fichiers mis à jour appliqués avec succès.");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Erreur lors de l'application des fichiers mis à jour.");
             throw;
         }
         finally
@@ -304,24 +281,20 @@ public class ServiceHostWorker(ILogger<ServiceHostWorker> logger) : BackgroundSe
 
             if (!File.Exists(trayPath))
             {
-                _logger.LogWarning("FastLabel.Tray.exe introuvable à l'emplacement : {Path}", trayPath);
                 return;
             }
 
             // Vérifier si la Tray tourne déjà
             if (Process.GetProcessesByName("FastLabel.Tray").Length > 0)
             {
-                _logger.LogInformation("La Tray est déjà active.");
                 return;
             }
 
             // Lancement dans la session utilisateur active depuis le Service
-            _logger.LogInformation("Lancement de l'interface Tray pour l'utilisateur...");
             ProcessLauncher.StartProcessInUserSession(trayPath);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Impossible de lancer l'application Tray.");
         }
     }
 
@@ -331,7 +304,6 @@ public class ServiceHostWorker(ILogger<ServiceHostWorker> logger) : BackgroundSe
 
         if (!File.Exists(pluginPath))
         {
-            _logger.LogWarning("Plugin introuvable à l'emplacement : {Path}. En attente du premier déploiement...", pluginPath);
             return;
         }
 
@@ -349,8 +321,6 @@ public class ServiceHostWorker(ILogger<ServiceHostWorker> logger) : BackgroundSe
         // Instanciation dynamique et appel de Launch()
         _activePlugin = (IFastLabelPlugin?)Activator.CreateInstance(pluginType);
         _activePlugin?.Launch(baseUrl);
-
-        _logger.LogInformation("Plugin métier chargé et méthode Launch() exécutée avec succès.");
     }
 
     private void UnloadPlugin()
@@ -362,12 +332,9 @@ public class ServiceHostWorker(ILogger<ServiceHostWorker> logger) : BackgroundSe
 
             _loadContext?.Unload();
             _loadContext = null;
-
-            _logger.LogInformation("Plugin métier déchargé proprement.");
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(ex, "Erreur lors du déchargement du plugin.");
         }
     }
 
@@ -390,12 +357,10 @@ public class ServiceHostWorker(ILogger<ServiceHostWorker> logger) : BackgroundSe
                     switch (command.Trim())
                     {
                         case "CHECK_VERSION":
-                            _logger.LogInformation("Demande de vérification de version reçue depuis le Tray.");
                             responseMessage = await CheckVersionOnlyAsync(stoppingToken);
                             break;
 
                         case "CHECK_STATUS":
-                            _logger.LogInformation("Demande de vérification de statut reçue depuis le Tray.");
                             if (OperatingSystem.IsWindows())
                             {
                                 responseMessage = await CheckStatusAsync(stoppingToken);
@@ -407,13 +372,11 @@ public class ServiceHostWorker(ILogger<ServiceHostWorker> logger) : BackgroundSe
                             break;
 
                         case "TRIGGER_UPDATE":
-                            _logger.LogInformation("Ordre de mise à jour complet reçu depuis le Tray.");
                             await CheckAndUpdateAndRunAsync(stoppingToken);
                             responseMessage = "UPDATE_TRIGGERED";
                             break;
 
                         default:
-                            _logger.LogWarning("Commande inconnue reçue via le Pipe : {Command}", command);
                             responseMessage = "UNKNOWN_COMMAND";
                             break;
                     }
@@ -428,9 +391,8 @@ public class ServiceHostWorker(ILogger<ServiceHostWorker> logger) : BackgroundSe
             {
                 break;
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                _logger.LogError(ex, "Erreur dans le serveur NamedPipe du service.");
                 await Task.Delay(1000, stoppingToken);
             }
         }
