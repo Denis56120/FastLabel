@@ -7,5 +7,7 @@ start "FastLabel - Serveur" cmd /k "dotnet run --project server/FastLabel.Backen
 echo Lancement du Client...
 start "FastLabel - Client" cmd /k "dotnet watch --project client/FastLabel.Client/FastLabel.Client.csproj"
 
-echo Les deux services ont ete lances dans des fenetres separees.
+echo Ouverture du navigateur...
+start http://localhost:5000
+
 pause
