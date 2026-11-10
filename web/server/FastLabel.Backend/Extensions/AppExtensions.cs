@@ -40,7 +40,7 @@ public static class AppExtensions
         app.MapPrintEndpoints();
         app.MapUserEndpoints();
         app.MapTranslationEndpoints();
-        app.MapCultureEndpoints();
+        app.MapLanguageEndpoints();
 
         return app;
     }

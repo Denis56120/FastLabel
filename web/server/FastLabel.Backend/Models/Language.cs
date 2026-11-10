@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace FastLabel.Backend.Models;
 
-public class PreferredLanguage
+public class Language
 {
     [Key]
     public int Id { get; set; }

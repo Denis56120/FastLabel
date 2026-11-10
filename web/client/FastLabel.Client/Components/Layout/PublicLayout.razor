@@ -24,19 +24,19 @@ else
                         <button class="btn btn-outline-secondary dropdown-toggle btn-sm d-flex align-items-center"
                                 type="button" @onclick="ToggleDropdown">
                             <i class="bi bi-globe me-1"></i>
-                            <span>@(Translation.CurrentCulture.StartsWith("fr", StringComparison.OrdinalIgnoreCase) ? "Français" : "English")</span>
+                            <span>@(Translation.CurrentLanguage.StartsWith("fr", StringComparison.OrdinalIgnoreCase) ? "Français" : "English")</span>
                         </button>
 
                         <ul class="dropdown-menu dropdown-menu-end shadow-sm @(_isDropdownOpen ? "show" : "")"
                             style="position: absolute; right: 0; left: auto;">
                             <li>
-                                <button class="dropdown-item @(Translation.CurrentCulture.Equals("fr-FR", StringComparison.OrdinalIgnoreCase) ? "active" : "")" type="button"
+                                <button class="dropdown-item @(Translation.CurrentLanguage.Equals("fr-FR", StringComparison.OrdinalIgnoreCase) ? "active" : "")" type="button"
                                         @onclick='() => ChangeLanguage("fr-FR")'>
                                     🇫🇷 Français (FR)
                                 </button>
                             </li>
                             <li>
-                                <button class="dropdown-item @(Translation.CurrentCulture.Equals("en-GB", StringComparison.OrdinalIgnoreCase) ? "active" : "")" type="button"
+                                <button class="dropdown-item @(Translation.CurrentLanguage.Equals("en-GB", StringComparison.OrdinalIgnoreCase) ? "active" : "")" type="button"
                                         @onclick='() => ChangeLanguage("en-GB")'>
                                     🇬🇧 English (EN)
                                 </button>
@@ -67,7 +67,7 @@ else
         try
         {
             // Lecture directe et unique du cookie prioritaire
-            var cookieLang = await CookieService.GetCookieAsync("preferred_language");
+            var cookieLang = await CookieService.GetCookieAsync("language");
             
             if (!string.IsNullOrEmpty(cookieLang))
             {
@@ -94,21 +94,21 @@ else
         if (uri.Contains("/login"))
         {
             var title = Translation.GetString("auth.login_title");
-            return title == "auth.login_title" ? (Translation.CurrentCulture.StartsWith("fr") ? "Connexion" : "Sign In") : title;
+            return title == "auth.login_title" ? (Translation.CurrentLanguage.StartsWith("fr") ? "Connexion" : "Sign In") : title;
         }
         if (uri.Contains("/register"))
         {
             var title = Translation.GetString("auth.register_title");
-            return title == "auth.register_title" ? (Translation.CurrentCulture.StartsWith("fr") ? "Inscription" : "Register") : title;
+            return title == "auth.register_title" ? (Translation.CurrentLanguage.StartsWith("fr") ? "Inscription" : "Register") : title;
         }
         if (uri.Contains("/forgot-password"))
         {
             var title = Translation.GetString("auth.forgot_heading");
-            return title == "auth.forgot_heading" ? (Translation.CurrentCulture.StartsWith("fr") ? "Mot de passe oublié" : "Forgot Password") : title;
+            return title == "auth.forgot_heading" ? (Translation.CurrentLanguage.StartsWith("fr") ? "Mot de passe oublié" : "Forgot Password") : title;
         }
 
         var defaultTitle = Translation.GetString("nav.home");
-        return defaultTitle == "nav.home" ? (Translation.CurrentCulture.StartsWith("fr") ? "Accueil" : "Home") : defaultTitle;
+        return defaultTitle == "nav.home" ? (Translation.CurrentLanguage.StartsWith("fr") ? "Accueil" : "Home") : defaultTitle;
     }
 
     private void OnTranslationChanged()
@@ -135,19 +135,19 @@ else
         _isDropdownOpen = !_isDropdownOpen;
     }
 
-    private async Task ChangeLanguage(string cultureCode)
+    private async Task ChangeLanguage(string languageCode)
     {
         _isDropdownOpen = false;
 
         try
         {
-            await CookieService.SetCookieAsync("preferred_language", cultureCode, days: 365);
+            await CookieService.SetCookieAsync("language", languageCode, days: 365);
         }
         catch
         {
             // Ignore
         }
 
-        await Translation.InitializeAsync(cultureCode);
+        await Translation.InitializeAsync(languageCode);
     }
 }

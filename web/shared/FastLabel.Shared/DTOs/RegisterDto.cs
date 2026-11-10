@@ -12,5 +12,5 @@ public class RegisterDto
     [MinLength(8, ErrorMessage = "Password must be at least 8 characters long")]
     public string Password { get; set; } = string.Empty;
 
-    public string PreferredLanguage { get; set; } = "en"; // "fr" ou "en"
+    public string Language { get; set; } = "en"; // "fr" ou "en"
 }

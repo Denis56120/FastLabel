@@ -15,17 +15,17 @@ public static class AppPipelineExtensions
 
         app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 
-        // Configuration de la localisation par cookie ("preferred_language")
-        var supportedCultures = new[] { "fr-FR", "en_US" }; 
+        // Configuration de la localisation par cookie ("language")
+        var supportedLanguages = new[] { "fr-FR", "en_US" }; 
         var localizationOptions = new RequestLocalizationOptions()
             .SetDefaultCulture("fr-FR")
-            .AddSupportedCultures(supportedCultures)
-            .AddSupportedUICultures(supportedCultures);
+            .AddSupportedCultures(supportedLanguages)
+            .AddSupportedUICultures(supportedLanguages);
 
         var cookieProvider = localizationOptions.RequestCultureProviders
             .OfType<CookieRequestCultureProvider>()
             .First();
-        cookieProvider.CookieName = "preferred_language";
+        cookieProvider.CookieName = "language";
 
         app.UseRequestLocalization(localizationOptions);
 

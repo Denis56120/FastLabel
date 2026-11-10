@@ -166,7 +166,7 @@
 
             if (response.IsSuccessStatusCode)
             {
-                successMessage = Translation.CurrentCulture.StartsWith("fr") 
+                successMessage = Translation.CurrentLanguage.StartsWith("fr") 
                     ? "Vos préférences ont été enregistrées avec succès." 
                     : "Your preferences have been successfully saved.";
             }
@@ -176,14 +176,14 @@
             }
             else
             {
-                errorMessage = Translation.CurrentCulture.StartsWith("fr") 
+                errorMessage = Translation.CurrentLanguage.StartsWith("fr") 
                     ? "Erreur lors de l'enregistrement des préférences." 
                     : "Error while saving preferences.";
             }
         }
         catch (Exception)
         {
-            errorMessage = Translation.CurrentCulture.StartsWith("fr") 
+            errorMessage = Translation.CurrentLanguage.StartsWith("fr") 
                 ? "Impossible de joindre le serveur." 
                 : "Unable to reach the server.";
         }

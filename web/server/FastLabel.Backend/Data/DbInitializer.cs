@@ -34,18 +34,18 @@ public static class DbInitializer
                 var langCode = kvp.Key;
                 var translatedValue = kvp.Value;
 
-                var lang = await context.PreferredLanguages.FirstOrDefaultAsync(l => l.Locale == langCode);
+                var lang = await context.Languages.FirstOrDefaultAsync(l => l.Locale == langCode);
                 if (lang != null)
                 {
                     var existingTranslation = textEntity.Translations
-                        .FirstOrDefault(tr => tr.PreferredLanguageId == lang.Id);
+                        .FirstOrDefault(tr => tr.LanguageId == lang.Id);
 
                     if (existingTranslation == null)
                     {
                         context.Translations.Add(new Translation
                         {
                             TextId = textEntity.Id,
-                            PreferredLanguageId = lang.Id,
+                            LanguageId = lang.Id,
                             TranslatedValue = translatedValue
                         });
                     }
@@ -65,12 +65,12 @@ public static class DbInitializer
         var descFr = await CreateTextWithTranslationsAsync("lang.fr.desc", "French language", new() { { "fr-FR", "Langue française" }, { "en-GB", "French language" } });
         var descEn = await CreateTextWithTranslationsAsync("lang.en.desc", "English language", new() { { "fr-FR", "Langue anglaise" }, { "en-GB", "English language" } });
 
-        // 2. Langues préférées (PreferredLanguage) insérées APRÈS leurs textes de description
-        if (!await context.PreferredLanguages.AnyAsync())
+        // 2. Langues insérées APRÈS leurs textes de description
+        if (!await context.Languages.AnyAsync())
         {
-            context.PreferredLanguages.AddRange(
-                new PreferredLanguage { Locale = "fr-FR", DescriptionTextId = descFr.Id, Flag = null },
-                new PreferredLanguage { Locale = "en-GB", DescriptionTextId = descEn.Id, Flag = null }
+            context.Languages.AddRange(
+                new Language { Locale = "fr-FR", DescriptionTextId = descFr.Id, Flag = null },
+                new Language { Locale = "en-GB", DescriptionTextId = descEn.Id, Flag = null }
             );
             await context.SaveChangesAsync();
         }

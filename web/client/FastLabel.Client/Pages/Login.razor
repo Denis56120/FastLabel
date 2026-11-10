@@ -91,7 +91,7 @@
                     
                     try
                     {
-                        await CookieService.SetCookieAsync("preferred_language", Translation.CurrentCulture, days: 365);
+                        await CookieService.SetCookieAsync("language", Translation.CurrentLanguage, days: 365);
                     }
                     catch
                     {
@@ -110,13 +110,13 @@
                 
                 if (_errorMessage == "auth.invalid_credentials")
                 {
-                    _errorMessage = Translation.CurrentCulture.StartsWith("fr") ? "Identifiants invalides." : "Invalid credentials.";
+                    _errorMessage = Translation.CurrentLanguage.StartsWith("fr") ? "Identifiants invalides." : "Invalid credentials.";
                 }
             }
         }
         catch (Exception)
         {
-            _errorMessage = Translation.CurrentCulture.StartsWith("fr") ? "Impossible de joindre le serveur." : "Unable to reach the server.";
+            _errorMessage = Translation.CurrentLanguage.StartsWith("fr") ? "Impossible de joindre le serveur." : "Unable to reach the server.";
         }
         
         StateHasChanged();

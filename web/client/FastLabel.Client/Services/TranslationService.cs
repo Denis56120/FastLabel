@@ -8,11 +8,11 @@ public class TranslationService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly CookieService _cookieService; // Injection de ton CookieService
     private Dictionary<string, string> _translations = new(StringComparer.OrdinalIgnoreCase);
-    private string _currentCulture = "fr-FR";
+    private string _currentLanguage = "fr-FR";
 
     public event Action? OnChange;
 
-    public string CurrentCulture => _currentCulture;
+    public string CurrentLanguage => _currentLanguage;
 
     public string this[string key] => GetString(key);
 
@@ -25,33 +25,33 @@ public class TranslationService
     // Nouvelle méthode sans paramètre qui lit le cookie automatiquement
     public async Task InitializeAsync()
     {
-        string culture = _currentCulture;
+        string language = _currentLanguage;
 
         try
         {
-            var cookieValue = await _cookieService.GetCookieAsync("preferred_language"); 
+            var cookieValue = await _cookieService.GetCookieAsync("language"); 
             if (!string.IsNullOrEmpty(cookieValue))
             {
-                culture = cookieValue;
+                language = cookieValue;
             }
         }
         catch
         {
-            // Ignore pendant le prerendering, on garde la culture actuelle
+            // Ignore pendant le prerendering, on garde la langue actuelle
         }
 
-        await InitializeAsync(culture);
+        await InitializeAsync(language);
     }
 
-    public async Task InitializeAsync(string culture)
+    public async Task InitializeAsync(string language)
     {
-        var targetCulture = string.IsNullOrEmpty(culture) ? _currentCulture : culture;
-        _currentCulture = targetCulture;
+        var targetLanguage = string.IsNullOrEmpty(language) ? _currentLanguage : language;
+        _currentLanguage = targetLanguage;
 
         try
         {
             var client = _httpClientFactory.CreateClient("PublicClient");
-            var url = $"api/translations/{_currentCulture}";
+            var url = $"api/translations/{_currentLanguage}";
             
             var result = await client.GetFromJsonAsync<List<TranslationDto>>(url);
             

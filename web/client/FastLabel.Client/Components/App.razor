@@ -31,7 +31,7 @@
     {
         try
         {
-            var cookieValue = HttpContextAccessor.HttpContext?.Request.Cookies["preferred_language"];
+            var cookieValue = HttpContextAccessor.HttpContext?.Request.Cookies["language"];
             if (!string.IsNullOrEmpty(cookieValue))
             {
                 return cookieValue.StartsWith("fr", StringComparison.OrdinalIgnoreCase) ? "fr" : "en";

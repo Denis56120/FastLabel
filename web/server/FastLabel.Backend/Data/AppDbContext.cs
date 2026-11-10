@@ -10,7 +10,7 @@ public class AppDbContext : DbContext
     }
 
     // Tables de référence / Internationalisation
-    public DbSet<PreferredLanguage> PreferredLanguages => Set<PreferredLanguage>();
+    public DbSet<Language> Languages => Set<Language>();
     public DbSet<Text> Texts => Set<Text>();
     public DbSet<Translation> Translations => Set<Translation>();
     public DbSet<Protocol> Protocols => Set<Protocol>();

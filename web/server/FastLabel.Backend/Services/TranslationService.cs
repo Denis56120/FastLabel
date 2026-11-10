@@ -7,7 +7,7 @@ public class TranslationService
 {
     private readonly IHttpClientFactory _httpClientFactory;
     private Dictionary<string, string> _translations = new(StringComparer.OrdinalIgnoreCase);
-    private string _currentCulture = string.Empty;
+    private string _currentLanguage = string.Empty;
 
     // Événement pour notifier les composants des changements de langue/traductions
     public event Action? OnChange;
@@ -17,22 +17,22 @@ public class TranslationService
         _httpClientFactory = httpClientFactory;
     }
 
-    public async Task InitializeAsync(string culture)
+    public async Task InitializeAsync(string language)
     {
-        // Évite de recharger si on a déjà les traductions pour cette culture
-        if (_currentCulture == culture && _translations.Count > 0)
+        // Évite de recharger si on a déjà les traductions pour cette langue
+        if (_currentLanguage == language && _translations.Count > 0)
             return;
 
         try
         {
             var client = _httpClientFactory.CreateClient("PublicClient");
-            var dtos = await client.GetFromJsonAsync<List<TranslationDto>>($"api/translations/{culture}");
+            var dtos = await client.GetFromJsonAsync<List<TranslationDto>>($"api/translations/{language}");
 
             if (dtos != null && dtos.Count > 0)
             {
                 // 1. On remplit le dictionnaire en mémoire
                 _translations = dtos.ToDictionary(d => d.Key, d => d.Value, StringComparer.OrdinalIgnoreCase);
-                _currentCulture = culture;
+                _currentLanguage = language;
 
                 // 2. ON FORCE LE RAFRAÎCHISSEMENT UNIQUEMENT MAINTENANT
                 // Notifie les composants abonnés pour qu'ils affichent les textes d'un coup sec

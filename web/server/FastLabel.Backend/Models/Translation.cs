@@ -8,10 +8,10 @@ public class Translation
     [Key]
     public int Id { get; set; }
 
-    public int PreferredLanguageId { get; set; }
+    public int LanguageId { get; set; }
 
-    [ForeignKey(nameof(PreferredLanguageId))]
-    public PreferredLanguage PreferredLanguage { get; set; } = null!;
+    [ForeignKey(nameof(LanguageId))]
+    public Language Language { get; set; } = null!;
 
     public int TextId { get; set; }
 

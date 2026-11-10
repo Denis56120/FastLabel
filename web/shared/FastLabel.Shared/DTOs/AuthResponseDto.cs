@@ -4,6 +4,6 @@ public record AuthResponseDto(
     string Token,
     Guid UserId,
     string Email,
-    string PreferredLanguage,
+    string Language,
     DateTime ExpiresAt
 );
