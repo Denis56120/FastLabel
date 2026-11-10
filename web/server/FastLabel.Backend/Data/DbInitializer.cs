@@ -218,7 +218,7 @@ public static class DbInitializer
 
             await context.SaveChangesAsync();
         }
-
+        
         // 11. Textes UI (Sorti du bloc Users pour s'exécuter et se mettre à jour à chaque démarrage)
         await CreateTextWithTranslationsAsync("history.title", "Print History", new() { { "fr-FR", "Historique des impressions" }, { "en-GB", "Print History" } });
         await CreateTextWithTranslationsAsync("history.description", "Tracking and logs of labels sent to printers.", new() { { "fr-FR", "Suivi et journaux des étiquettes envoyées aux imprimantes." }, { "en-GB", "Tracking and logs of labels sent to printers." } });
@@ -258,12 +258,21 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("account.default_printer", "Default ZPL Printer", new() { { "fr-FR", "Imprimante ZPL par défaut" }, { "en-GB", "Default ZPL Printer" } });
         await CreateTextWithTranslationsAsync("account.saving", "Saving...", new() { { "fr-FR", "Enregistrement..." }, { "en-GB", "Saving..." } });
         await CreateTextWithTranslationsAsync("account.save_button", "Save Changes", new() { { "fr-FR", "Enregistrer les modifications" }, { "en-GB", "Save Changes" } });
+        await CreateTextWithTranslationsAsync("account.loading", "Loading...", new() { { "fr-FR", "Chargement en cours..." }, { "en-GB", "Loading..." } });
+        await CreateTextWithTranslationsAsync("account.success_saved", "Your preferences have been successfully saved.", new() { { "fr-FR", "Vos préférences ont été enregistrées avec succès." }, { "en-GB", "Your preferences have been successfully saved." } });
+        await CreateTextWithTranslationsAsync("account.error_save_failed", "Error while saving preferences.", new() { { "fr-FR", "Erreur lors de l'enregistrement des préférences." }, { "en-GB", "Error while saving preferences." } });
 
         await CreateTextWithTranslationsAsync("dashboard.title", "FastLabel - Dashboard", new() { { "fr-FR", "FastLabel - Tableau de bord" }, { "en-GB", "FastLabel - Dashboard" } });
         await CreateTextWithTranslationsAsync("dashboard.agents_header", "ZPL Agents & Printers", new() { { "fr-FR", "Agents & Imprimantes ZPL" }, { "en-GB", "ZPL Agents & Printers" } });
         await CreateTextWithTranslationsAsync("dashboard.agents_description", "Management and status of your connected Windows agents for thermal printing.", new() { { "fr-FR", "Gestion et état de vos agents Windows connectés pour l'impression thermique." }, { "en-GB", "Management and status of your connected Windows agents for thermal printing." } });
         await CreateTextWithTranslationsAsync("dashboard.no_active_agents", "No active agents at the moment. The ZPL listening service will communicate here soon.", new() { { "fr-FR", "Aucun agent actif pour le moment. Le service d'écoute ZPL communiquera bientôt ici." }, { "en-GB", "No active agents at the moment. The ZPL listening service will communicate here soon." } });
                 
+        await CreateTextWithTranslationsAsync("auth.error.invalid_credentials", "Invalid credentials.", new() { { "fr-FR", "Identifiants invalides." }, { "en-GB", "Invalid credentials." } });
+        await CreateTextWithTranslationsAsync("auth.error.server_unreachable", "Unable to reach the server.", new() { { "fr-FR", "Impossible de joindre le serveur." }, { "en-GB", "Unable to reach the server." } });
+        await CreateTextWithTranslationsAsync("auth.sending", "Sending...", new() { { "fr-FR", "Envoi en cours..." }, { "en-GB", "Sending..." } });
+        await CreateTextWithTranslationsAsync("auth.forgot_success_message", "If an account matches this email, a recovery link has been sent.", new() { { "fr-FR", "Si un compte est associé à cet email, un lien de réinitialisation a été envoyé." }, { "en-GB", "If an account matches this email, a recovery link has been sent." } });
+        await CreateTextWithTranslationsAsync("auth.error.request_failed", "An error occurred while processing your request.", new() { { "fr-FR", "Une erreur est survenue lors de la demande." }, { "en-GB", "An error occurred while processing your request." } });
+        await CreateTextWithTranslationsAsync("auth.error.registration_failed", "An error occurred during registration.", new() { { "fr-FR", "Erreur lors de l'inscription." }, { "en-GB", "An error occurred during registration." } });
         await CreateTextWithTranslationsAsync("auth.login_title", "Login", new() { { "fr-FR", "Connexion" }, { "en-GB", "Login" } });
         await CreateTextWithTranslationsAsync("auth.email", "Email", new() { { "fr-FR", "Email" }, { "en-GB", "Email" } });
         await CreateTextWithTranslationsAsync("auth.password", "Password", new() { { "fr-FR", "Mot de passe" }, { "en-GB", "Password" } });

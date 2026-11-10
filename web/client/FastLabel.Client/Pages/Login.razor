@@ -120,19 +120,15 @@
             else
             {
                 var errorContent = await response.Content.ReadFromJsonAsync<ErrorResponseDto>();
-                _errorMessage = errorContent?.Message != null 
-                    ? Translation.GetString(errorContent.Message) 
-                    : Translation.GetString("auth.invalid_credentials");
                 
-                if (_errorMessage == "auth.invalid_credentials")
-                {
-                    _errorMessage = Translation.CurrentLanguage.StartsWith("fr") ? "Identifiants invalides." : "Invalid credentials.";
-                }
+                // Si l'API renvoie une clé connue, on l'utilise, sinon on prend la clé d'erreur par défaut
+                string errorKey = !string.IsNullOrEmpty(errorContent?.Message) ? errorContent.Message : "auth.error.invalid_credentials";
+                _errorMessage = Translation.GetString(errorKey);
             }
         }
         catch (Exception)
         {
-            _errorMessage = Translation.CurrentLanguage.StartsWith("fr") ? "Impossible de joindre le serveur." : "Unable to reach the server.";
+            _errorMessage = Translation.GetString("auth.error.server_unreachable");
         }
         
         StateHasChanged();
