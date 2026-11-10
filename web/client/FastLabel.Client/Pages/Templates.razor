@@ -1,10 +1,29 @@
 @page "/templates"
+@inject TranslationService Translation
+@implements IDisposable
 
 <div class="container-fluid">
-    <h3>Modèles d'étiquettes</h3>
-    <p class="text-muted">Gérez et concevez vos modèles d'étiquettes ZPL.</p>
+    <h3>@Translation.GetString("templates.title")</h3>
+    <p class="text-muted">@Translation.GetString("templates.description")</p>
     
     <div class="alert alert-secondary" role="alert">
-        Aucun modèle d'étiquette enregistré pour le moment.
+        @Translation.GetString("templates.no_templates")
     </div>
 </div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Translation.OnChange += OnTranslationChanged;
+    }
+
+    private void OnTranslationChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Translation.OnChange -= OnTranslationChanged;
+    }
+}

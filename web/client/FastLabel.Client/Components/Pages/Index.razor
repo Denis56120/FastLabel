@@ -2,40 +2,26 @@
 @inject NavigationManager Navigation
 @inject AuthService AuthService
 
-<div class="container mt-4">
-    @if (!_isChecked)
-    {
-        <p>Chargement en cours...</p>
-    }
-    else if (_isAuthenticated)
-    {
-        <h1>Bienvenue sur FastLabel</h1>
-        <p>Vous êtes connecté avec succès !</p>
-    }
-    else
-    {
-        <p>Redirection vers la connexion...</p>
-    }
+<div class="d-flex justify-content-center align-items-center vh-100">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
 </div>
 
 @code {
-    private bool _isChecked = false;
-    private bool _isAuthenticated = false;
-
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            _isAuthenticated = await AuthService.IsAuthenticatedAsync();
-            _isChecked = true;
+            var isAuthenticated = await AuthService.IsAuthenticatedAsync();
             
-            if (!_isAuthenticated)
+            if (isAuthenticated)
             {
-                Navigation.NavigateTo("/login");
+                Navigation.NavigateTo("/dashboard", replace: true);
             }
             else
             {
-                StateHasChanged();
+                Navigation.NavigateTo("/login", replace: true);
             }
         }
     }

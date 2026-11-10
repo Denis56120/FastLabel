@@ -1,10 +1,29 @@
 @page "/printers"
+@inject TranslationService Translation
+@implements IDisposable
 
 <div class="container-fluid">
-    <h3>Imprimantes Thermiques</h3>
-    <p class="text-muted">Liste des imprimantes connectées et configurées.</p>
+    <h3>@Translation.GetString("printers.title")</h3>
+    <p class="text-muted">@Translation.GetString("printers.description")</p>
     
     <div class="alert alert-secondary" role="alert">
-        Aucune imprimante détectée.
+        @Translation.GetString("printers.no_printers")
     </div>
 </div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Translation.OnChange += OnTranslationChanged;
+    }
+
+    private void OnTranslationChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Translation.OnChange -= OnTranslationChanged;
+    }
+}

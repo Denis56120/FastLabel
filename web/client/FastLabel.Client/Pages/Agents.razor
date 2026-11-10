@@ -1,10 +1,29 @@
 @page "/agents"
+@inject TranslationService Translation
+@implements IDisposable
 
 <div class="container-fluid">
-    <h3>Agents ZPL</h3>
-    <p class="text-muted">État de vos agents Windows connectés.</p>
+    <h3>@Translation.GetString("agents.title")</h3>
+    <p class="text-muted">@Translation.GetString("agents.description")</p>
     
     <div class="alert alert-info" role="alert">
-        Aucun agent actif pour le moment.
+        @Translation.GetString("agents.no_agents")
     </div>
 </div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Translation.OnChange += OnTranslationChanged;
+    }
+
+    private void OnTranslationChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Translation.OnChange -= OnTranslationChanged;
+    }
+}

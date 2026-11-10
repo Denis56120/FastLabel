@@ -51,7 +51,6 @@ public static class DbInitializer
                     }
                     else if (existingTranslation.TranslatedValue != translatedValue)
                     {
-                        // Optionnel : met à jour si la valeur a changé dans ton code
                         existingTranslation.TranslatedValue = translatedValue;
                     }
                 }
@@ -218,47 +217,67 @@ public static class DbInitializer
             );
 
             await context.SaveChangesAsync();
-
-            // 11. Textes UI
-            await CreateTextWithTranslationsAsync("nav.home", "Home", new() { { "fr-FR", "Accueil" }, { "en-GB", "Home" } });
-            await CreateTextWithTranslationsAsync("nav.templates", "Label Templates", new() { { "fr-FR", "Modèles d'étiquettes" }, { "en-GB", "Label Templates" } });
-            await CreateTextWithTranslationsAsync("nav.printers", "Printers", new() { { "fr-FR", "Imprimantes" }, { "en-GB", "Printers" } });
-            await CreateTextWithTranslationsAsync("nav.agents", "Agents", new() { { "fr-FR", "Agents" }, { "en-GB", "Agents" } });
-            await CreateTextWithTranslationsAsync("nav.users", "Users", new() { { "fr-FR", "Utilisateurs" }, { "en-GB", "Users" } });
-            await CreateTextWithTranslationsAsync("nav.history", "History", new() { { "fr-FR", "Historique" }, { "en-GB", "History" } });
-            await CreateTextWithTranslationsAsync("nav.my_account", "My Account", new() { { "fr-FR", "Mon Compte" }, { "en-GB", "My Account" } });
-            await CreateTextWithTranslationsAsync("nav.logout", "Logout", new() { { "fr-FR", "Déconnexion" }, { "en-GB", "Logout" } });
-
-            await CreateTextWithTranslationsAsync("account.title", "My Account", new() { { "fr-FR", "Mon Compte" }, { "en-GB", "My Account" } });
-            await CreateTextWithTranslationsAsync("account.personal_info", "Personal Information", new() { { "fr-FR", "Informations personnelles" }, { "en-GB", "Personal Information" } });
-            await CreateTextWithTranslationsAsync("account.email_label", "Email Address", new() { { "fr-FR", "Adresse Email" }, { "en-GB", "Email Address" } });
-            await CreateTextWithTranslationsAsync("account.role_label", "Role / Plan", new() { { "fr-FR", "Rôle / Plan" }, { "en-GB", "Role / Plan" } });
-            await CreateTextWithTranslationsAsync("account.preferences_title", "User Preferences", new() { { "fr-FR", "Préférences utilisateur" }, { "en-GB", "User Preferences" } });
-            await CreateTextWithTranslationsAsync("account.email_notifications", "Receive email notifications", new() { { "fr-FR", "Recevoir les notifications par email" }, { "en-GB", "Receive email notifications" } });
-            await CreateTextWithTranslationsAsync("account.default_printer", "Default ZPL Printer", new() { { "fr-FR", "Imprimante ZPL par défaut" }, { "en-GB", "Default ZPL Printer" } });
-            await CreateTextWithTranslationsAsync("account.saving", "Saving...", new() { { "fr-FR", "Enregistrement..." }, { "en-GB", "Saving..." } });
-            await CreateTextWithTranslationsAsync("account.save_button", "Save Changes", new() { { "fr-FR", "Enregistrer les modifications" }, { "en-GB", "Save Changes" } });
-
-            await CreateTextWithTranslationsAsync("dashboard.title", "FastLabel - Dashboard", new() { { "fr-FR", "FastLabel - Tableau de bord" }, { "en-GB", "FastLabel - Dashboard" } });
-            await CreateTextWithTranslationsAsync("dashboard.agents_header", "ZPL Agents & Printers", new() { { "fr-FR", "Agents & Imprimantes ZPL" }, { "en-GB", "ZPL Agents & Printers" } });
-            await CreateTextWithTranslationsAsync("dashboard.agents_description", "Management and status of your connected Windows agents for thermal printing.", new() { { "fr-FR", "Gestion et état de vos agents Windows connectés pour l'impression thermique." }, { "en-GB", "Management and status of your connected Windows agents for thermal printing." } });
-            await CreateTextWithTranslationsAsync("dashboard.no_active_agents", "No active agents at the moment. The ZPL listening service will communicate here soon.", new() { { "fr-FR", "Aucun agent actif pour le moment. Le service d'écoute ZPL communiquera bientôt ici." }, { "en-GB", "No active agents at the moment. The ZPL listening service will communicate here soon." } });
-
-            await CreateTextWithTranslationsAsync("auth.login_title", "Login", new() { { "fr-FR", "Connexion" }, { "en-GB", "Login" } });
-            await CreateTextWithTranslationsAsync("auth.email", "Email", new() { { "fr-FR", "Email" }, { "en-GB", "Email" } });
-            await CreateTextWithTranslationsAsync("auth.password", "Password", new() { { "fr-FR", "Mot de passe" }, { "en-GB", "Password" } });
-            await CreateTextWithTranslationsAsync("auth.submit", "Sign In", new() { { "fr-FR", "Se connecter" }, { "en-GB", "Sign In" } });
-            await CreateTextWithTranslationsAsync("auth.create_account", "Create an account", new() { { "fr-FR", "Créer un compte" }, { "en-GB", "Create an account" } });
-            await CreateTextWithTranslationsAsync("auth.forgot_password", "Forgot password?", new() { { "fr-FR", "Mot de passe oublié ?" }, { "en-GB", "Forgot password?" } });
-            await CreateTextWithTranslationsAsync("auth.register_title", "Register", new() { { "fr-FR", "Inscription" }, { "en-GB", "Register" } });
-            await CreateTextWithTranslationsAsync("auth.register_button", "Sign Up", new() { { "fr-FR", "S'inscrire" }, { "en-GB", "Sign Up" } });
-            await CreateTextWithTranslationsAsync("auth.already_have_account", "Already have an account? Sign in", new() { { "fr-FR", "Déjà un compte ? Connectez-vous" }, { "en-GB", "Already have an account? Sign in" } });
-            await CreateTextWithTranslationsAsync("auth.forgot_heading", "Forgot password", new() { { "fr-FR", "Mot de passe oublié" }, { "en-GB", "Forgot password" } });
-            await CreateTextWithTranslationsAsync("auth.forgot_instruction", "Enter your email address to receive password reset instructions.", new() { { "fr-FR", "Entre ton adresse email pour recevoir les instructions de réinitialisation." }, { "en-GB", "Enter your email address to receive password reset instructions." } });
-            await CreateTextWithTranslationsAsync("auth.email_placeholder", "name@example.com", new() { { "fr-FR", "nom@exemple.com" }, { "en-GB", "name@example.com" } });
-            await CreateTextWithTranslationsAsync("auth.send_link_button", "Send Link", new() { { "fr-FR", "Envoyer le lien" }, { "en-GB", "Send Link" } });
-            await CreateTextWithTranslationsAsync("auth.back_to_login", "Back to login", new() { { "fr-FR", "Retour à la connexion" }, { "en-GB", "Back to login" } });
-            await CreateTextWithTranslationsAsync("auth.email_placeholder_alt", "votre@email.com", new() { { "fr-FR", "votre@email.com" }, { "en-GB", "your@email.com" } });
         }
+
+        // 11. Textes UI (Sorti du bloc Users pour s'exécuter et se mettre à jour à chaque démarrage)
+        await CreateTextWithTranslationsAsync("history.title", "Print History", new() { { "fr-FR", "Historique des impressions" }, { "en-GB", "Print History" } });
+        await CreateTextWithTranslationsAsync("history.description", "Tracking and logs of labels sent to printers.", new() { { "fr-FR", "Suivi et journaux des étiquettes envoyées aux imprimantes." }, { "en-GB", "Tracking and logs of labels sent to printers." } });
+        await CreateTextWithTranslationsAsync("history.no_history", "No print history at the moment.", new() { { "fr-FR", "Aucun historique d'impression pour l'instant." }, { "en-GB", "No print history at the moment." } });
+
+        await CreateTextWithTranslationsAsync("users.title", "User Management", new() { { "fr-FR", "Gestion des utilisateurs" }, { "en-GB", "User Management" } });
+        await CreateTextWithTranslationsAsync("users.description", "List of users with access to the FastLabel platform.", new() { { "fr-FR", "Liste des utilisateurs ayant accès à la plateforme FastLabel." }, { "en-GB", "List of users with access to the FastLabel platform." } });
+        await CreateTextWithTranslationsAsync("users.no_users", "No other registered users.", new() { { "fr-FR", "Aucun autre utilisateur enregistré." }, { "en-GB", "No other registered users." } });
+
+        await CreateTextWithTranslationsAsync("agents.title", "ZPL Agents", new() { { "fr-FR", "Agents ZPL" }, { "en-GB", "ZPL Agents" } });
+        await CreateTextWithTranslationsAsync("agents.description", "Status of your connected Windows agents.", new() { { "fr-FR", "État de vos agents Windows connectés." }, { "en-GB", "Status of your connected Windows agents." } });
+        await CreateTextWithTranslationsAsync("agents.no_agents", "No active agents at the moment.", new() { { "fr-FR", "Aucun agent actif pour le moment." }, { "en-GB", "No active agents at the moment." } });
+
+        await CreateTextWithTranslationsAsync("printers.title", "Thermal Printers", new() { { "fr-FR", "Imprimantes Thermiques" }, { "en-GB", "Thermal Printers" } });
+        await CreateTextWithTranslationsAsync("printers.description", "List of connected and configured printers.", new() { { "fr-FR", "Liste des imprimantes connectées et configurées." }, { "en-GB", "List of connected and configured printers." } });
+        await CreateTextWithTranslationsAsync("printers.no_printers", "No printers detected.", new() { { "fr-FR", "Aucune imprimante détectée." }, { "en-GB", "No printers detected." } });
+
+        await CreateTextWithTranslationsAsync("templates.title", "Label Templates", new() { { "fr-FR", "Modèles d'étiquettes" }, { "en-GB", "Label Templates" } });
+        await CreateTextWithTranslationsAsync("templates.description", "Manage and design your ZPL label templates.", new() { { "fr-FR", "Gérez et concevez vos modèles d'étiquettes ZPL." }, { "en-GB", "Manage and design your ZPL label templates." } });
+        await CreateTextWithTranslationsAsync("templates.no_templates", "No label templates saved at the moment.", new() { { "fr-FR", "Aucun modèle d'étiquette enregistré pour le moment." }, { "en-GB", "No label templates saved at the moment." } });
+
+        await CreateTextWithTranslationsAsync("nav.home", "Home", new() { { "fr-FR", "Accueil" }, { "en-GB", "Home" } });
+        await CreateTextWithTranslationsAsync("nav.templates", "Label Templates", new() { { "fr-FR", "Modèles d'étiquettes" }, { "en-GB", "Label Templates" } });
+        await CreateTextWithTranslationsAsync("nav.printers", "Printers", new() { { "fr-FR", "Imprimantes" }, { "en-GB", "Printers" } });
+        await CreateTextWithTranslationsAsync("nav.agents", "Agents", new() { { "fr-FR", "Agents" }, { "en-GB", "Agents" } });
+        await CreateTextWithTranslationsAsync("nav.users", "Users", new() { { "fr-FR", "Utilisateurs" }, { "en-GB", "Users" } });
+        await CreateTextWithTranslationsAsync("nav.history", "History", new() { { "fr-FR", "Historique" }, { "en-GB", "History" } });
+        await CreateTextWithTranslationsAsync("nav.my_account", "My Account", new() { { "fr-FR", "Mon Compte" }, { "en-GB", "My Account" } });
+        await CreateTextWithTranslationsAsync("nav.logout", "Logout", new() { { "fr-FR", "Déconnexion" }, { "en-GB", "Logout" } });
+
+        await CreateTextWithTranslationsAsync("account.title", "My Account", new() { { "fr-FR", "Mon Compte" }, { "en-GB", "My Account" } });
+        await CreateTextWithTranslationsAsync("account.personal_info", "Personal Information", new() { { "fr-FR", "Informations personnelles" }, { "en-GB", "Personal Information" } });
+        await CreateTextWithTranslationsAsync("account.email_label", "Email Address", new() { { "fr-FR", "Adresse Email" }, { "en-GB", "Email Address" } });
+        await CreateTextWithTranslationsAsync("account.role_label", "Role / Plan", new() { { "fr-FR", "Rôle / Plan" }, { "en-GB", "Role / Plan" } });
+        await CreateTextWithTranslationsAsync("account.preferences_title", "User Preferences", new() { { "fr-FR", "Préférences utilisateur" }, { "en-GB", "User Preferences" } });
+        await CreateTextWithTranslationsAsync("account.email_notifications", "Receive email notifications", new() { { "fr-FR", "Recevoir les notifications par email" }, { "en-GB", "Receive email notifications" } });
+        await CreateTextWithTranslationsAsync("account.default_printer", "Default ZPL Printer", new() { { "fr-FR", "Imprimante ZPL par défaut" }, { "en-GB", "Default ZPL Printer" } });
+        await CreateTextWithTranslationsAsync("account.saving", "Saving...", new() { { "fr-FR", "Enregistrement..." }, { "en-GB", "Saving..." } });
+        await CreateTextWithTranslationsAsync("account.save_button", "Save Changes", new() { { "fr-FR", "Enregistrer les modifications" }, { "en-GB", "Save Changes" } });
+
+        await CreateTextWithTranslationsAsync("dashboard.title", "FastLabel - Dashboard", new() { { "fr-FR", "FastLabel - Tableau de bord" }, { "en-GB", "FastLabel - Dashboard" } });
+        await CreateTextWithTranslationsAsync("dashboard.agents_header", "ZPL Agents & Printers", new() { { "fr-FR", "Agents & Imprimantes ZPL" }, { "en-GB", "ZPL Agents & Printers" } });
+        await CreateTextWithTranslationsAsync("dashboard.agents_description", "Management and status of your connected Windows agents for thermal printing.", new() { { "fr-FR", "Gestion et état de vos agents Windows connectés pour l'impression thermique." }, { "en-GB", "Management and status of your connected Windows agents for thermal printing." } });
+        await CreateTextWithTranslationsAsync("dashboard.no_active_agents", "No active agents at the moment. The ZPL listening service will communicate here soon.", new() { { "fr-FR", "Aucun agent actif pour le moment. Le service d'écoute ZPL communiquera bientôt ici." }, { "en-GB", "No active agents at the moment. The ZPL listening service will communicate here soon." } });
+                
+        await CreateTextWithTranslationsAsync("auth.login_title", "Login", new() { { "fr-FR", "Connexion" }, { "en-GB", "Login" } });
+        await CreateTextWithTranslationsAsync("auth.email", "Email", new() { { "fr-FR", "Email" }, { "en-GB", "Email" } });
+        await CreateTextWithTranslationsAsync("auth.password", "Password", new() { { "fr-FR", "Mot de passe" }, { "en-GB", "Password" } });
+        await CreateTextWithTranslationsAsync("auth.submit", "Sign In", new() { { "fr-FR", "Se connecter" }, { "en-GB", "Sign In" } });
+        await CreateTextWithTranslationsAsync("auth.create_account", "Create an account", new() { { "fr-FR", "Créer un compte" }, { "en-GB", "Create an account" } });
+        await CreateTextWithTranslationsAsync("auth.forgot_password", "Forgot password?", new() { { "fr-FR", "Mot de passe oublié ?" }, { "en-GB", "Forgot password?" } });
+        await CreateTextWithTranslationsAsync("auth.register_title", "Register", new() { { "fr-FR", "Inscription" }, { "en-GB", "Register" } });
+        await CreateTextWithTranslationsAsync("auth.register_button", "Sign Up", new() { { "fr-FR", "S'inscrire" }, { "en-GB", "Sign Up" } });
+        await CreateTextWithTranslationsAsync("auth.already_have_account", "Already have an account? Sign in", new() { { "fr-FR", "Déjà un compte ? Connectez-vous" }, { "en-GB", "Already have an account? Sign in" } });
+        await CreateTextWithTranslationsAsync("auth.forgot_heading", "Forgot password", new() { { "fr-FR", "Mot de passe oublié" }, { "en-GB", "Forgot password" } });
+        await CreateTextWithTranslationsAsync("auth.forgot_instruction", "Enter your email address to receive password reset instructions.", new() { { "fr-FR", "Entre ton adresse email pour recevoir les instructions de réinitialisation." }, { "en-GB", "Enter your email address to receive password reset instructions." } });
+        await CreateTextWithTranslationsAsync("auth.email_placeholder", "name@example.com", new() { { "fr-FR", "nom@exemple.com" }, { "en-GB", "name@example.com" } });
+        await CreateTextWithTranslationsAsync("auth.send_link_button", "Send Link", new() { { "fr-FR", "Envoyer le lien" }, { "en-GB", "Send Link" } });
+        await CreateTextWithTranslationsAsync("auth.back_to_login", "Back to login", new() { { "fr-FR", "Retour à la connexion" }, { "en-GB", "Back to login" } });
+        await CreateTextWithTranslationsAsync("auth.email_placeholder_alt", "votre@email.com", new() { { "fr-FR", "votre@email.com" }, { "en-GB", "your@email.com" } });
     }
 }

@@ -3,6 +3,7 @@
 @inject IHttpClientFactory ClientFactory
 @inject NavigationManager Navigation
 @inject TranslationService Translation
+@implements IDisposable
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.Forms
@@ -112,6 +113,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        Translation.OnChange += OnTranslationChanged;
+
         try
         {
             isLoading = true;
@@ -151,6 +154,16 @@
         {
             isLoading = false;
         }
+    }
+
+    private void OnTranslationChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Translation.OnChange -= OnTranslationChanged;
     }
 
     private async Task SavePreferences()

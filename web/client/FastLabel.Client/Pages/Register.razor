@@ -3,6 +3,7 @@
 @inject IHttpClientFactory ClientFactory
 @inject NavigationManager Navigation
 @inject TranslationService Translation
+@implements IDisposable
 @using FastLabel.Client.Components.Layout
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Web
@@ -63,6 +64,21 @@
     private string PasswordInputType => _showPassword ? "text" : "password";
     private string PasswordIconClass => _showPassword ? "bi-eye-slash" : "bi-eye";
 
+    protected override void OnInitialized()
+    {
+        Translation.OnChange += OnTranslationChanged;
+    }
+
+    private void OnTranslationChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Translation.OnChange -= OnTranslationChanged;
+    }
+
     private void TogglePasswordVisibility()
     {
         _showPassword = !_showPassword;
@@ -74,7 +90,7 @@
 
         try
         {
-            var client = ClientFactory.CreateClient("PublicClient"); // ou ClientFactory.CreateClient selon ton injection
+            var client = ClientFactory.CreateClient("PublicClient");
             var response = await client.PostAsJsonAsync("api/auth/register", _registerModel);
 
             if (response.IsSuccessStatusCode)
@@ -93,5 +109,7 @@
         {
             _errorMessage = Translation.CurrentLanguage.StartsWith("fr") ? "Impossible de joindre le serveur." : "Unable to reach the server.";
         }
+
+        StateHasChanged();
     }
 }
