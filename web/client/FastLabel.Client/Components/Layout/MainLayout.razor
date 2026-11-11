@@ -23,7 +23,7 @@ else
                     FastLabel
                 </NavLink>
 
-                <NavLink class="btn btn-outline-secondary btn-sm text-white border-secondary d-flex align-items-center gap-1" href="/">
+                <NavLink class="btn btn-outline-secondary btn-sm text-white border-secondary d-flex align-items-center gap-1" href="/dashboard">
                     <i class="bi bi-house-door"></i>
                     <span>@Translation.GetString("nav.home")</span>
                 </NavLink>
@@ -206,6 +206,6 @@ else
             // Ignore
         }
 
-        Navigation.NavigateTo("/login", forceLoad: true);
+        Navigation.NavigateTo("/", forceLoad: true);
     }
 }

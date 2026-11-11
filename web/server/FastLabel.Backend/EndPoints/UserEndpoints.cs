@@ -12,10 +12,8 @@ public static class UserEndpoints
 {
     public static void MapUserEndpoints(this IEndpointRouteBuilder routes)
     {
-        // 1. Groupe sécurisé pour les utilisateurs connectés (/api/users)
         var group = routes.MapGroup("/api/users").RequireAuthorization();
 
-        // Récupérer le profil de l'utilisateur connecté -> Devient /api/users/me
         group.MapGet("/me", async (AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
             var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -38,7 +36,6 @@ public static class UserEndpoints
             });
         });
 
-        // Mettre à jour les préférences de l'utilisateur -> Devient /api/users/me/preferences
         group.MapPut("/me/preferences", async (UpdatePreferencesDto dto, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
             var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier);

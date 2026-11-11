@@ -10,7 +10,6 @@ public static class AgentEndpoints
     {
         var group = routes.MapGroup("/api/agents");
 
-        // Tout le monde connecté peut voir la liste des agents (ou tu peux restreindre si besoin)
         group.MapGet("/", async (AppDbContext db, PrintBrokerService broker) =>
         {
             var agents = await db.Agents.ToListAsync();
@@ -26,7 +25,6 @@ public static class AgentEndpoints
             return Results.Ok(result);
         });
 
-        // Suppression réservée STRICTEMENT aux administrateurs
         group.MapDelete("/{id:int}", async (int id, AppDbContext db, PrintBrokerService broker) =>
         {
             var agent = await db.Agents.FindAsync(id);
@@ -40,6 +38,6 @@ public static class AgentEndpoints
             db.Agents.Remove(agent);
             await db.SaveChangesAsync();
             return Results.NoContent();
-        }).RequireAuthorization("AdminOnly"); // <-- Application de la politique
+        }).RequireAuthorization("AdminOnly"); 
     }
 }

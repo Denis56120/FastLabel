@@ -10,7 +10,6 @@ public static class AppExtensions
 {
     public static WebApplication ConfigurePipeline(this WebApplication app)
     {
-        // Initialisation de la BDD au démarrage
         using var scope = app.Services.CreateScope();
         var services = scope.ServiceProvider;
         
@@ -21,11 +20,8 @@ public static class AppExtensions
             
             DbInitializer.InitializeAsync(dbContext, passwordHasher).GetAwaiter().GetResult();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            // Optionnel : un petit log en cas d'échec pour t'aider à débugger
-            var logger = services.GetRequiredService<ILogger<WebApplication>>();
-            logger.LogError(ex, "An error occurred while initializing the database.");
         }
 
         // Ordre des Middlewares

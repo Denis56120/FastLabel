@@ -34,13 +34,12 @@ public static class PrinterEndpoints
             var printer = await db.Printers.FindAsync(id);
             if (printer is null) return Results.NotFound();
 
-            // Aligné avec les propriétés réelles du modèle Printer
             printer.Name = updatedPrinter.Name;
             printer.Location = updatedPrinter.Location;
-            printer.IP = updatedPrinter.IP;       // IP en majuscule
+            printer.IP = updatedPrinter.IP;       
             printer.Port = updatedPrinter.Port;
-            printer.ProtocolId = updatedPrinter.ProtocolId;       // Relation ID
-            printer.ResolutionDpiId = updatedPrinter.ResolutionDpiId; // Relation ID
+            printer.ProtocolId = updatedPrinter.ProtocolId;      
+            printer.ResolutionDpiId = updatedPrinter.ResolutionDpiId; 
             printer.BasicStatusId = updatedPrinter.BasicStatusId;     
 
             await db.SaveChangesAsync();

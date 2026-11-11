@@ -12,7 +12,6 @@ public class Text
 
     public string DefaultTranslation { get; set; } = string.Empty;
 
-    // Relations inverses
     public ICollection<Language> LanguagesDescriptions { get; set; } = new List<Language>();
     public ICollection<Translation> Translations { get; set; } = new List<Translation>();
 }

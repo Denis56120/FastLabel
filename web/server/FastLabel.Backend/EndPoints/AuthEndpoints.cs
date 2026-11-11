@@ -51,7 +51,6 @@ public static class AuthEndpoints
 
             var user = await db.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
 
-            // Par sécurité, on renvoie un succès même si l'e-mail n'existe pas
             if (user == null)
             {
                 return Results.Ok(new { message = "auth.success.forgot_password" });
@@ -61,7 +60,6 @@ public static class AuthEndpoints
             user.ResetTokenExpired = DateTime.UtcNow.AddHours(2);
             await db.SaveChangesAsync();
 
-            // Utilisation de ClientUrl pour pointer vers le Front-End Blazor
             var clientUrl = configuration["ClientUrl"] ?? "http://localhost:5000";
             var resetLink = $"{clientUrl}/reset-password?token={user.PasswordResetToken}";
 
@@ -106,7 +104,6 @@ public static class AuthEndpoints
                 return Results.BadRequest(new ErrorResponseDto { Message = "auth.error.invalid_or_expired_token" });
             }
 
-            // Mise à jour du mot de passe haché et nettoyage du token
             user.PasswordHash = passwordHasher.HashPassword(user, dto.NewPassword);
             user.PasswordResetToken = null;
             user.ResetTokenExpired = null;
@@ -213,7 +210,7 @@ public static class AuthEndpoints
             await db.SaveChangesAsync();
 
             var clientUrl = configuration["ClientUrl"] ?? "http://localhost:5000";
-            return Results.Redirect($"{clientUrl}/login?activated=true");
+            return Results.Redirect($"{clientUrl}/?activated=true");
         });
     }
 }

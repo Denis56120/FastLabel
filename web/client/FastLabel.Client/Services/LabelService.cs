@@ -11,7 +11,6 @@ public class LabelService
 
     public async Task<List<LabelDto>> GetLabelsAsync()
     {
-        // Utilise "AuthClient" pour que le token soit injecté automatiquement
         var client = _clientFactory.CreateClient("AuthClient");
         
         var labels = await client.GetFromJsonAsync<List<LabelDto>>("api/labels");

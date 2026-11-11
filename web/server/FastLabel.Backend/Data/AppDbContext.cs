@@ -9,7 +9,6 @@ public class AppDbContext : DbContext
     {
     }
 
-    // Tables de référence / Internationalisation
     public DbSet<Language> Languages => Set<Language>();
     public DbSet<Text> Texts => Set<Text>();
     public DbSet<Translation> Translations => Set<Translation>();
@@ -22,7 +21,6 @@ public class AppDbContext : DbContext
     public DbSet<Plan> Plans => Set<Plan>();
     public DbSet<Stripe> Stripes => Set<Stripe>();
 
-    // Tables métiers
     public DbSet<User> Users => Set<User>();
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
     public DbSet<LabelTemplate> LabelTemplates => Set<LabelTemplate>();

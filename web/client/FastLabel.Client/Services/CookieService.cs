@@ -56,7 +56,6 @@ public class CookieService
         }
         catch
         {
-            // Ignorer si le JS n'est pas prêt
         }
     }
 }

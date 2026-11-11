@@ -13,7 +13,6 @@ public static class DependencyInjectionExtensions
         services.AddRazorComponents()
             .AddInteractiveServerComponents();
 
-        // Indispensable pour lire les cookies directement dans le HttpContext des layouts
         services.AddHttpContextAccessor();
 
         // 2. Authentification et Autorisation Blazor

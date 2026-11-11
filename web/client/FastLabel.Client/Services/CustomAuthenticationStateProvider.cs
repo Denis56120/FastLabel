@@ -24,7 +24,6 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
         }
         catch
         {
-            // Ignore si JS indisponible
         }
 
         if (string.IsNullOrWhiteSpace(token))
@@ -63,7 +62,6 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
 
         foreach (var kvp in keyValuePairs)
         {
-            // On s'assure que si la clé est "role" ou "http://...", on la mappe proprement 
             var claimType = kvp.Key;
             if (claimType == "role" || claimType.EndsWith("/identity/claims/role"))
             {

@@ -9,7 +9,7 @@ public class AuthService(
     IJSRuntime jsRuntime,
     AuthenticationStateProvider authStateProvider,
     TokenContainer tokenContainer,
-    CookieService cookieService) // 1. Injection du CookieService dans le constructeur primaire
+    CookieService cookieService) 
 {
     private readonly HttpClient _httpClient = clientFactory.CreateClient("AuthClient");
     private readonly IJSRuntime _jsRuntime = jsRuntime;
@@ -41,7 +41,6 @@ public class AuthService(
             }
             catch
             {
-                // Ignorer si le JS n'est pas encore disponible
             }
         }
         return _token;

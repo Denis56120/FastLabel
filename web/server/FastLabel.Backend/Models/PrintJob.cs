@@ -15,9 +15,6 @@ public class PrintJob
 
     public int AgentId { get; set; }
 
-    // [ForeignKey(nameof(AgentId))]
-    // public Agent Agent { get; set; } = null!; // Sera activé une fois la table Agent définie
-
     public int LabelTemplateId { get; set; }
 
     [ForeignKey(nameof(LabelTemplateId))]

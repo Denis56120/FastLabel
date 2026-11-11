@@ -59,7 +59,7 @@
                     </div>
 
                     <div class="text-center">
-                        <a href="/login">@Translation.GetString("auth.already_have_account")</a>
+                        <a href="/">@Translation.GetString("auth.already_have_account")</a>
                     </div>
                 </EditForm>
             </div>
@@ -99,7 +99,6 @@
     {
         _errorMessage = null;
 
-        // On injecte directement la langue courante gérée par le layout/service juste avant l'envoi
         _registerModel.Language = !string.IsNullOrEmpty(Translation.CurrentLanguage) 
             ? Translation.CurrentLanguage 
             : "en-GB";
@@ -117,10 +116,9 @@
                 }
                 catch
                 {
-                    // Ignore
                 }
 
-                Navigation.NavigateTo("/login");
+                Navigation.NavigateTo("/");
             }
             else
             {

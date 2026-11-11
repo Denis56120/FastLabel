@@ -91,7 +91,7 @@ else
     {
         var uri = Navigation.Uri.ToLower();
 
-        if (uri.Contains("/login"))
+        if (uri.Contains("/"))
         {
             var title = Translation.GetString("auth.login_title");
             return title == "auth.login_title" ? (Translation.CurrentLanguage.StartsWith("fr") ? "Connexion" : "Sign In") : title;

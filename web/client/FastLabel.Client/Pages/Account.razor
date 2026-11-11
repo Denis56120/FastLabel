@@ -1,10 +1,8 @@
 @page "/account"
-@attribute [Authorize]
 @inject IHttpClientFactory ClientFactory
 @inject NavigationManager Navigation
 @inject TranslationService Translation
 @implements IDisposable
-@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.Forms
 @using FastLabel.Shared.DTOs
@@ -25,7 +23,6 @@
     else
     {
         <div class="row">
-            <!-- Informations Profil -->
             <div class="col-md-6 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-header bg-primary text-white">
@@ -44,7 +41,6 @@
                 </div>
             </div>
 
-            <!-- Préférences et Paramètres -->
             <div class="col-md-6 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-header bg-secondary text-white">
@@ -143,7 +139,7 @@
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
         {
-            Navigation.NavigateTo("/login", forceLoad: true);
+            Navigation.NavigateTo("/", forceLoad: true);
         }
         catch (Exception)
         {
@@ -183,7 +179,7 @@
             }
             else if (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden)
             {
-                Navigation.NavigateTo("/login", forceLoad: true);
+                Navigation.NavigateTo("/", forceLoad: true);
             }
             else
             {

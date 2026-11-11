@@ -1,0 +1,68 @@
+@page "/dashboard"
+@inject IHttpClientFactory ClientFactory
+@inject NavigationManager Navigation
+@inject TranslationService Translation
+@implements IDisposable
+@using System.Net
+@using System.Text.Json
+@using Microsoft.AspNetCore.Components.Authorization
+
+<div class="container-fluid">
+    <h3 class="mb-3">@Translation.GetString("dashboard.title")</h3>
+    <h5 class="text-muted mb-4">@Translation.GetString("dashboard.agents_header")</h5>
+
+    <p class="text-secondary">@Translation.GetString("dashboard.agents_description")</p>
+    
+    <div class="alert alert-info" role="alert">
+        @Translation.GetString("dashboard.no_active_agents")
+    </div>
+</div>
+
+@code {
+    [Inject] private AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
+
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {      
+        Translation.OnChange += OnTranslationChanged;
+
+        try
+        {
+            isLoading = true;
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            Console.WriteLine(JsonSerializer.Serialize(user));
+
+            if (user.Identity?.IsAuthenticated != true)
+            {
+                Navigation.NavigateTo("/", forceLoad: true);
+                return;
+            }
+
+            var client = ClientFactory.CreateClient("AuthClient");
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
+        {
+            Navigation.NavigateTo("/", forceLoad: true);
+        }
+        catch (Exception)
+        {
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void OnTranslationChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Translation.OnChange -= OnTranslationChanged;
+    }
+}

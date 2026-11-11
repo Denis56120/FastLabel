@@ -15,7 +15,6 @@ public static class AppPipelineExtensions
 
         app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 
-        // Configuration de la localisation par cookie ("language")
         var supportedLanguages = new[] { "fr-FR", "en_GB" }; 
         var localizationOptions = new RequestLocalizationOptions()
             .SetDefaultCulture("fr-FR")
@@ -29,7 +28,6 @@ public static class AppPipelineExtensions
 
         app.UseRequestLocalization(localizationOptions);
 
-        // AJOUT : Indispensable pour que le cookie d'authentification soit lu et validé
         app.UseAuthentication();
         app.UseAuthorization();
 

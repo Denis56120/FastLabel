@@ -20,7 +20,6 @@ public class TokenService(IConfiguration config)
             new(ClaimTypes.Name, user.Name),
         };
 
-        // Si l'utilisateur est admin, on lui ajoute le rôle .NET standard
         if (user.IsAdmin)
         {
             claims.Add(new Claim(ClaimTypes.Role, "Admin"));
