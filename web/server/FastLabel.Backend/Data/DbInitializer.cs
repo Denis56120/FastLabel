@@ -34,7 +34,7 @@ public static class DbInitializer
                 var langCode = kvp.Key;
                 var translatedValue = kvp.Value;
 
-                var lang = await context.Languages.FirstOrDefaultAsync(l => l.Locale == langCode);
+                var lang = await context.Languages.FirstOrDefaultAsync(l => l.Code == langCode);
                 if (lang != null)
                 {
                     var existingTranslation = textEntity.Translations
@@ -68,8 +68,8 @@ public static class DbInitializer
         if (!await context.Languages.AnyAsync())
         {
             context.Languages.AddRange(
-                new Language { Locale = "fr", DescriptionTextId = descFr.Id, Flag = null },
-                new Language { Locale = "en", DescriptionTextId = descEn.Id, Flag = null }
+                new Language { Code = "fr", DescriptionTextId = descFr.Id, Flag = null },
+                new Language { Code = "en", DescriptionTextId = descEn.Id, Flag = null }
             );
             await context.SaveChangesAsync();
         }

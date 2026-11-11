@@ -9,7 +9,7 @@ public class Language
     public int Id { get; set; }
 
     [Required]
-    public string Locale { get; set; } = string.Empty;
+    public string Code { get; set; } = string.Empty;
 
     public int DescriptionTextId { get; set; }
 

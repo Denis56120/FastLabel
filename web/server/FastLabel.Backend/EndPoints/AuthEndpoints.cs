@@ -71,7 +71,7 @@ public static class AuthEndpoints
                 {
                     t.Tag,
                     Value = t.Translations
-                        .Where(tr => tr.Language.Locale.ToLower() == languageCode.ToLower())
+                        .Where(tr => tr.Language.Code == languageCode)
                         .Select(tr => tr.TranslatedValue)
                         .FirstOrDefault() ?? t.DefaultTranslation
                 })
@@ -163,7 +163,7 @@ public static class AuthEndpoints
                 {
                     t.Tag,
                     Value = t.Translations
-                        .Where(tr => tr.Language.Locale.ToLower() == languageCode.ToLower())
+                        .Where(tr => tr.Language.Code == languageCode)
                         .Select(tr => tr.TranslatedValue)
                         .FirstOrDefault() ?? t.DefaultTranslation
                 })

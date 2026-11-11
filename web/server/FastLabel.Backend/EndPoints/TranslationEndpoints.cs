@@ -10,14 +10,12 @@ public static class TranslationEndpoints
     {
         routes.MapGet("api/translations/{language}", async (string language, AppDbContext db) =>
         {           
-            var languageLower = language.ToLower();
-
             var translations = await db.Texts
                 .Select(t => new TranslationDto
                 {
                     Key = t.Tag,
                     Value = t.Translations
-                        .Where(tr => tr.Language.Locale.ToLower() == languageLower)
+                        .Where(tr => tr.Language.Code == language)
                         .Select(tr => tr.TranslatedValue)
                         .FirstOrDefault() ?? t.DefaultTranslation
                 })

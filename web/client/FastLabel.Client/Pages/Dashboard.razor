@@ -21,15 +21,12 @@
 @code {
     [Inject] private AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
 
-    private bool isLoading = true;
-
     protected override async Task OnInitializedAsync()
     {      
         Translation.OnChange += OnTranslationChanged;
 
         try
         {
-            isLoading = true;
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             var user = authState.User;
 
@@ -52,7 +49,6 @@
         }
         finally
         {
-            isLoading = false;
         }
     }
 
