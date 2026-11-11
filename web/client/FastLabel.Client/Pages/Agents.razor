@@ -6,13 +6,41 @@
 
 <div class="container-fluid">
     <h3>@Translation.GetString("agents.title")</h3>
-    <p class="text-muted">@Translation.GetString("agents.description")</p>
+
+    @if (isLoading)
+    {
+        <div class="d-flex justify-content-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">@Translation.GetString("account.loading")</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <p class="text-muted">@Translation.GetString("agents.description")</p>
     
-    <div class="alert alert-info" role="alert">
-        @Translation.GetString("agents.no_agents")
-    </div>
+        <div class="alert alert-info" role="alert">
+            @Translation.GetString("agents.no_agents")
+        </div>
+    }
 </div>
 
-@code {
 
+@code {
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            isLoading = true;
+        }
+        catch (Exception)
+        {
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
 }

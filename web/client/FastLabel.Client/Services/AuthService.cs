@@ -8,14 +8,12 @@ public class AuthService(
     IHttpClientFactory clientFactory,
     IJSRuntime jsRuntime,
     AuthenticationStateProvider authStateProvider,
-    TokenContainer tokenContainer,
-    CookieService cookieService) 
+    TokenContainer tokenContainer) 
 {
     private readonly HttpClient _httpClient = clientFactory.CreateClient("AuthClient");
     private readonly IJSRuntime _jsRuntime = jsRuntime;
     private readonly AuthenticationStateProvider _authProvider = authStateProvider;
     private readonly TokenContainer _tokenContainer = tokenContainer;
-    private readonly CookieService _cookieService = cookieService;
     private string? _token;
 
     public async Task SetTokenAsync(string token)

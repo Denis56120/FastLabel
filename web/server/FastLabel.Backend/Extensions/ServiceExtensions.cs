@@ -2,9 +2,7 @@ using System.Text;
 using FastLabel.Backend.Data;
 using FastLabel.Backend.Models;
 using FastLabel.Backend.Services;
-using FastLabel.Client.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -15,7 +13,6 @@ public static class ServiceExtensions
 {
     public static IServiceCollection AddAppServices(this IServiceCollection services, IConfiguration configuration, string dbPath)
     {
-        // 1. CORS
         services.AddCors(options =>
         {
             options.AddPolicy("AllowBlazorClient", policy =>
@@ -30,10 +27,8 @@ public static class ServiceExtensions
         services.AddScoped<TokenService>();
         services.AddScoped<IEmailService, EmailService>();
 
-        // 2. État partagé (WebSockets / Jobs)
         services.AddSingleton<PrintBrokerService>();
 
-        // 3. Authentification mixte : Cookies pour l'UI Blazor / JWT pour l'API
         services.AddAuthentication(options =>
         {
             options.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
@@ -60,7 +55,6 @@ public static class ServiceExtensions
 
         services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
-        // 4. Base de données SQLite
         services.AddDbContext<AppDbContext>(options =>
             options.UseSqlite($"Data Source={dbPath}"));
 

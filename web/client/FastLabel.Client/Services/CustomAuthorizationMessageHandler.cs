@@ -1,5 +1,4 @@
 using System.Net.Http.Headers;
-using FastLabel.Client.Services;
 
 public class CustomAuthorizationMessageHandler : DelegatingHandler
 {

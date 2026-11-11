@@ -29,24 +29,23 @@
 
                     <div class="mb-3">
                         <label class="form-label">@Translation.GetString("auth.name")</label>
-                        <InputText @bind-Value="_registerModel.Name" class="form-control" placeholder="@Translation.GetString("auth.name_placeholder")" />
+                        <InputText @bind-Value="_registerModel.Name" class="form-control"
+                                   placeholder="@Translation.GetString("auth.name_placeholder")" />
                         <ValidationMessage For="@(() => _registerModel.Name)" />
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">@Translation.GetString("auth.email")</label>
-                        <InputText @bind-Value="_registerModel.Email" class="form-control" placeholder="@Translation.GetString("auth.email_placeholder")" />
+                        <InputText @bind-Value="_registerModel.Email" class="form-control"
+                                   placeholder="@Translation.GetString("auth.email_placeholder")" />
                         <ValidationMessage For="@(() => _registerModel.Email)" />
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">@Translation.GetString("auth.password")</label>
                         <div class="input-group">
-                            <input type="@PasswordInputType" 
-                                   @bind="_registerModel.Password" 
-                                   @bind:event="oninput"
-                                   class="form-control"
-                                   placeholder="••••••••" />
+                            <input type="@PasswordInputType" @bind="_registerModel.Password" @bind:event="oninput"
+                                   class="form-control" placeholder="••••••••" />
                             <button type="button" class="btn btn-outline-secondary" @onclick="TogglePasswordVisibility">
                                 <i class="bi @PasswordIconClass" style="pointer-events: none;"></i>
                             </button>
@@ -55,7 +54,8 @@
                     </div>
 
                     <div class="d-grid mb-3">
-                        <button type="submit" class="btn btn-success">@Translation.GetString("auth.register_button")</button>
+                        <button type="submit"
+                                class="btn btn-success">@Translation.GetString("auth.register_button")</button>
                     </div>
 
                     <div class="text-center">
@@ -67,15 +67,17 @@
     </div>
 </div>
 
+
 @code {
     private RegisterDto _registerModel = new();
     private string? _errorMessage;
     private bool _showPassword = false;
+    private bool isLoading = true;
 
     private string PasswordInputType => _showPassword ? "text" : "password";
     private string PasswordIconClass => _showPassword ? "bi-eye-slash" : "bi-eye";
 
-     private void TogglePasswordVisibility()
+    private void TogglePasswordVisibility()
     {
         _showPassword = !_showPassword;
     }
@@ -84,8 +86,8 @@
     {
         _errorMessage = null;
 
-        _registerModel.Language = !string.IsNullOrEmpty(Translation.CurrentLanguage) 
-            ? Translation.CurrentLanguage 
+        _registerModel.Language = !string.IsNullOrEmpty(Translation.CurrentLanguage)
+            ? Translation.CurrentLanguage
             : "en";
 
         try
@@ -108,7 +110,8 @@
             else
             {
                 var errorContent = await response.Content.ReadFromJsonAsync<ErrorResponseDto>();
-                string errorKey = !string.IsNullOrEmpty(errorContent?.Message) ? errorContent.Message : "auth.error.registration_failed";
+                string errorKey = !string.IsNullOrEmpty(errorContent?.Message) ? errorContent.Message :
+"auth.error.registration_failed";
                 _errorMessage = Translation.GetString(errorKey);
             }
         }

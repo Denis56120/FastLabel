@@ -2,7 +2,6 @@ using FastLabel.Backend.Data;
 using FastLabel.Backend.Endpoints;
 using FastLabel.Backend.Models;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 
 namespace FastLabel.Backend.Extensions;
 
@@ -24,14 +23,12 @@ public static class AppExtensions
         {
         }
 
-        // Ordre des Middlewares
         app.UseCors("AllowBlazorClient");
         app.UseWebSockets();
 
         app.UseAuthentication();
         app.UseAuthorization();
 
-        // Mapping des endpoints modulaires
         app.MapPrinterEndpoints();
         app.MapTemplateEndpoints();
         app.MapAgentEndpoints();

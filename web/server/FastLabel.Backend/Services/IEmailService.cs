@@ -10,14 +10,9 @@ public interface IEmailService
     Task SendEmailAsync(string toEmail, string subject, string message);
 }
 
-public class EmailService : IEmailService
+public class EmailService(IConfiguration configuration) : IEmailService
 {
-    private readonly IConfiguration _configuration;
-
-    public EmailService(IConfiguration configuration)
-    {
-        _configuration = configuration;
-    }
+    private readonly IConfiguration _configuration = configuration;
 
     public async Task SendEmailAsync(string toEmail, string subject, string message)
     {

@@ -8,7 +8,9 @@ public static class LanguageEndpoints
 {
     public static void MapLanguageEndpoints(this IEndpointRouteBuilder routes)
     {
-        routes.MapGet("/api/language/set", (string language, HttpResponse response) =>
+        var group = routes.MapGroup("/api/language");
+        
+        group.MapGet("/set", (string language, HttpResponse response) =>
         {
             response.Cookies.Append("language", language, new CookieOptions
             {

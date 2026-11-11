@@ -1,7 +1,6 @@
-using System.Net.Http.Json;
 using FastLabel.Shared.DTOs;
 
-namespace FastLabel.Client.Services;
+namespace FastLabel.Backend.Services;
 
 public class TranslationService
 {
