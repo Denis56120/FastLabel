@@ -1,10 +1,10 @@
 @page "/"
+@inherits TranslatableComponent
 @layout PublicLayout
 @inject IHttpClientFactory ClientFactory
 @inject NavigationManager Navigation
 @inject AuthService AuthService
 @inject CookieService CookieService
-@inject TranslationService Translation
 @implements IDisposable
 @using FastLabel.Client.Components.Layout
 @using Microsoft.AspNetCore.Components.Forms
@@ -102,26 +102,11 @@
     private string PasswordInputType => _showPassword ? "text" : "password";
     private string PasswordIconClass => _showPassword ? "bi-eye-slash" : "bi-eye";
 
-    protected override void OnInitialized()
-    {
-        Translation.OnChange += OnTranslationChanged;
-    }
-
     protected override void OnParametersSet()
     {
         _isActivated = ActivatedParam;
         _isPasswordResetRequested = PwResetParam;
         _isPasswordUpdated = PwUpdatedParam;
-    }
-
-    private void OnTranslationChanged()
-    {
-        InvokeAsync(StateHasChanged);
-    }
-
-    public void Dispose()
-    {
-        Translation.OnChange -= OnTranslationChanged;
     }
 
     private void TogglePasswordVisibility()

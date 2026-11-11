@@ -1,7 +1,6 @@
-﻿@inherits LayoutComponentBase
+﻿@inherits TranslatableComponent
 @inject AuthService AuthService
 @inject NavigationManager Navigation
-@inject TranslationService Translation
 @inject CookieService CookieService
 @implements IDisposable
 
@@ -111,8 +110,6 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        Translation.OnChange += OnTranslationChanged;
-
         var cookieLang = await CookieService.GetCookieAsync("language");
             
         if (!string.IsNullOrEmpty(cookieLang))
@@ -144,19 +141,6 @@ else
     }
 
     private void ToggleDropdown() => _isDropdownOpen = !_isDropdownOpen;
-
-    private void OnTranslationChanged()
-    {
-        if (_isLoaded)
-        {
-            InvokeAsync(StateHasChanged);
-        }
-    }
-
-    public void Dispose()
-    {
-        Translation.OnChange -= OnTranslationChanged;
-    }
 
     private async Task ChangeLanguage(string languageCode)
     {

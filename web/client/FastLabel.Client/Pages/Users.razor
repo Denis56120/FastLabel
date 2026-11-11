@@ -1,7 +1,8 @@
 @page "/users"
 @attribute [Authorize(Roles = "Admin")]
-@inject TranslationService Translation
+@inherits TranslatableComponent
 @implements IDisposable
+@using FastLabel.Client.Components
 @using Microsoft.AspNetCore.Authorization
 
 <div class="container-fluid">
@@ -14,18 +15,5 @@
 </div>
 
 @code {
-    protected override void OnInitialized()
-    {
-        Translation.OnChange += OnTranslationChanged;
-    }
 
-    private void OnTranslationChanged()
-    {
-        InvokeAsync(StateHasChanged);
-    }
-
-    public void Dispose()
-    {
-        Translation.OnChange -= OnTranslationChanged;
-    }
 }

@@ -15,7 +15,7 @@ public class AuthService(
     private readonly IJSRuntime _jsRuntime = jsRuntime;
     private readonly AuthenticationStateProvider _authProvider = authStateProvider;
     private readonly TokenContainer _tokenContainer = tokenContainer;
-    private readonly CookieService _cookieService = cookieService; // 2. Stockage de l'instance
+    private readonly CookieService _cookieService = cookieService;
     private string? _token;
 
     public async Task SetTokenAsync(string token)

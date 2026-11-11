@@ -1,6 +1,5 @@
-@inherits LayoutComponentBase
+@inherits TranslatableComponent
 @inject NavigationManager Navigation
-@inject TranslationService Translation
 @inject CookieService CookieService
 @implements IDisposable
 
@@ -61,7 +60,6 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        Translation.OnChange += OnTranslationChanged;
         Navigation.LocationChanged += OnLocationChanged;
 
         var cookieLang = await CookieService.GetCookieAsync("language");
@@ -103,23 +101,19 @@ else
         return defaultTitle == "nav.home" ? (Translation.CurrentLanguage.StartsWith("fr") ? "Accueil" : "Home") : defaultTitle;
     }
 
-    private void OnTranslationChanged()
-    {
-        if (_isLoaded)
-        {
-            InvokeAsync(StateHasChanged);
-        }
-    }
-
     private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
     {
         StateHasChanged();
     }
 
-    public void Dispose()
+    protected override void Dispose(bool disposing)
     {
-        Translation.OnChange -= OnTranslationChanged;
-        Navigation.LocationChanged -= OnLocationChanged;
+        if (disposing)
+        {
+            Navigation.LocationChanged -= OnLocationChanged;
+        }
+
+        base.Dispose(disposing);
     }
 
     private void ToggleDropdown()

@@ -1,12 +1,17 @@
 @page "/account"
+@attribute [Authorize]
+@inherits TranslatableComponent
 @inject IHttpClientFactory ClientFactory
 @inject NavigationManager Navigation
-@inject TranslationService Translation
+@inject AuthenticationStateProvider AuthStateProvider
 @implements IDisposable
+@using System.Net
+@using System.Security.Claims
+@using FastLabel.Client.Components
+@using FastLabel.Shared.DTOs
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.Forms
-@using FastLabel.Shared.DTOs
-@using System.Net
 
 <div class="container mt-4">
     <h2>@Translation.GetString("account.title")</h2>
@@ -96,8 +101,6 @@
 </div>
 
 @code {
-    [Inject] private AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
-
     private bool isLoading = true;
     private bool isSaving = false;
     private string userEmail = string.Empty;
@@ -109,25 +112,21 @@
 
     protected override async Task OnInitializedAsync()
     {
-        Translation.OnChange += OnTranslationChanged;
-
         try
         {
             isLoading = true;
+
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             var user = authState.User;
 
-            if (user.Identity?.IsAuthenticated == true)
+            userEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value 
+                      ?? user.Identity?.Name 
+                      ?? "Utilisateur";
+            
+            var roleClaim = user.FindFirst(c => c.Type == ClaimTypes.Role);
+            if (roleClaim != null)
             {
-                userEmail = user.FindFirst(c => c.Type == System.Security.Claims.ClaimTypes.Email)?.Value 
-                          ?? user.Identity.Name 
-                          ?? "Utilisateur";
-                
-                var roleClaim = user.FindFirst(c => c.Type == System.Security.Claims.ClaimTypes.Role);
-                if (roleClaim != null)
-                {
-                    userRole = roleClaim.Value;
-                }
+                userRole = roleClaim.Value;
             }
 
             var client = ClientFactory.CreateClient("AuthClient");
@@ -150,16 +149,6 @@
         {
             isLoading = false;
         }
-    }
-
-    private void OnTranslationChanged()
-    {
-        InvokeAsync(StateHasChanged);
-    }
-
-    public void Dispose()
-    {
-        Translation.OnChange -= OnTranslationChanged;
     }
 
     private async Task SavePreferences()

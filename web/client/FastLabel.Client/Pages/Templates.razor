@@ -1,5 +1,8 @@
 @page "/templates"
-@inject TranslationService Translation
+@using FastLabel.Client.Components
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inherits TranslatableComponent
 @implements IDisposable
 
 <div class="container-fluid">
@@ -12,18 +15,5 @@
 </div>
 
 @code {
-    protected override void OnInitialized()
-    {
-        Translation.OnChange += OnTranslationChanged;
-    }
 
-    private void OnTranslationChanged()
-    {
-        InvokeAsync(StateHasChanged);
-    }
-
-    public void Dispose()
-    {
-        Translation.OnChange -= OnTranslationChanged;
-    }
 }

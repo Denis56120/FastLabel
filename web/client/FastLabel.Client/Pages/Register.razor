@@ -1,15 +1,16 @@
 @page "/register"
+@inherits TranslatableComponent
 @layout PublicLayout
 @inject IHttpClientFactory ClientFactory
 @inject NavigationManager Navigation
 @inject CookieService CookieService
-@inject TranslationService Translation
 @implements IDisposable
+@using FastLabel.Client.Components
 @using FastLabel.Client.Components.Layout
-@using Microsoft.AspNetCore.Components.Forms
-@using Microsoft.AspNetCore.Components.Web
 @using FastLabel.Client.Services
 @using FastLabel.Shared.DTOs
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
 
 <div class="d-flex justify-content-center align-items-center w-100">
     <div style="width: 100%; max-width: 420px;">
@@ -75,22 +76,7 @@
     private string PasswordInputType => _showPassword ? "text" : "password";
     private string PasswordIconClass => _showPassword ? "bi-eye-slash" : "bi-eye";
 
-    protected override void OnInitialized()
-    {
-        Translation.OnChange += OnTranslationChanged;
-    }
-
-    private void OnTranslationChanged()
-    {
-        InvokeAsync(StateHasChanged);
-    }
-
-    public void Dispose()
-    {
-        Translation.OnChange -= OnTranslationChanged;
-    }
-
-    private void TogglePasswordVisibility()
+     private void TogglePasswordVisibility()
     {
         _showPassword = !_showPassword;
     }
