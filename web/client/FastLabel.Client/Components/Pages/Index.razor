@@ -50,18 +50,17 @@
 
                     <div class="mb-3">
                         <label class="form-label">@Translation.GetString("auth.email")</label>
-                        <InputText @bind-Value="_loginModel.Email" class="form-control" placeholder="@Translation.GetString("auth.email_placeholder")" />
+                        <InputText @bind-Value="_loginModel.Email" class="form-control"
+                                   placeholder="@Translation.GetString("auth.email_placeholder")" />
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label">@Translation.GetString("auth.password")</label>
                         <div class="input-group">
-                            <input type="@PasswordInputType" 
-                                   @bind="_loginModel.Password" 
-                                   @bind:event="oninput"
-                                   class="form-control"
-                                   placeholder="••••••••" />
-                            <button type="button" class="btn btn-outline-secondary" @onclick="TogglePasswordVisibility">
+                            <input type="@PasswordInputType" @bind="_loginModel.Password" @bind:event="oninput"
+                                   class="form-control" placeholder="••••••••" />
+                            <button type="button" class="btn btn-outline-secondary" style="border-color: #ced4da;"
+                                    @onclick="TogglePasswordVisibility">
                                 <i class="bi @PasswordIconClass" style="pointer-events: none;"></i>
                             </button>
                         </div>
@@ -146,7 +145,8 @@
             else
             {
                 var errorContent = await response.Content.ReadFromJsonAsync<ErrorResponseDto>();
-                string errorKey = !string.IsNullOrEmpty(errorContent?.Message) ? errorContent.Message : "auth.error.invalid_credentials";
+                string errorKey = !string.IsNullOrEmpty(errorContent?.Message) ? errorContent.Message :
+"auth.error.invalid_credentials";
                 _errorMessage = Translation.GetString(errorKey);
             }
         }
