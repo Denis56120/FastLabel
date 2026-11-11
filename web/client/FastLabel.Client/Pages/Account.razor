@@ -139,7 +139,7 @@
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
         {
-            Navigation.NavigateTo("/");//, forceLoad: true);
+            Navigation.NavigateTo("/");
         }
         catch (Exception)
         {
@@ -179,7 +179,7 @@
             }
             else if (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden)
             {
-                Navigation.NavigateTo("/");//, forceLoad: true);
+                Navigation.NavigateTo("/");
             }
             else
             {

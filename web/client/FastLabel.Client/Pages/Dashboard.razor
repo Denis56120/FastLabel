@@ -32,7 +32,7 @@
 
             if (user.Identity?.IsAuthenticated != true)
             {
-                Navigation.NavigateTo("/");//, forceLoad: true);
+                Navigation.NavigateTo("/");
                 return;
             }
 
@@ -40,7 +40,7 @@
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
         {
-            Navigation.NavigateTo("/");//, forceLoad: true);
+            Navigation.NavigateTo("/");
         }
         catch (Exception)
         {

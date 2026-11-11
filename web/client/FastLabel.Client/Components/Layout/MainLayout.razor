@@ -113,20 +113,13 @@ else
     {
         Translation.OnChange += OnTranslationChanged;
 
-        try
-        {
-            var cookieLang = await CookieService.GetCookieAsync("language");
+        var cookieLang = await CookieService.GetCookieAsync("language");
             
-            if (!string.IsNullOrEmpty(cookieLang))
-            {
-                await Translation.InitializeAsync(cookieLang);
-            }
-            else
-            {
-                await Translation.InitializeAsync();
-            }
+        if (!string.IsNullOrEmpty(cookieLang))
+        {
+            await Translation.InitializeAsync(cookieLang);
         }
-        catch
+        else
         {
             await Translation.InitializeAsync();
         }
@@ -169,14 +162,7 @@ else
     {
         _isDropdownOpen = false;
 
-        try
-        {
-            await CookieService.SetCookieAsync("language", languageCode, days: 365);
-        }
-        catch
-        {
-        }
-
+        await CookieService.SetCookieAsync("language", languageCode, days: 365);
         await Translation.InitializeAsync(languageCode);
     }
 
@@ -184,21 +170,8 @@ else
     {
         var currentLang = Translation.CurrentLanguage;
 
-        try
-        {
-            await AuthService.LogoutAsync();
-        }
-        catch
-        {
-        }
-
-        try
-        {
-            await CookieService.SetCookieAsync("language", currentLang, days: 365);
-        }
-        catch
-        {
-        }
+        await AuthService.LogoutAsync();
+        await CookieService.SetCookieAsync("language", currentLang, days: 365);
 
         Navigation.NavigateTo("/", forceLoad: true);
     }
