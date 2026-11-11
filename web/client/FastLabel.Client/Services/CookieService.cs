@@ -18,6 +18,7 @@ public class CookieService(IJSRuntime jsRuntime)
         }
     }
 
+
     public async Task SetCookieAsync(string key, string value, int days = 30)
     {
         try
