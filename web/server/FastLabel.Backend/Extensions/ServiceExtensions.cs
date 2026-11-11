@@ -41,7 +41,6 @@ public static class ServiceExtensions
         })
         .AddCookie(options =>
         {
-            options.LoginPath = "/login";
         })
         .AddJwtBearer(options =>
         {
