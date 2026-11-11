@@ -34,6 +34,14 @@ public class TranslationService
             {
                 language = cookieValue;
             }
+            else
+            {
+                var browserLang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+                if (!string.IsNullOrEmpty(browserLang))
+                {
+                    language = browserLang.Equals("fr", StringComparison.OrdinalIgnoreCase) ? "fr" : "en";
+                }
+            }
         }
         catch
         {

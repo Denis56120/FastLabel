@@ -15,16 +15,20 @@ public static class AppPipelineExtensions
 
         app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 
-        var supportedLanguages = new[] { "fr", "en" }; 
+        var supportedLanguages = new[] { "fr", "en" };
         var localizationOptions = new RequestLocalizationOptions()
             .SetDefaultCulture("en")
             .AddSupportedCultures(supportedLanguages)
             .AddSupportedUICultures(supportedLanguages);
 
-        var cookieProvider = localizationOptions.RequestCultureProviders
-            .OfType<CookieRequestCultureProvider>()
-            .First();
-        cookieProvider.CookieName = "language";
+        localizationOptions.RequestCultureProviders.Insert(0, new CustomRequestCultureProvider(context =>
+        {
+            if (context.Request.Cookies.TryGetValue("language", out var cookieValue) && !string.IsNullOrEmpty(cookieValue))
+            {
+                return Task.FromResult<ProviderCultureResult?>(new ProviderCultureResult(cookieValue));
+            }
+            return Task.FromResult<ProviderCultureResult?>(null);
+        }));
 
         app.UseRequestLocalization(localizationOptions);
 

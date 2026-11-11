@@ -16,7 +16,6 @@
 else
 {
     <div class="app-container d-flex flex-column vh-100">
-        <!-- Bandeau supérieur -->
         <header class="navbar navbar-dark bg-dark px-3 shadow-sm d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center gap-3">
                 <NavLink class="navbar-brand fw-bold text-white text-decoration-none" href="/">
@@ -30,7 +29,6 @@ else
             </div>
             
             <div class="d-flex align-items-center gap-3">
-                <!-- Sélecteur de langue -->
                 <div class="d-flex align-items-center">
                     <div class="dropdown @(_isDropdownOpen ? "show" : "")">
                         <button class="btn btn-outline-secondary dropdown-toggle btn-sm d-flex align-items-center text-white border-secondary"
@@ -117,7 +115,6 @@ else
 
         try
         {
-            // Priorité absolue au cookie de langue existant pour éviter le saut au login
             var cookieLang = await CookieService.GetCookieAsync("language");
             
             if (!string.IsNullOrEmpty(cookieLang))
@@ -178,7 +175,6 @@ else
         }
         catch
         {
-            // Ignore
         }
 
         await Translation.InitializeAsync(languageCode);
@@ -186,7 +182,7 @@ else
 
     private async Task HandleLogout()
     {
-        var currentLang = Translation.CurrentLanguage; // ex: "en"
+        var currentLang = Translation.CurrentLanguage;
 
         try
         {
@@ -194,17 +190,14 @@ else
         }
         catch
         {
-            // Ignore
         }
 
-        // Ré-écriture forcée de la langue juste avant de recharger la page
         try
         {
             await CookieService.SetCookieAsync("language", currentLang, days: 365);
         }
         catch
         {
-            // Ignore
         }
 
         Navigation.NavigateTo("/", forceLoad: true);

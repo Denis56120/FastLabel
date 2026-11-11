@@ -30,11 +30,9 @@
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             var user = authState.User;
 
-            Console.WriteLine(JsonSerializer.Serialize(user));
-
             if (user.Identity?.IsAuthenticated != true)
             {
-                Navigation.NavigateTo("/", forceLoad: true);
+                Navigation.NavigateTo("/");//, forceLoad: true);
                 return;
             }
 
@@ -42,7 +40,7 @@
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
         {
-            Navigation.NavigateTo("/", forceLoad: true);
+            Navigation.NavigateTo("/");//, forceLoad: true);
         }
         catch (Exception)
         {
