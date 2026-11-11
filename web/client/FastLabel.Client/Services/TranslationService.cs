@@ -7,7 +7,7 @@ public class TranslationService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly CookieService _cookieService;
     private Dictionary<string, string> _translations = new(StringComparer.OrdinalIgnoreCase);
-    private string _currentLanguage = "fr-FR";
+    private string _currentLanguage = "en";
     private string? _loadedLanguage;
     private Task? _loadingTask;
 

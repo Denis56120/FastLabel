@@ -15,9 +15,9 @@ public static class AppPipelineExtensions
 
         app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 
-        var supportedLanguages = new[] { "fr-FR", "en_GB" }; 
+        var supportedLanguages = new[] { "fr", "en" }; 
         var localizationOptions = new RequestLocalizationOptions()
-            .SetDefaultCulture("fr-FR")
+            .SetDefaultCulture("en")
             .AddSupportedCultures(supportedLanguages)
             .AddSupportedUICultures(supportedLanguages);
 

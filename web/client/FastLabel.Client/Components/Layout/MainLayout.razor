@@ -42,14 +42,14 @@ else
                         <ul class="dropdown-menu dropdown-menu-end shadow-sm @(_isDropdownOpen ? "show" : "")"
                             style="position: absolute; right: 0; left: auto;">
                             <li>
-                                <button class="dropdown-item @(Translation.CurrentLanguage.Equals("fr-FR", StringComparison.OrdinalIgnoreCase) ? "active" : "")" type="button"
-                                        @onclick='() => ChangeLanguage("fr-FR")'>
+                                <button class="dropdown-item @(Translation.CurrentLanguage.Equals("fr", StringComparison.OrdinalIgnoreCase) ? "active" : "")" type="button"
+                                        @onclick='() => ChangeLanguage("fr")'>
                                     🇫🇷 Français (FR)
                                 </button>
                             </li>
                             <li>
-                                <button class="dropdown-item @(Translation.CurrentLanguage.Equals("en-GB", StringComparison.OrdinalIgnoreCase) ? "active" : "")" type="button"
-                                        @onclick='() => ChangeLanguage("en-GB")'>
+                                <button class="dropdown-item @(Translation.CurrentLanguage.Equals("en", StringComparison.OrdinalIgnoreCase) ? "active" : "")" type="button"
+                                        @onclick='() => ChangeLanguage("en")'>
                                     🇬🇧 English (EN)
                                 </button>
                             </li>
@@ -185,7 +185,7 @@ else
 
     private async Task HandleLogout()
     {
-        var currentLang = Translation.CurrentLanguage; // ex: "en-GB"
+        var currentLang = Translation.CurrentLanguage; // ex: "en"
 
         try
         {

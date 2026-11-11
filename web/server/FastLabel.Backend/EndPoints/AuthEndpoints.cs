@@ -63,7 +63,7 @@ public static class AuthEndpoints
             var clientUrl = configuration["ClientUrl"] ?? "http://localhost:5000";
             var resetLink = $"{clientUrl}/reset-password?token={user.PasswordResetToken}";
 
-            var languageCode = string.IsNullOrWhiteSpace(dto.Language) ? "en-GB" : dto.Language;
+            var languageCode = string.IsNullOrWhiteSpace(dto.Language) ? "en" : dto.Language;
 
             var emailTexts = await db.Texts
                 .Where(t => t.Tag == "email.reset.subject" || t.Tag == "email.reset.body")
@@ -155,7 +155,7 @@ public static class AuthEndpoints
             var serverUrl = configuration["ServerUrl"] ?? "http://localhost:6000";
             var verificationLink = $"{serverUrl}/api/auth/verify-email?token={user.EmailVerificationToken}";
 
-            var languageCode = string.IsNullOrWhiteSpace(dto.Language) ? "en-GB" : dto.Language;
+            var languageCode = string.IsNullOrWhiteSpace(dto.Language) ? "en" : dto.Language;
 
             var emailTexts = await db.Texts
                 .Where(t => t.Tag == "email.activation.subject" || t.Tag == "email.activation.body")
