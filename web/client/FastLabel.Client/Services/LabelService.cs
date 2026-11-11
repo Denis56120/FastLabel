@@ -1,13 +1,8 @@
 using FastLabel.Shared.DTOs;
 
-public class LabelService
+public class LabelService(IHttpClientFactory clientFactory)
 {
-    private readonly IHttpClientFactory _clientFactory;
-
-    public LabelService(IHttpClientFactory clientFactory)
-    {
-        _clientFactory = clientFactory;
-    }
+    private readonly IHttpClientFactory _clientFactory = clientFactory;
 
     public async Task<List<LabelDto>> GetLabelsAsync()
     {

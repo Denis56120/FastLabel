@@ -2,10 +2,10 @@ using System.Net.Http.Json;
 using FastLabel.Client.Services;
 using FastLabel.Shared.DTOs;
 
-public class TranslationService
+public class TranslationService(IHttpClientFactory httpClientFactory, CookieService cookieService)
 {
-    private readonly IHttpClientFactory _httpClientFactory;
-    private readonly CookieService _cookieService;
+    private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
+    private readonly CookieService _cookieService = cookieService;
     private Dictionary<string, string> _translations = new(StringComparer.OrdinalIgnoreCase);
     private string _currentLanguage = "en";
     private string? _loadedLanguage;
@@ -16,12 +16,6 @@ public class TranslationService
     public string CurrentLanguage => _currentLanguage;
 
     public string this[string key] => GetString(key);
-
-    public TranslationService(IHttpClientFactory httpClientFactory, CookieService cookieService)
-    {
-        _httpClientFactory = httpClientFactory;
-        _cookieService = cookieService;
-    }
 
     public async Task InitializeAsync()
     {
