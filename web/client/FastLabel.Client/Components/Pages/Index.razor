@@ -1,29 +1,64 @@
 @page "/"
 @inject NavigationManager Navigation
 @inject AuthService AuthService
+@inject TranslationService Translation
+@implements IDisposable
 
-<div class="d-flex justify-content-center align-items-center vh-100">
-    <div class="spinner-border text-primary" role="status">
-        <span class="visually-hidden">Loading...</span>
+@if (_isLoading)
+{
+    <div class="d-flex justify-content-center align-items-center vh-100">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
     </div>
-</div>
+}
+else
+{
+    <div class="container-fluid">
+        <h3 class="mb-3">@Translation.GetString("dashboard.title")</h3>
+        <h5 class="text-muted mb-4">@Translation.GetString("dashboard.agents_header")</h5>
+
+        <p class="text-secondary">@Translation.GetString("dashboard.agents_description")</p>
+        
+        <div class="alert alert-info" role="alert">
+            @Translation.GetString("dashboard.no_active_agents")
+        </div>
+    </div>
+}
 
 @code {
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Translation.OnChange += OnTranslationChanged;
+    }
+
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        // On s'assure de n'exécuter la logique qu'au premier rendu pour éviter les boucles
         if (firstRender)
         {
             var isAuthenticated = await AuthService.IsAuthenticatedAsync();
             
-            if (isAuthenticated)
-            {
-                Navigation.NavigateTo("/dashboard", forceLoad: false);
-            }
-            else
+            if (!isAuthenticated)
             {
                 Navigation.NavigateTo("/login", forceLoad: false);
             }
+            else
+            {
+                _isLoading = false;
+                StateHasChanged();
+            }
         }
+    }
+
+    private void OnTranslationChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Translation.OnChange -= OnTranslationChanged;
     }
 }
