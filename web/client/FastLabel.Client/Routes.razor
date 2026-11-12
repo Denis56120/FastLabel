@@ -1,23 +1,25 @@
-﻿@inject TranslationService Translation
-@inject NavigationManager Navigation
-@implements IDisposable
+﻿@inject NavigationManager Navigation
+
+<HeadOutlet />
 
 <CascadingAuthenticationState>
     <Router AppAssembly="@typeof(Program).Assembly">
         <Found Context="routeData">
             <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
                 <NotAuthorized>
-                    <div class="container mt-5 text-center">
-                        <h3>Accès non autorisé</h3>
-                        <p>Vous devez vous connecter pour accéder à cette page.</p>
-                        <button class="btn btn-primary mt-3" @onclick="NavigateHome">Accueil</button>
-                    </div>
+                    <LayoutView Layout="@typeof(PublicLayout)">
+                        <div class="container mt-5 text-center">
+                            <h3>Accès non autorisé</h3>
+                            <p>Vous devez vous connecter pour accéder à cette page.</p>
+                            <button class="btn btn-primary mt-3" @onclick="NavigateHome">Accueil</button>
+                        </div>
+                    </LayoutView>
                 </NotAuthorized>
             </AuthorizeRouteView>
         </Found>
         <NotFound>
             <PageTitle>Non trouvé</PageTitle>
-            <LayoutView Layout="@typeof(MainLayout)">
+            <LayoutView Layout="@typeof(PublicLayout)">
                 <div class="container mt-5 text-center">
                     <h3>Page non trouvée</h3>
                     <p>Désolé, la page que vous recherchez n'existe pas.</p>
@@ -28,18 +30,8 @@
 </CascadingAuthenticationState>
 
 @code {
-    protected override void OnInitialized()
-    {
-        Translation.OnChange += StateHasChanged;
-    }
-
     private void NavigateHome()
     {
         Navigation.NavigateTo("/");
-    }
-
-    public void Dispose()
-    {
-        Translation.OnChange -= StateHasChanged;
     }
 }
