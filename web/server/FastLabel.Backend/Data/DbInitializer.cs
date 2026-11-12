@@ -10,7 +10,6 @@ public static class DbInitializer
     {
         await context.Database.EnsureCreatedAsync();
 
-        // Fonction d'aide pour créer un Text avec ses traductions (DefaultVal en Anglais)
         async Task<Text> CreateTextWithTranslationsAsync(string tag, string defaultEnglishVal, Dictionary<string, string> translations)
         {
             var textEntity = await context.Texts
@@ -26,10 +25,9 @@ public static class DbInitializer
                     DefaultTranslation = defaultEnglishVal
                 };
                 context.Texts.Add(textEntity);
-                await context.SaveChangesAsync(); // Sauvegarde pour obtenir l'ID
+                await context.SaveChangesAsync(); 
             }
 
-            // On vérifie et ajoute les traductions manquantes pour chaque langue
             foreach (var kvp in translations)
             {
                 var langCode = kvp.Key;
