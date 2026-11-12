@@ -75,6 +75,7 @@ public static class PrintJobEndpoints
             }
 
             var jobDto = await query
+                .OrderBy(j => j.Id)
                 .Select(j => new PrintHistoryDto
                 {
                     Id = j.Id,

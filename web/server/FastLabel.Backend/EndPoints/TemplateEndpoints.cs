@@ -62,6 +62,7 @@ public static class TemplateEndpoints
             }
 
             var template = await query
+                .OrderBy(t => t.Id)
                 .Select(t => new TemplateDto
                 {
                     Id = t.Id,

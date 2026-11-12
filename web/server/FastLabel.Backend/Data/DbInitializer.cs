@@ -15,6 +15,7 @@ public static class DbInitializer
         {
             var textEntity = await context.Texts
                 .Include(t => t.Translations)
+                .OrderBy(t => t.Id)
                 .FirstOrDefaultAsync(t => t.Tag == tag);
 
             if (textEntity == null)
@@ -34,7 +35,9 @@ public static class DbInitializer
                 var langCode = kvp.Key;
                 var translatedValue = kvp.Value;
 
-                var lang = await context.Languages.FirstOrDefaultAsync(l => l.Code == langCode);
+                var lang = await context.Languages
+                    .OrderBy(l => l.Id)
+                    .FirstOrDefaultAsync(l => l.Code == langCode);
                 if (lang != null)
                 {
                     var existingTranslation = textEntity.Translations
@@ -192,7 +195,9 @@ public static class DbInitializer
         // 10. Compte Administrateur par défaut
         if (!await context.Users.AnyAsync())
         {
-            var activeStatus = await context.BasicStatuses.FirstOrDefaultAsync();
+            var activeStatus = await context.BasicStatuses
+                .OrderBy(s => s.Id)
+                .FirstOrDefaultAsync();
             int statusId = activeStatus?.Id ?? 1;
 
             passwordHasher ??= new PasswordHasher<User>();

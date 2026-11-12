@@ -15,7 +15,9 @@ public static class PrintEndpoints
     {
         app.MapPost("/api/print", async (PrintRequest request, AppDbContext db, PrintBrokerService broker) =>
         {
-            var agent = await db.Agents.FirstOrDefaultAsync(a => a.ApiKey == request.ApiKey);
+            var agent = await db.Agents
+                .OrderBy(a => a.Id)
+                .FirstOrDefaultAsync(a => a.ApiKey == request.ApiKey);
             if (agent == null) return Results.Unauthorized();
 
             if (!broker.ActiveAgents.TryGetValue(agent.Id, out var ws) || ws.State != WebSocketState.Open)

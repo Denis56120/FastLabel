@@ -15,7 +15,9 @@ public static class AuthEndpoints
 
         group.MapPost("/login", async (LoginRequest request, AppDbContext db, TokenService tokenService, IPasswordHasher<User> passwordHasher) =>
         {
-            var user = await db.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
+            var user = await db.Users
+                .OrderBy(u => u.Id) 
+                .FirstOrDefaultAsync(u => u.Email == request.Email);
             
             if (user == null || passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password) == PasswordVerificationResult.Failed)
             {
@@ -25,6 +27,7 @@ public static class AuthEndpoints
             var statusTag = await db.Texts
                 .Join(db.BasicStatuses, t => t.Id, bs => bs.NameTextId, (t, bs) => new { bs.Id, t.Tag })
                 .Where(x => x.Id == user.BasicStatusId)
+                .OrderBy(x => x.Id)
                 .Select(x => x.Tag)
                 .FirstOrDefaultAsync();
 
@@ -49,7 +52,9 @@ public static class AuthEndpoints
                 return Results.BadRequest(new ErrorResponseDto { Message = "auth.error.missing_email" });
             }
 
-            var user = await db.Users.FirstOrDefaultAsync(u => u.Email == dto.Email);
+            var user = await db.Users
+                .OrderBy(u => u.Id)
+                .FirstOrDefaultAsync(u => u.Email == dto.Email);
 
             if (user == null)
             {
@@ -97,7 +102,9 @@ public static class AuthEndpoints
                 return Results.BadRequest(new ErrorResponseDto { Message = "auth.error.missing_token" });
             }
 
-            var user = await db.Users.FirstOrDefaultAsync(u => u.PasswordResetToken == dto.Token);
+            var user = await db.Users
+                .OrderBy(u => u.Id) 
+                .FirstOrDefaultAsync(u => u.PasswordResetToken == dto.Token);
 
             if (user == null || user.ResetTokenExpired < DateTime.UtcNow)
             {
@@ -133,6 +140,7 @@ public static class AuthEndpoints
             var inactiveStatus = await db.BasicStatuses
                 .Join(db.Texts, bs => bs.NameTextId, t => t.Id, (bs, t) => new { bs, t.Tag })
                 .Where(x => x.Tag == "status.inactive")
+                .OrderBy(x => x.bs.Id)
                 .Select(x => x.bs)
                 .FirstOrDefaultAsync();
 
@@ -189,7 +197,9 @@ public static class AuthEndpoints
                 return Results.BadRequest(new { message = "Token invalide." });
             }
 
-            var user = await db.Users.FirstOrDefaultAsync(u => u.EmailVerificationToken == token);
+            var user = await db.Users
+                .OrderBy(u => u.Id) 
+                .FirstOrDefaultAsync(u => u.EmailVerificationToken == token);
             if (user == null)
             {
                 return Results.BadRequest(new { message = "Jeton de validation invalide ou expiré." });
@@ -198,6 +208,7 @@ public static class AuthEndpoints
             var activeStatus = await db.BasicStatuses
                 .Join(db.Texts, bs => bs.NameTextId, t => t.Id, (bs, t) => new { bs, t.Tag })
                 .Where(x => x.Tag == "status.active")
+                .OrderBy(x => x.bs.Id)
                 .Select(x => x.bs)
                 .FirstOrDefaultAsync();
 

@@ -14,8 +14,8 @@ public static class PrinterEndpoints
 
         static (int userId, bool isAdmin) GetUserInfo(ClaimsPrincipal user)
         {
-            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value 
-                           ?? user.FindFirst("nameid")?.Value 
+            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                           ?? user.FindFirst("nameid")?.Value
                            ?? user.FindFirst("unique_name")?.Value;
 
             int.TryParse(userIdClaim, out var userId);
@@ -68,6 +68,7 @@ public static class PrinterEndpoints
             }
 
             var printer = await query
+                .OrderBy(p => p.Id)
                 .Select(p => new PrinterDto
                 {
                     Id = p.Id,
@@ -95,9 +96,9 @@ public static class PrinterEndpoints
                 Location = dto.Location,
                 IP = dto.IP,
                 Port = dto.Port,
-                ProtocolId = 1,      
-                ResolutionDpiId = 1,   
-                BasicStatusId = 1,     
+                ProtocolId = 1,
+                ResolutionDpiId = 1,
+                BasicStatusId = 1,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -122,7 +123,7 @@ public static class PrinterEndpoints
 
             printer.Name = updatedDto.Name;
             printer.Location = updatedDto.Location;
-            printer.IP = updatedDto.IP;      
+            printer.IP = updatedDto.IP;
             printer.Port = updatedDto.Port;
 
             await db.SaveChangesAsync();

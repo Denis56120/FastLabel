@@ -31,7 +31,9 @@ public static class AgentWebSocketEndpoints
             using (var scope = context.RequestServices.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                agent = await db.Agents.FirstOrDefaultAsync(a => a.ApiKey == apiKey);
+                agent = await db.Agents
+                    .OrderBy(a => a.Id)
+                    .FirstOrDefaultAsync(a => a.ApiKey == apiKey);
                 
                 if (agent != null)
                 {
@@ -72,7 +74,9 @@ public static class AgentWebSocketEndpoints
                         using var scope = context.RequestServices.CreateScope();
                         var dbScoped = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                         
-                        var job = await dbScoped.PrintJobs.FirstOrDefaultAsync(j => j.Id == jobId);
+                        var job = await dbScoped.PrintJobs
+                            .OrderBy(j => j.Id)
+                            .FirstOrDefaultAsync(j => j.Id == jobId);
                         
                         if (job != null)
                         {

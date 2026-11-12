@@ -18,7 +18,9 @@ public static class UserEndpoints
             if (!int.TryParse(userIdString, out var userId))
                 return Results.Unauthorized();
 
-            var user = await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            var user = await db.Users
+                .OrderBy(u => u.Id) 
+                .FirstOrDefaultAsync(u => u.Id == userId);
             if (user == null)
                 return Results.NotFound(new { message = "User not found." });
 
