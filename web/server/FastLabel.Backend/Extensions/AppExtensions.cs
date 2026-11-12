@@ -23,6 +23,8 @@ public static class AppExtensions
         {
         }
 
+        app.UseResponseCompression();
+
         app.UseCors("AllowBlazorClient");
         app.UseWebSockets();
 

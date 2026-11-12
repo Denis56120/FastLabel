@@ -4,6 +4,7 @@ using FastLabel.Backend.Models;
 using FastLabel.Backend.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
@@ -15,7 +16,14 @@ public static class ServiceExtensions
     public static IServiceCollection AddAppServices(this IServiceCollection services, IConfiguration configuration, string dbPath)
     {
         var clientUrl = configuration["ClientUrl"] ?? "http://localhost:5000";
-        
+
+        services.AddResponseCompression(options =>
+        {
+            options.EnableForHttps = true;
+            options.Providers.Add<BrotliCompressionProvider>();
+            options.Providers.Add<GzipCompressionProvider>();
+        });
+
         services.AddCors(options =>
         {
             options.AddPolicy("AllowBlazorClient", policy =>

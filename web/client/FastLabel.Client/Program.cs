@@ -6,7 +6,6 @@ using FastLabel.Client.Services;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
-builder.RootComponents.Add<HeadOutlet>("head::after");
 
 var serverAddress = builder.Configuration["ServerUrl"] ?? "http://localhost:5001";
 
