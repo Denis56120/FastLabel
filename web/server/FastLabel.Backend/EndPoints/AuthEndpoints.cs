@@ -2,9 +2,9 @@ using FastLabel.Backend.Data;
 using FastLabel.Shared.DTOs;
 using FastLabel.Backend.Services;
 using FastLabel.Backend.Models;
-using FastLabel.Backend.Extensions; // Import de l'extension de langue
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace FastLabel.Backend.Endpoints;
 
@@ -14,7 +14,7 @@ public static class AuthEndpoints
     {
         var group = routes.MapGroup("/api/auth");
 
-        group.MapPost("/login", async (LoginRequest request, AppDbContext db, TokenService tokenService, IPasswordHasher<User> passwordHasher) =>
+        group.MapPost("/login", async (LoginRequest request, HttpContext httpContext, AppDbContext db, TokenService tokenService, IPasswordHasher<User> passwordHasher) =>
         {
             var user = await db.Users
                 .OrderBy(u => u.Id) 
@@ -39,12 +39,50 @@ public static class AuthEndpoints
 
             var token = tokenService.GenerateToken(user);
 
+            httpContext.Response.Cookies.Append("auth_token", token, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = false, 
+                SameSite = SameSiteMode.Lax,
+                Expires = DateTimeOffset.UtcNow.AddDays(7)
+            });
+
             return Results.Ok(new
             {
-                token,
                 user = new { user.Id, user.Email, user.Name } 
             });
         });
+
+        group.MapPost("/logout", (HttpContext httpContext) =>
+        {
+            httpContext.Response.Cookies.Delete("auth_token", new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = false, 
+                SameSite = SameSiteMode.Lax
+            });
+
+            return Results.Ok(new { message = "auth.success.logout" });
+        }).RequireAuthorization();
+
+        group.MapGet("/me", (ClaimsPrincipal user) =>
+        {
+            if (user.Identity?.IsAuthenticated != true)
+            {
+                return Results.Unauthorized();
+            }
+
+            var idClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var name = user.FindFirst(ClaimTypes.Name)?.Value ?? string.Empty;
+            var email = user.FindFirst(ClaimTypes.Email)?.Value ?? string.Empty;
+
+            return Results.Ok(new
+            {
+                Id = int.TryParse(idClaim, out var id) ? id : 0,
+                Name = name,
+                Email = email
+            });
+        }).RequireAuthorization();
 
         group.MapPost("/forgot-password", async (ForgotPasswordDto dto, HttpContext httpContext, AppDbContext db, IEmailService emailService, IConfiguration configuration) =>
         {
@@ -69,7 +107,6 @@ public static class AuthEndpoints
             var clientUrl = configuration["ClientUrl"] ?? "http://localhost:5000";
             var resetLink = $"{clientUrl}/reset-password?token={user.PasswordResetToken}";
 
-            // Utilisation exclusive de l'en-tête HTTP via l'extension
             var languageCode = httpContext.GetRequestLanguage();
 
             var emailTexts = await db.Texts

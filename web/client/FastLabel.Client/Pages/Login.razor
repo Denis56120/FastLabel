@@ -116,32 +116,27 @@
 
         try
         {
-            var client = ClientFactory.CreateClient("PublicClient");
-            var response = await client.PostAsJsonAsync("api/auth/login", _loginModel);
+            // On délègue tout à l'AuthService que tu viens de montrer
+            var success = await AuthService.LoginAsync(_loginModel);
 
-            if (response.IsSuccessStatusCode)
+            if (success)
             {
-                var result = await response.Content.ReadFromJsonAsync<AuthResponseDto>();
-                if (result != null && !string.IsNullOrEmpty(result.Token))
+                try
                 {
-                    await AuthService.SetTokenAsync(result.Token);
-                    
-                    try
-                    {
-                        await CookieService.SetCookieAsync("language", Translation.CurrentLanguage, days: 365);
-                    }
-                    catch
-                    {
-                    }
-
-                    Navigation.NavigateTo("/dashboard");
+                    await CookieService.SetCookieAsync("language", Translation.CurrentLanguage, days: 365);
                 }
+                catch
+                {
+                    // Ignorer les erreurs non bloquantes de cookie de langue
+                }
+
+                // Redirection vers le dashboard, le state provider ayant été notifié
+                Navigation.NavigateTo("/dashboard");
             }
             else
             {
-                var errorContent = await response.Content.ReadFromJsonAsync<ErrorResponseDto>();
-                string errorKey = !string.IsNullOrEmpty(errorContent?.Message) ? errorContent.Message : "auth.error.invalid_credentials";
-                _errorMessage = Translation.GetString(errorKey);
+                // Si le login échoue (ex: 400 Bad Request ou 401 Unauthorized géré par AuthService)
+                _errorMessage = Translation.GetString("auth.error.invalid_credentials");
             }
         }
         catch (Exception)

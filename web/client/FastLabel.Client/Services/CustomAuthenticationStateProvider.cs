@@ -1,112 +1,53 @@
 using System.Security.Claims;
-using System.Text.Json;
+using System.Net.Http.Json;
 using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.JSInterop;
-
-namespace FastLabel.Client.Services;
+using FastLabel.Shared.DTOs; 
 
 public class CustomAuthenticationStateProvider : AuthenticationStateProvider
 {
-    private readonly IServiceProvider _serviceProvider;
-    private IJSRuntime? _jsRuntime;
-    private IJSRuntime JsRuntime => _jsRuntime ??= _serviceProvider.GetRequiredService<IJSRuntime>();
-
+    private readonly HttpClient _httpClient;
     private readonly ClaimsPrincipal _anonymous = new(new ClaimsIdentity());
-    private bool _initialized;
-    private AuthenticationState _cachedState;
 
-    public CustomAuthenticationStateProvider(IServiceProvider serviceProvider)
+    public CustomAuthenticationStateProvider(IHttpClientFactory clientFactory)
     {
-        _serviceProvider = serviceProvider;
-        _cachedState = new AuthenticationState(_anonymous);
+        _httpClient = clientFactory.CreateClient("AuthClient");
     }
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
-        if (_initialized)
-        {
-            return _cachedState;
-        }
-
-        string? token = null;
         try
         {
-            token = await JsRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+            var userInfo = await _httpClient.GetFromJsonAsync<UserDto>("api/auth/me");
+
+            if (userInfo != null && !string.IsNullOrEmpty(userInfo.Email))
+            {
+                var claims = new List<Claim>
+                {
+                    new(ClaimTypes.Name, userInfo.Name),
+                    new(ClaimTypes.Email, userInfo.Email),
+                    new(ClaimTypes.Role, userInfo.IsAdmin ? "Admin" : "Standard")
+                };
+
+                var identity = new ClaimsIdentity(claims, "cookieAuth");
+                return new AuthenticationState(new ClaimsPrincipal(identity));
+            }
         }
         catch
         {
+            
         }
 
-        if (!string.IsNullOrWhiteSpace(token))
-        {
-            var identity = new ClaimsIdentity(ParseClaimsFromJwt(token), "jwtAuthType");
-            var user = new ClaimsPrincipal(identity);
-            _cachedState = new AuthenticationState(user);
-        }
-
-        _initialized = true;
-        return _cachedState;
+        return new AuthenticationState(_anonymous);
     }
 
-    public void NotifyUserAuthentication(string token)
+    public void NotifyUserAuthentication()
     {
-        var authenticatedUser = new ClaimsPrincipal(new ClaimsIdentity(ParseClaimsFromJwt(token), "jwtAuthType"));
-        _cachedState = new AuthenticationState(authenticatedUser);
-        _initialized = true;
-        NotifyAuthenticationStateChanged(Task.FromResult(_cachedState));
+        NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
     }
 
     public void NotifyUserLogout()
     {
-        _cachedState = new AuthenticationState(_anonymous);
-        _initialized = true;
-        NotifyAuthenticationStateChanged(Task.FromResult(_cachedState));
-    }
-
-    private static IEnumerable<Claim> ParseClaimsFromJwt(string jwt)
-    {
-        var payload = jwt.Split('.')[1];
-        var jsonBytes = ParseBase64WithoutPadding(payload);
-        var keyValuePairs = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonBytes);
-
-        var claims = new List<Claim>();
-        if (keyValuePairs == null) return claims;
-
-        foreach (var kvp in keyValuePairs)
-        {
-            var claimType = kvp.Key;
-            if (claimType == "role" || claimType.EndsWith("/identity/claims/role"))
-            {
-                claimType = ClaimTypes.Role;
-            }
-
-            if (kvp.Value is JsonElement element && element.ValueKind == JsonValueKind.Array)
-            {
-                foreach (var item in element.EnumerateArray())
-                {
-                    claims.Add(new Claim(claimType, item.ToString()!));
-                }
-            }
-            else if (kvp.Value is JsonElement singleElement)
-            {
-                claims.Add(new Claim(claimType, singleElement.ToString()!));
-            }
-            else
-            {
-                claims.Add(new Claim(claimType, kvp.Value.ToString()!));
-            }
-        }
-
-        return claims;
-    }
-
-    private static byte[] ParseBase64WithoutPadding(string base64)
-    {
-        switch (base64.Length % 4)
-        {
-            case 2: base64 += "=="; break;
-            case 3: base64 += "="; break;
-        }
-        return Convert.FromBase64String(base64);
+        var authState = Task.FromResult(new AuthenticationState(_anonymous));
+        NotifyAuthenticationStateChanged(authState);
     }
 }

@@ -12,7 +12,6 @@ namespace FastLabel.Backend.Extensions;
 
 public static class ServiceExtensions
 {
-
     public static IServiceCollection AddAppServices(this IServiceCollection services, IConfiguration configuration, string dbPath)
     {
         var clientUrl = configuration["ClientUrl"] ?? "http://localhost:5000";
@@ -49,7 +48,7 @@ public static class ServiceExtensions
         .AddJwtBearer(options =>
         {
             var secretKey = configuration["Jwt:SecretKey"]
-                            ?? throw new InvalidOperationException("Jwt:SecretKey is not configured.");
+                        ?? throw new InvalidOperationException("Jwt:SecretKey is not configured.");
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,
@@ -60,6 +59,14 @@ public static class ServiceExtensions
 
             options.Events = new JwtBearerEvents
             {
+                OnMessageReceived = context =>
+                {
+                    if (context.Request.Cookies.TryGetValue("auth_token", out var token))
+                    {
+                        context.Token = token;
+                    }
+                    return Task.CompletedTask;
+                },
                 OnChallenge = context =>
                 {
                     context.HandleResponse();

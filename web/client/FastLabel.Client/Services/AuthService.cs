@@ -1,75 +1,39 @@
-using Microsoft.JSInterop;
-using Microsoft.AspNetCore.Components.Authorization;
-using FastLabel.Shared.DTOs;
 using System.Net.Http.Json;
+using Microsoft.AspNetCore.Components.Authorization;
+using FastLabel.Shared.DTOs; // <-- Importe le namespace partagé ici
 
-namespace FastLabel.Client.Services;
-
-public class AuthService(
-    IHttpClientFactory clientFactory,
-    IServiceProvider serviceProvider,
-    AuthenticationStateProvider authStateProvider,
-    TokenContainer tokenContainer) 
+public class AuthService
 {
-    private readonly IHttpClientFactory _clientFactory = clientFactory;
-    private readonly IServiceProvider _serviceProvider = serviceProvider;
-    private readonly AuthenticationStateProvider _authProvider = authStateProvider;
-    private readonly TokenContainer _tokenContainer = tokenContainer;
-    
-    private IJSRuntime? _jsRuntime;
-    private IJSRuntime JsRuntime => _jsRuntime ??= _serviceProvider.GetRequiredService<IJSRuntime>();
+    private readonly HttpClient _http;
+    private readonly AuthenticationStateProvider _authProvider;
 
-    private HttpClient Http => _clientFactory.CreateClient("AuthClient");
-    private string? _token;
-
-    public async Task SetTokenAsync(string token)
+    public AuthService(IHttpClientFactory clientFactory, AuthenticationStateProvider authProvider)
     {
-        _token = token;
-        _tokenContainer.Token = token;
-        await JsRuntime.InvokeVoidAsync("localStorage.setItem", "authToken", token);
-
-        if (_authProvider is CustomAuthenticationStateProvider customProvider)
-        {
-            customProvider.NotifyUserAuthentication(token);
-        }
+        _http = clientFactory.CreateClient("AuthClient");
+        _authProvider = authProvider;
     }
 
-    public async Task<string?> GetTokenAsync()
+    public async Task<bool> LoginAsync(LoginDto model)
     {
-        if (string.IsNullOrEmpty(_token))
+        var response = await _http.PostAsJsonAsync("api/auth/login", model);
+        if (response.IsSuccessStatusCode)
         {
-            try
+            if (_authProvider is CustomAuthenticationStateProvider customProvider)
             {
-                _token = await JsRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
-                _tokenContainer.Token = _token;
+                customProvider.NotifyUserAuthentication();
             }
-            catch
-            {
-            }
+            return true;
         }
-        return _token;
+        return false;
     }
 
     public async Task LogoutAsync()
     {
-        _token = null;
-        _tokenContainer.Token = null;
-        await JsRuntime.InvokeVoidAsync("localStorage.removeItem", "authToken");
+        await _http.PostAsync("api/auth/logout", null);
 
         if (_authProvider is CustomAuthenticationStateProvider customProvider)
         {
             customProvider.NotifyUserLogout();
         }
-    }
-
-    public async Task<bool> IsAuthenticatedAsync()
-    {
-        var token = await GetTokenAsync();
-        return !string.IsNullOrEmpty(token);
-    }
-
-    public async Task<AuthResponseDto?> GetCurrentUserAsync()
-    {
-        return await Http.GetFromJsonAsync<AuthResponseDto>("api/auth/me");
     }
 }

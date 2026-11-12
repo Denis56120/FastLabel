@@ -1,4 +1,3 @@
-using System.Net.Http.Json;
 using System.Text.Json;
 using FastLabel.Client.Services;
 using FastLabel.Shared.DTOs;
@@ -115,10 +114,8 @@ public class TranslationService(IHttpClientFactory httpClientFactory, CookieServ
     {
         if (string.IsNullOrEmpty(language)) return;
 
-        // 1. Sauvegarde dans le cookie pour que le client et le backend s'en souviennent
         await _cookieService.SetCookieAsync("language", language);
 
-        // 2. Initialise la nouvelle langue (ce qui va fetch les traductions et lever l'événement OnChange)
         await InitializeAsync(language);
     }
 

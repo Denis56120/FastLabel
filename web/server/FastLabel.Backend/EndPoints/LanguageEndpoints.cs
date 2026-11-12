@@ -1,7 +1,3 @@
-using FastLabel.Backend.Data;
-using FastLabel.Shared.DTOs;
-using Microsoft.EntityFrameworkCore;
-
 namespace FastLabel.Backend.Endpoints;
 
 public static class LanguageEndpoints

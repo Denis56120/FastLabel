@@ -10,41 +10,70 @@ public static class UserEndpoints
 {
     public static void MapUserEndpoints(this IEndpointRouteBuilder routes)
     {
-        routes.MapGet("/api/users/me", async (AppDbContext db, ClaimsPrincipal claimsUser) =>
+        routes.MapGet("/api/users/me", async (AppDbContext db, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
         {
             var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier) 
-                            ?? claimsUser.FindFirstValue("nameid");
+                                ?? claimsUser.FindFirstValue("nameid");
 
             if (!int.TryParse(userIdString, out var userId))
                 return Results.Unauthorized();
 
-            var user = await db.Users
-                .OrderBy(u => u.Id) 
-                .FirstOrDefaultAsync(u => u.Id == userId);
-            if (user == null)
-                return Results.NotFound(new { message = "User not found." });
+            var lang = HttpContextExtensions.GetRequestLanguage(httpContext);
 
-            return Results.Ok(new UserDto
-            {
-                Id = user.Id,
-                Name = user.Name,
-                Email = user.Email,
-                IsAdmin = user.IsAdmin,
-                CreatedAt = user.CreatedAt
-            });
-        }).RequireAuthorization();
-
-        var adminGroup = routes.MapGroup("/api/users").RequireAuthorization("AdminOnly");
-
-        adminGroup.MapGet("/", async (AppDbContext db) =>
-        {
-            var users = await db.Users
+            var userDto = await db.Users
+                .Include(u => u.BasicStatus)
+                    .ThenInclude(s => s.Name)
+                        .ThenInclude(n => n.Translations)
+                            .ThenInclude(tr => tr.Language)
+                .Where(u => u.Id == userId)
+                .OrderBy(u => u.Id)
                 .Select(u => new UserDto
                 {
                     Id = u.Id,
                     Name = u.Name,
                     Email = u.Email,
                     IsAdmin = u.IsAdmin,
+                    BasicStatusName = u.BasicStatus != null && u.BasicStatus.Name != null
+                        ? (u.BasicStatus.Name.Translations
+                            .Where(tr => tr.Language.Code == lang)
+                            .Select(tr => tr.TranslatedValue)
+                            .FirstOrDefault()
+                           ?? u.BasicStatus.Name.DefaultTranslation)
+                        : string.Empty,
+                    CreatedAt = u.CreatedAt
+                })
+                .FirstOrDefaultAsync();
+
+            if (userDto == null)
+                return Results.NotFound(new { message = "User not found." });
+
+            return Results.Ok(userDto);
+        }).RequireAuthorization();
+
+        var adminGroup = routes.MapGroup("/api/users").RequireAuthorization("AdminOnly");
+
+        adminGroup.MapGet("/", async (AppDbContext db, HttpContext httpContext) =>
+        {
+            var lang = HttpContextExtensions.GetRequestLanguage(httpContext);
+
+            var users = await db.Users
+                .Include(u => u.BasicStatus)
+                    .ThenInclude(s => s.Name)
+                        .ThenInclude(n => n.Translations)
+                            .ThenInclude(tr => tr.Language)
+                .Select(u => new UserDto
+                {
+                    Id = u.Id,
+                    Name = u.Name,
+                    Email = u.Email,
+                    IsAdmin = u.IsAdmin,
+                    BasicStatusName = u.BasicStatus != null && u.BasicStatus.Name != null
+                        ? (u.BasicStatus.Name.Translations
+                            .Where(tr => tr.Language.Code == lang)
+                            .Select(tr => tr.TranslatedValue)
+                            .FirstOrDefault()
+                           ?? u.BasicStatus.Name.DefaultTranslation)
+                        : string.Empty,
                     CreatedAt = u.CreatedAt
                 })
                 .ToListAsync();
@@ -52,19 +81,35 @@ public static class UserEndpoints
             return Results.Ok(users);
         });
 
-        adminGroup.MapGet("/{id:int}", async (int id, AppDbContext db) =>
+        adminGroup.MapGet("/{id:int}", async (int id, AppDbContext db, HttpContext httpContext) =>
         {
-            var user = await db.Users.FindAsync(id);
-            if (user == null) return Results.NotFound();
+            var lang = HttpContextExtensions.GetRequestLanguage(httpContext);
 
-            var dto = new UserDto
-            {
-                Id = user.Id,
-                Name = user.Name,
-                Email = user.Email,
-                IsAdmin = user.IsAdmin,
-                CreatedAt = user.CreatedAt
-            };
+            var dto = await db.Users
+                .Include(u => u.BasicStatus)
+                    .ThenInclude(s => s.Name)
+                        .ThenInclude(n => n.Translations)
+                            .ThenInclude(tr => tr.Language)
+                .Where(u => u.Id == id)
+                .OrderBy(u => u.Id)
+                .Select(u => new UserDto
+                {
+                    Id = u.Id,
+                    Name = u.Name,
+                    Email = u.Email,
+                    IsAdmin = u.IsAdmin,
+                    BasicStatusName = u.BasicStatus != null && u.BasicStatus.Name != null
+                        ? (u.BasicStatus.Name.Translations
+                            .Where(tr => tr.Language.Code == lang)
+                            .Select(tr => tr.TranslatedValue)
+                            .FirstOrDefault()
+                           ?? u.BasicStatus.Name.DefaultTranslation)
+                        : string.Empty,
+                    CreatedAt = u.CreatedAt
+                })
+                .FirstOrDefaultAsync();
+
+            if (dto == null) return Results.NotFound();
 
             return Results.Ok(dto);
         });
@@ -76,6 +121,7 @@ public static class UserEndpoints
                 Name = dto.Name,
                 Email = dto.Email,
                 IsAdmin = dto.IsAdmin,
+                BasicStatusId = 1,
                 CreatedAt = DateTime.UtcNow
             };
 

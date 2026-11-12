@@ -1,28 +1,21 @@
-using System.Net.Http.Headers;
+using Microsoft.AspNetCore.Components.WebAssembly.Http;
 
 public class CustomAuthorizationMessageHandler : DelegatingHandler
 {
-    private readonly TokenContainer _tokenContainer;
     private readonly TranslationService _translationService;
 
-    public CustomAuthorizationMessageHandler(TokenContainer tokenContainer, TranslationService translationService)
+    public CustomAuthorizationMessageHandler(TranslationService translationService)
     {
-        _tokenContainer = tokenContainer;
         _translationService = translationService;
     }
 
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
-        if (!string.IsNullOrEmpty(_tokenContainer.Token))
-        {
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _tokenContainer.Token);
-        }
+        request.SetBrowserRequestCredentials(BrowserRequestCredentials.Include);
 
-        var currentLang = _translationService?.CurrentLanguage ?? "en";
+        var currentLang = _translationService?.CurrentLanguage ?? "fr";
         request.Headers.Remove("X-Language");
         request.Headers.Add("X-Language", currentLang);
-
-        Console.WriteLine($"X-Language : {currentLang}");
 
         return base.SendAsync(request, cancellationToken);
     }
