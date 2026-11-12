@@ -8,6 +8,11 @@ public class LabelTemplate
     [Key]
     public int Id { get; set; }
 
+    public int UserId { get; set; }
+
+    [ForeignKey(nameof(UserId))]
+    public User User { get; set; } = null!;
+
     [Required]
     public string Name { get; set; } = string.Empty;
 

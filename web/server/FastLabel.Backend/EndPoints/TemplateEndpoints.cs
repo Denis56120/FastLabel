@@ -1,6 +1,8 @@
 using FastLabel.Backend.Data;
 using FastLabel.Backend.Models;
+using FastLabel.Shared.DTOs;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace FastLabel.Backend.Endpoints;
 
@@ -8,43 +10,125 @@ public static class TemplateEndpoints
 {
     public static void MapTemplateEndpoints(this IEndpointRouteBuilder routes)
     {
-        var group = routes.MapGroup("/api/templates");
+        var group = routes.MapGroup("/api/templates").RequireAuthorization();
 
-        group.MapGet("/", async (AppDbContext db) =>
+        static (int userId, bool isAdmin) GetUserInfo(ClaimsPrincipal user)
         {
-            var templates = await db.LabelTemplates.ToListAsync();
+            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value 
+                           ?? user.FindFirst("nameid")?.Value 
+                           ?? user.FindFirst("unique_name")?.Value;
+
+            int.TryParse(userIdClaim, out var userId);
+            bool isAdmin = user.IsInRole("Admin");
+
+            return (userId, isAdmin);
+        }
+
+        group.MapGet("/", async (AppDbContext db, ClaimsPrincipal claimsUser) =>
+        {
+            var (userId, isAdmin) = GetUserInfo(claimsUser);
+
+            var query = db.LabelTemplates.Include(t => t.BasicStatus).AsQueryable();
+
+            if (!isAdmin)
+            {
+                query = query.Where(t => t.UserId == userId);
+            }
+
+            var templates = await query
+                .Select(t => new TemplateDto
+                {
+                    Id = t.Id,
+                    Name = t.Name ?? string.Empty,
+                    BasicStatusName = (t.BasicStatus != null && t.BasicStatus.Name != null ? t.BasicStatus.Name.ToString() : null) ?? string.Empty,
+                    JsonData = t.JsonData ?? string.Empty,
+                    CreatedAt = t.CreatedAt,
+                    UpdatedAt = t.UpdatedAt
+                })
+                .ToListAsync();
+
             return Results.Ok(templates);
         });
 
-        group.MapGet("/{id:int}", async (int id, AppDbContext db) =>
+        group.MapGet("/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
-            var template = await db.LabelTemplates.FindAsync(id);
+            var (userId, isAdmin) = GetUserInfo(claimsUser);
+
+            var query = db.LabelTemplates.Include(t => t.BasicStatus).Where(t => t.Id == id).AsQueryable();
+
+            if (!isAdmin)
+            {
+                query = query.Where(t => t.UserId == userId);
+            }
+
+            var template = await query
+                .Select(t => new TemplateDto
+                {
+                    Id = t.Id,
+                    Name = t.Name ?? string.Empty,
+                    BasicStatusName = (t.BasicStatus != null && t.BasicStatus.Name != null ? t.BasicStatus.Name.ToString() : null) ?? string.Empty,
+                    JsonData = t.JsonData ?? string.Empty,
+                    CreatedAt = t.CreatedAt,
+                    UpdatedAt = t.UpdatedAt
+                })
+                .FirstOrDefaultAsync();
+
             return template is not null ? Results.Ok(template) : Results.NotFound();
         });
 
-        group.MapPost("/", async (LabelTemplate template, AppDbContext db) =>
+        group.MapPost("/", async (TemplateDto dto, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
+            var (userId, _) = GetUserInfo(claimsUser);
+            if (userId == 0) return Results.Unauthorized();
+
+            var template = new LabelTemplate
+            {
+                UserId = userId,
+                Name = dto.Name,
+                JsonData = dto.JsonData,
+                BasicStatusId = 1, 
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
             db.LabelTemplates.Add(template);
             await db.SaveChangesAsync();
-            return Results.Created($"/api/templates/{template.Id}", template);
+
+            dto.Id = template.Id;
+            return Results.Created($"/api/templates/{template.Id}", dto);
         });
 
-        group.MapPut("/{id:int}", async (int id, LabelTemplate updated, AppDbContext db) =>
+        group.MapPut("/{id:int}", async (int id, TemplateDto updatedDto, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
+            var (userId, isAdmin) = GetUserInfo(claimsUser);
+
             var template = await db.LabelTemplates.FindAsync(id);
             if (template is null) return Results.NotFound();
 
-            template.Name = updated.Name;
-            template.JsonData = updated.JsonData;
+            if (!isAdmin && template.UserId != userId)
+            {
+                return Results.Forbid();
+            }
+
+            template.Name = updatedDto.Name;
+            template.JsonData = updatedDto.JsonData;
+            template.UpdatedAt = DateTime.UtcNow;
 
             await db.SaveChangesAsync();
             return Results.Ok(template);
         });
 
-        group.MapDelete("/{id:int}", async (int id, AppDbContext db) =>
+        group.MapDelete("/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
+            var (userId, isAdmin) = GetUserInfo(claimsUser);
+
             var template = await db.LabelTemplates.FindAsync(id);
             if (template is null) return Results.NotFound();
+
+            if (!isAdmin && template.UserId != userId)
+            {
+                return Results.Forbid();
+            }
 
             db.LabelTemplates.Remove(template);
             await db.SaveChangesAsync();

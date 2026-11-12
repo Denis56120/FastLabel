@@ -259,9 +259,6 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("account.role_label", "Role / Plan", new() { { "fr", "Rôle / Plan" }, { "en", "Role / Plan" } });
 
         await CreateTextWithTranslationsAsync("dashboard.title", "FastLabel - Dashboard", new() { { "fr", "FastLabel - Tableau de bord" }, { "en", "FastLabel - Dashboard" } });
-        await CreateTextWithTranslationsAsync("dashboard.agents_header", "ZPL Agents & Printers", new() { { "fr", "Agents & Imprimantes ZPL" }, { "en", "ZPL Agents & Printers" } });
-        await CreateTextWithTranslationsAsync("dashboard.agents_description", "Management and status of your connected Windows agents for thermal printing.", new() { { "fr", "Gestion et état de vos agents Windows connectés pour l'impression thermique." }, { "en", "Management and status of your connected Windows agents for thermal printing." } });
-        await CreateTextWithTranslationsAsync("dashboard.no_active_agents", "No active agents at the moment. The ZPL listening service will communicate here soon.", new() { { "fr", "Aucun agent actif pour le moment. Le service d'écoute ZPL communiquera bientôt ici." }, { "en", "No active agents at the moment. The ZPL listening service will communicate here soon." } });
 
         await CreateTextWithTranslationsAsync("auth.error.invalid_or_expired_token", "Invalid or expired reset token.", new() { { "fr", "Jeton de réinitialisation invalide ou expiré." }, { "en", "Invalid or expired reset token." } });
         await CreateTextWithTranslationsAsync("auth.reset_password_title", "Reset your password", new() { { "fr", "Réinitialiser votre mot de passe" }, { "en", "Reset your password" } });

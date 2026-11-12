@@ -72,8 +72,6 @@
     private RegisterDto _registerModel = new();
     private string? _errorMessage;
     private bool _showPassword = false;
-    private bool isLoading = true;
-
     private string PasswordInputType => _showPassword ? "text" : "password";
     private string PasswordIconClass => _showPassword ? "bi-eye-slash" : "bi-eye";
 

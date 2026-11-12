@@ -1,11 +1,13 @@
 @page "/templates"
 @using FastLabel.Client.Components
+@using FastLabel.Shared.DTOs
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @inherits TranslatableComponent
+@inject IHttpClientFactory ClientFactory
 
 <div class="container-fluid">
-    <h3>@Translation.GetString("templates.title")</h3>
+    <h3 class="mb-3">@Translation.GetString("templates.title")</h3>
 
     @if (isLoading)
     {
@@ -15,7 +17,7 @@
             </div>
         </div>
     }
-    else
+    else if (_templates == null || !_templates.Any())
     {
         <p class="text-muted">@Translation.GetString("templates.description")</p>
     
@@ -23,19 +25,52 @@
             @Translation.GetString("templates.no_templates")
         </div>
     }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>@Translation.GetString("templates.name")</th>
+                        <th>@Translation.GetString("templates.status")</th>
+                        <th>@Translation.GetString("templates.updated_at")</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var template in _templates)
+                    {
+                        <tr>
+                            <td>@template.Name</td>
+                            <td>@template.BasicStatusName</td>
+                            <td>@template.UpdatedAt.ToLocalTime().ToString("g")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
 </div>
 
 @code {
+    private List<TemplateDto> _templates = new();
     private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadTemplatesAsync();
+    }
+
+    private async Task LoadTemplatesAsync()
+    {
+        isLoading = true;
         try
         {
-            isLoading = true;
+            var client = ClientFactory.CreateClient("AuthClient");
+            _templates = await client.GetFromJsonAsync<List<TemplateDto>>("api/templates") ?? new();
         }
-        catch(Exception)
+        catch (Exception)
         {
+            _templates = new();
         }
         finally
         {

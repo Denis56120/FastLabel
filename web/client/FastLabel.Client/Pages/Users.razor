@@ -2,10 +2,12 @@
 @attribute [Authorize(Roles = "Admin")]
 @inherits TranslatableComponent
 @using FastLabel.Client.Components
+@using FastLabel.Shared.DTOs
 @using Microsoft.AspNetCore.Authorization
+@inject IHttpClientFactory ClientFactory
 
 <div class="container-fluid">
-    <h3>@Translation.GetString("users.title")</h3>
+    <h3 class="mb-3">@Translation.GetString("users.title")</h3>
 
     @if (isLoading)
     {
@@ -15,7 +17,7 @@
             </div>
         </div>
     }
-    else
+    else if (_users == null || !_users.Any())
     {
         <p class="text-muted">@Translation.GetString("users.description")</p>
     
@@ -23,19 +25,58 @@
             @Translation.GetString("users.no_users")
         </div>
     }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>@Translation.GetString("users.name")</th>
+                        <th>@Translation.GetString("users.email")</th>
+                        <th>@Translation.GetString("users.role")</th>
+                        <th>@Translation.GetString("users.created_at")</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in _users)
+                    {
+                        <tr>
+                            <td>@user.Name</td>
+                            <td>@user.Email</td>
+                            <td>
+                                <span class="badge bg-@(user.IsAdmin ? "danger" : "secondary")">
+                                    @(user.IsAdmin ? "Admin" : "User")
+                                </span>
+                            </td>
+                            <td>@user.CreatedAt.ToLocalTime().ToString("g")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
 </div>
 
 @code {
+    private List<UserDto> _users = new();
     private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadUsersAsync();
+    }
+
+    private async Task LoadUsersAsync()
+    {
+        isLoading = true;
         try
         {
-            isLoading = true;
+            var client = ClientFactory.CreateClient("AuthClient");
+            _users = await client.GetFromJsonAsync<List<UserDto>>("api/users") ?? new();
         }
         catch (Exception)
         {
+            _users = new();
         }
         finally
         {

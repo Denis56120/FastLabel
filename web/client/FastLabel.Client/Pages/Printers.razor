@@ -1,11 +1,13 @@
 @page "/printers"
 @using FastLabel.Client.Components
+@using FastLabel.Shared.DTOs
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @inherits TranslatableComponent
+@inject IHttpClientFactory ClientFactory
 
 <div class="container-fluid">
-    <h3>@Translation.GetString("printers.title")</h3>
+    <h3 class="mb-3">@Translation.GetString("printers.title")</h3>
 
     @if (isLoading)
     {
@@ -15,7 +17,7 @@
             </div>
         </div>
     }
-    else
+    else if (_printers == null || !_printers.Any())
     {
         <p class="text-muted">@Translation.GetString("printers.description")</p>
     
@@ -23,19 +25,54 @@
             @Translation.GetString("printers.no_printers")
         </div>
     }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>@Translation.GetString("printers.name")</th>
+                        <th>@Translation.GetString("printers.location")</th>
+                        <th>@Translation.GetString("printers.ip_port")</th>
+                        <th>@Translation.GetString("printers.status")</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var printer in _printers)
+                    {
+                        <tr>
+                            <td>@printer.Name</td>
+                            <td>@printer.Location</td>
+                            <td>@printer.IP:@printer.Port</td>
+                            <td>@printer.StatusName</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
 </div>
 
 @code {
+    private List<PrinterDto> _printers = new();
     private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadPrintersAsync();
+    }
+
+    private async Task LoadPrintersAsync()
+    {
+        isLoading = true;
         try
         {
-            isLoading = true;
+            var client = ClientFactory.CreateClient("AuthClient"); 
+            _printers = await client.GetFromJsonAsync<List<PrinterDto>>("api/printers") ?? new();
         }
         catch (Exception)
         {
+            _printers = new();
         }
         finally
         {

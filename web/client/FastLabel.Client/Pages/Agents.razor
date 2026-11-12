@@ -1,11 +1,13 @@
 @page "/agents"
 @using FastLabel.Client.Components
+@using FastLabel.Shared.DTOs
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
 @inherits TranslatableComponent
+@inject IHttpClientFactory ClientFactory
 
 <div class="container-fluid">
-    <h3>@Translation.GetString("agents.title")</h3>
+    <h3 class="mb-3">@Translation.GetString("agents.title")</h3>
 
     @if (isLoading)
     {
@@ -15,7 +17,7 @@
             </div>
         </div>
     }
-    else
+    else if (_agents == null || !_agents.Any())
     {
         <p class="text-muted">@Translation.GetString("agents.description")</p>
     
@@ -23,20 +25,54 @@
             @Translation.GetString("agents.no_agents")
         </div>
     }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>@Translation.GetString("agents.name")</th>
+                        <th>@Translation.GetString("agents.type")</th>
+                        <th>@Translation.GetString("agents.api_key")</th>
+                        <th>@Translation.GetString("agents.last_seen")</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var agent in _agents)
+                    {
+                        <tr>
+                            <td>@agent.Name</td>
+                            <td>@agent.AgentTypeName</td>
+                            <td><code>@agent.ApiKey</code></td>
+                            <td>@(agent.LastSeenAt?.ToLocalTime().ToString("g") ?? "-")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
 </div>
 
-
 @code {
+    private List<AgentDto> _agents = new();
     private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadAgentsAsync();
+    }
+
+    private async Task LoadAgentsAsync()
+    {
+        isLoading = true;
         try
         {
-            isLoading = true;
+            var client = ClientFactory.CreateClient("AuthClient");
+            _agents = await client.GetFromJsonAsync<List<AgentDto>>("api/agents") ?? new();
         }
         catch (Exception)
         {
+            _agents = new();
         }
         finally
         {
