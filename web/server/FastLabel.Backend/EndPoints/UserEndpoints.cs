@@ -32,23 +32,5 @@ public static class UserEndpoints
                 createdAt = user.CreatedAt
             });
         });
-
-        group.MapPut("/me/preferences", async (UpdatePreferencesDto dto, AppDbContext db, ClaimsPrincipal claimsUser) =>
-        {
-            var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier);
-            if (!int.TryParse(userIdString, out var userId))
-                return Results.Unauthorized();
-
-            var user = await db.Users.FindAsync(userId);
-            if (user == null)
-                return Results.NotFound(new { message = "User not found." });
-
-            await db.SaveChangesAsync();
-
-            return Results.Ok(new
-            {
-                message = "Preferences updated successfully."
-            });
-        });
     }
 }

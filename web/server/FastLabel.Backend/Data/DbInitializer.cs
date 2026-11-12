@@ -222,6 +222,8 @@ public static class DbInitializer
         }
 
         // 11. Textes UI
+        await CreateTextWithTranslationsAsync("common.loading", "Loading...", new() { { "fr", "Chargement en cours..." }, { "en", "Loading..." } });
+        
         await CreateTextWithTranslationsAsync("history.title", "Print History", new() { { "fr", "Historique des impressions" }, { "en", "Print History" } });
         await CreateTextWithTranslationsAsync("history.description", "Tracking and logs of labels sent to printers.", new() { { "fr", "Suivi et journaux des étiquettes envoyées aux imprimantes." }, { "en", "Tracking and logs of labels sent to printers." } });
         await CreateTextWithTranslationsAsync("history.no_history", "No print history at the moment.", new() { { "fr", "Aucun historique d'impression pour l'instant." }, { "en", "No print history at the moment." } });
@@ -252,17 +254,9 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("nav.logout", "Logout", new() { { "fr", "Déconnexion" }, { "en", "Logout" } });
 
         await CreateTextWithTranslationsAsync("account.title", "My Account", new() { { "fr", "Mon Compte" }, { "en", "My Account" } });
-        await CreateTextWithTranslationsAsync("account.personal_info", "Personal Information", new() { { "fr", "Informations personnelles" }, { "en", "Personal Information" } });
+        await CreateTextWithTranslationsAsync("account.name_label", "Name", new() { { "fr", "Nom" }, { "en", "Name" } });
         await CreateTextWithTranslationsAsync("account.email_label", "Email Address", new() { { "fr", "Adresse Email" }, { "en", "Email Address" } });
         await CreateTextWithTranslationsAsync("account.role_label", "Role / Plan", new() { { "fr", "Rôle / Plan" }, { "en", "Role / Plan" } });
-        await CreateTextWithTranslationsAsync("account.preferences_title", "User Preferences", new() { { "fr", "Préférences utilisateur" }, { "en", "User Preferences" } });
-        await CreateTextWithTranslationsAsync("account.email_notifications", "Receive email notifications", new() { { "fr", "Recevoir les notifications par email" }, { "en", "Receive email notifications" } });
-        await CreateTextWithTranslationsAsync("account.default_printer", "Default ZPL Printer", new() { { "fr", "Imprimante ZPL par défaut" }, { "en", "Default ZPL Printer" } });
-        await CreateTextWithTranslationsAsync("account.saving", "Saving...", new() { { "fr", "Enregistrement..." }, { "en", "Saving..." } });
-        await CreateTextWithTranslationsAsync("account.save_button", "Save Changes", new() { { "fr", "Enregistrer les modifications" }, { "en", "Save Changes" } });
-        await CreateTextWithTranslationsAsync("account.loading", "Loading...", new() { { "fr", "Chargement en cours..." }, { "en", "Loading..." } });
-        await CreateTextWithTranslationsAsync("account.success_saved", "Your preferences have been successfully saved.", new() { { "fr", "Vos préférences ont été enregistrées avec succès." }, { "en", "Your preferences have been successfully saved." } });
-        await CreateTextWithTranslationsAsync("account.error_save_failed", "Error while saving preferences.", new() { { "fr", "Erreur lors de l'enregistrement des préférences." }, { "en", "Error while saving preferences." } });
 
         await CreateTextWithTranslationsAsync("dashboard.title", "FastLabel - Dashboard", new() { { "fr", "FastLabel - Tableau de bord" }, { "en", "FastLabel - Dashboard" } });
         await CreateTextWithTranslationsAsync("dashboard.agents_header", "ZPL Agents & Printers", new() { { "fr", "Agents & Imprimantes ZPL" }, { "en", "ZPL Agents & Printers" } });
@@ -304,7 +298,7 @@ public static class DbInitializer
         // 12. Emails
         await CreateTextWithTranslationsAsync("email.activation.subject", "Activate your FastLabel account", new() { { "fr", "Activez votre compte FastLabel" }, { "en", "Activate your FastLabel account" } });
         await CreateTextWithTranslationsAsync("email.activation.body", "Hello {0},\n\nPlease click the following link to activate your account:\n{1}", new() { { "fr", "Bonjour {0},\n\nVeuillez cliquer sur le lien suivant pour activer votre compte :\n{1}" }, { "en", "Hello {0},\n\nPlease click the following link to activate your account:\n{1}" } });
-         await CreateTextWithTranslationsAsync("email.reset.subject", "Reset your FastLabel password", new() { { "fr", "Réinitialisez votre mot de passe FastLabel" }, { "en", "Reset your FastLabel password" } });
+        await CreateTextWithTranslationsAsync("email.reset.subject", "Reset your FastLabel password", new() { { "fr", "Réinitialisez votre mot de passe FastLabel" }, { "en", "Reset your FastLabel password" } });
         await CreateTextWithTranslationsAsync("email.reset.body", "Hello {0},\n\nPlease click the following link to reset your password:\n{1}", new() { { "fr", "Bonjour {0},\n\nVeuillez cliquer sur le lien suivant pour réinitialiser votre mot de passe :\n{1}" }, { "en", "Hello {0},\n\nPlease click the following link to reset your password:\n{1}" } });
     }
 }

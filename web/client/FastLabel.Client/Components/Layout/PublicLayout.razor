@@ -62,7 +62,7 @@ else
         Navigation.LocationChanged += OnLocationChanged;
 
         var cookieLang = await CookieService.GetCookieAsync("language");
-            
+
         if (!string.IsNullOrEmpty(cookieLang))
         {
             await Translation.InitializeAsync(cookieLang);
@@ -71,7 +71,7 @@ else
         {
             await Translation.InitializeAsync();
         }
-        
+
         _isLoaded = true;
         StateHasChanged();
     }
@@ -80,24 +80,21 @@ else
     {
         var uri = Navigation.Uri.ToLower();
 
-        if (uri.Contains("/"))
-        {
-            var title = Translation.GetString("auth.login_title");
-            return title == "auth.login_title" ? (Translation.CurrentLanguage.StartsWith("fr") ? "Connexion" : "Sign In") : title;
-        }
         if (uri.Contains("/register"))
         {
             var title = Translation.GetString("auth.register_title");
             return title == "auth.register_title" ? (Translation.CurrentLanguage.StartsWith("fr") ? "Inscription" : "Register") : title;
         }
-        if (uri.Contains("/forgot-password"))
+        else if (uri.Contains("/forgot-password"))
         {
             var title = Translation.GetString("auth.forgot_heading");
             return title == "auth.forgot_heading" ? (Translation.CurrentLanguage.StartsWith("fr") ? "Mot de passe oublié" : "Forgot Password") : title;
         }
-
-        var defaultTitle = Translation.GetString("nav.home");
-        return defaultTitle == "nav.home" ? (Translation.CurrentLanguage.StartsWith("fr") ? "Accueil" : "Home") : defaultTitle;
+        else
+        {
+            var title = Translation.GetString("auth.login_title");
+            return title == "auth.login_title" ? (Translation.CurrentLanguage.StartsWith("fr") ? "Connexion" : "Sign In") : title;
+        }
     }
 
     private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)

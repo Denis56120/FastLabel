@@ -7,10 +7,8 @@
 @using System.Net
 @using System.Security.Claims
 @using FastLabel.Client.Components
-@using FastLabel.Shared.DTOs
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
-@using Microsoft.AspNetCore.Components.Forms
 
 <div class="container mt-4">
     <h2>@Translation.GetString("account.title")</h2>
@@ -19,7 +17,7 @@
     {
         <div class="d-flex justify-content-center my-5">
             <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">@Translation.GetString("account.loading")</span>
+                <span class="visually-hidden">@Translation.GetString("common.loading")</span>
             </div>
         </div>
     }
@@ -28,10 +26,11 @@
         <div class="row">
             <div class="col-md-6 mb-4">
                 <div class="card shadow-sm">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">@Translation.GetString("account.personal_info")</h5>
-                    </div>
                     <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label text-muted">@Translation.GetString("account.name_label")</label>
+                            <input type="text" class="form-control" value="@userName" disabled />
+                        </div>
                         <div class="mb-3">
                             <label class="form-label text-muted">@Translation.GetString("account.email_label")</label>
                             <input type="text" class="form-control" value="@userEmail" disabled />
@@ -44,69 +43,16 @@
                 </div>
             </div>
 
-            <div class="col-md-6 mb-4">
-                <div class="card shadow-sm">
-                    <div class="card-header bg-secondary text-white">
-                        <h5 class="mb-0">@Translation.GetString("account.preferences_title")</h5>
-                    </div>
-                    <div class="card-body">
-                        @if (!string.IsNullOrEmpty(successMessage))
-                        {
-                            <div class="alert alert-success" role="alert">
-                                @successMessage
-                            </div>
-                        }
-
-                        @if (!string.IsNullOrEmpty(errorMessage))
-                        {
-                            <div class="alert alert-danger" role="alert">
-                                @errorMessage
-                            </div>
-                        }
-
-                        <EditForm Model="@preferencesModel" OnValidSubmit="SavePreferences">
-                            <DataAnnotationsValidator />
-
-                            <div class="mb-3 form-check">
-                                <InputCheckbox id="emailNotifications" class="form-check-input" @bind-Value="preferencesModel.ReceiveEmailNotifications" />
-                                <label class="form-check-label" for="emailNotifications">
-                                    @Translation.GetString("account.email_notifications")
-                                </label>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="defaultPrinter" class="form-label">@Translation.GetString("account.default_printer")</label>
-                                <InputText id="defaultPrinter" class="form-control" @bind-Value="preferencesModel.DefaultPrinterName" placeholder="Ex: Zebra ZD420" />
-                            </div>
-
-                            <button type="submit" class="btn btn-primary" disabled="@isSaving">
-                                @if (isSaving)
-                                {
-                                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                    <span>@Translation.GetString("account.saving")</span>
-                                }
-                                else
-                                {
-                                    <span>@Translation.GetString("account.save_button")</span>
-                                }
-                            </button>
-                        </EditForm>
-                    </div>
-                </div>
-            </div>
+            
         </div>
     }
 </div>
 
 @code {
     private bool isLoading = true;
-    private bool isSaving = false;
     private string userEmail = string.Empty;
+    private string userName = string.Empty;
     private string userRole = "Standard";
-    private string? successMessage;
-    private string? errorMessage;
-
-    private UpdatePreferencesDto preferencesModel = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -117,9 +63,14 @@
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             var user = authState.User;
 
-            userEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value 
-                      ?? user.Identity?.Name 
-                      ?? "Utilisateur";
+            var claimsData = user.Claims.Select(c => new { c.Type, c.Value });
+Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(claimsData, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+
+            var emailClaim = user.FindFirst("email");
+            if (emailClaim != null)
+            {
+                userEmail =  emailClaim.Value;
+            }
             
             var roleClaim = user.FindFirst(c => c.Type == ClaimTypes.Role);
             if (roleClaim != null)
@@ -127,59 +78,19 @@
                 userRole = roleClaim.Value;
             }
 
-            var client = ClientFactory.CreateClient("AuthClient");
-            var result = await client.GetFromJsonAsync<UpdatePreferencesDto>("api/users/me/preferences");
-            if (result != null)
+            var nameClaim = user.FindFirst("unique_name");
+            if (nameClaim != null)
             {
-                preferencesModel = result;
+                userName =  nameClaim.Value;
             }
         }
         catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
         {
             Navigation.NavigateTo("/");
         }
-        catch (Exception)
-        {
-            preferencesModel.ReceiveEmailNotifications = true;
-            preferencesModel.DefaultPrinterName = "Zebra ZT230";
-        }
         finally
         {
             isLoading = false;
-        }
-    }
-
-    private async Task SavePreferences()
-    {
-        isSaving = true;
-        successMessage = null;
-        errorMessage = null;
-
-        try
-        {
-            var client = ClientFactory.CreateClient("AuthClient");
-            var response = await client.PutAsJsonAsync("api/users/me/preferences", preferencesModel);
-
-            if (response.IsSuccessStatusCode)
-            {
-                successMessage = Translation.GetString("account.success_saved");
-            }
-            else if (response.StatusCode == HttpStatusCode.Unauthorized || response.StatusCode == HttpStatusCode.Forbidden)
-            {
-                Navigation.NavigateTo("/");
-            }
-            else
-            {
-                errorMessage = Translation.GetString("account.error_save_failed");
-            }
-        }
-        catch (Exception)
-        {
-            errorMessage = Translation.GetString("auth.error.server_unreachable");
-        }
-        finally
-        {
-            isSaving = false;
         }
     }
 }
