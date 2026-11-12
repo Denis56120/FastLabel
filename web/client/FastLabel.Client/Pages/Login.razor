@@ -1,6 +1,6 @@
 @page "/"
-@inherits TranslatableComponent
 @layout PublicLayout
+@inherits TranslatableComponent
 @inject IHttpClientFactory ClientFactory
 @inject NavigationManager Navigation
 @inject AuthService AuthService
@@ -84,22 +84,22 @@
     private bool _isPasswordUpdated = false;
 
     [SupplyParameterFromQuery(Name = "activated")]
-    public bool ActivatedParam { get; set; }
+    public bool? ActivatedParam { get; set; }
 
     [SupplyParameterFromQuery(Name = "pwreset")]
-    public bool PwResetParam { get; set; }
+    public bool? PwResetParam { get; set; }
 
     [SupplyParameterFromQuery(Name = "pwupdated")]
-    public bool PwUpdatedParam { get; set; }
+    public bool? PwUpdatedParam { get; set; }
 
     private string PasswordInputType => _showPassword ? "text" : "password";
     private string PasswordIconClass => _showPassword ? "bi-eye-slash" : "bi-eye";
 
     protected override void OnParametersSet()
     {
-        _isActivated = ActivatedParam;
-        _isPasswordResetRequested = PwResetParam;
-        _isPasswordUpdated = PwUpdatedParam;
+        _isActivated = ActivatedParam ?? false;
+        _isPasswordResetRequested = PwResetParam ?? false;
+        _isPasswordUpdated = PwUpdatedParam ?? false;
     }
 
     private void TogglePasswordVisibility()
@@ -140,8 +140,7 @@
             else
             {
                 var errorContent = await response.Content.ReadFromJsonAsync<ErrorResponseDto>();
-                string errorKey = !string.IsNullOrEmpty(errorContent?.Message) ? errorContent.Message :
-"auth.error.invalid_credentials";
+                string errorKey = !string.IsNullOrEmpty(errorContent?.Message) ? errorContent.Message : "auth.error.invalid_credentials";
                 _errorMessage = Translation.GetString(errorKey);
             }
         }

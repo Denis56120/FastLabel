@@ -160,7 +160,7 @@ public static class AuthEndpoints
             db.Users.Add(user);
             await db.SaveChangesAsync();
 
-            var serverUrl = configuration["ServerUrl"] ?? "http://localhost:6000";
+            var serverUrl = configuration["ServerUrl"] ?? "http://localhost:5001";
             var verificationLink = $"{serverUrl}/api/auth/verify-email?token={user.EmailVerificationToken}";
 
             var languageCode = string.IsNullOrWhiteSpace(dto.Language) ? "en" : dto.Language;

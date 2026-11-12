@@ -11,15 +11,19 @@ namespace FastLabel.Backend.Extensions;
 
 public static class ServiceExtensions
 {
+
     public static IServiceCollection AddAppServices(this IServiceCollection services, IConfiguration configuration, string dbPath)
     {
+        var clientUrl = configuration["ClientUrl"] ?? "http://localhost:5000";
+        
         services.AddCors(options =>
         {
             options.AddPolicy("AllowBlazorClient", policy =>
             {
-                policy.WithOrigins()
+                policy.WithOrigins(clientUrl)
                     .AllowAnyHeader()
-                    .AllowAnyMethod();
+                    .AllowAnyMethod()
+                    .AllowCredentials();
             });
         });
 

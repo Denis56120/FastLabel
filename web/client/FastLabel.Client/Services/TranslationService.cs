@@ -1,3 +1,5 @@
+using System.Net.Http.Json;
+using System.Text.Json;
 using FastLabel.Client.Services;
 using FastLabel.Shared.DTOs;
 
@@ -71,12 +73,28 @@ public class TranslationService(IHttpClientFactory httpClientFactory, CookieServ
             var client = _httpClientFactory.CreateClient("PublicClient");
             var url = $"api/translations/{language}";
 
-            var result = await client.GetFromJsonAsync<List<TranslationDto>>(url);
-
-            if (result != null)
+            var response = await client.GetAsync(url);
+            if (response.IsSuccessStatusCode)
             {
-                _translations = result.ToDictionary(t => t.Key, t => t.Value, StringComparer.OrdinalIgnoreCase);
-                _loadedLanguage = language;
+                var jsonString = await response.Content.ReadAsStringAsync();
+                
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+
+                var result = JsonSerializer.Deserialize<List<TranslationDto>>(jsonString, options);
+
+                if (result != null)
+                {
+                    _translations = result.ToDictionary(t => t.Key, t => t.Value, StringComparer.OrdinalIgnoreCase);
+                    _loadedLanguage = language;
+                }
+                else
+                {
+                    _translations = [];
+                    _loadedLanguage = null;
+                }
             }
             else
             {

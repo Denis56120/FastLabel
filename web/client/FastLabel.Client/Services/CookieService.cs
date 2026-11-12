@@ -2,15 +2,20 @@ using Microsoft.JSInterop;
 
 namespace FastLabel.Client.Services;
 
-public class CookieService(IJSRuntime jsRuntime)
+public class CookieService(IServiceProvider serviceProvider)
 {
-    private readonly IJSRuntime _jsRuntime = jsRuntime;
+    private readonly IServiceProvider _serviceProvider = serviceProvider;
+    private IJSRuntime? _jsRuntime;
+
+    // Résolution différée de IJSRuntime pour éviter l'erreur au démarrage
+    private IJSRuntime JsRuntime => 
+        _jsRuntime ??= _serviceProvider.GetRequiredService<IJSRuntime>();
 
     public async Task<string?> GetCookieAsync(string key)
     {
         try
         {
-            return await _jsRuntime.InvokeAsync<string?>("appInterop.getCookie", key);
+            return await JsRuntime.InvokeAsync<string?>("appInterop.getCookie", key);
         }
         catch
         {
@@ -18,12 +23,11 @@ public class CookieService(IJSRuntime jsRuntime)
         }
     }
 
-
     public async Task SetCookieAsync(string key, string value, int days = 30)
     {
         try
         {
-            await _jsRuntime.InvokeVoidAsync("appInterop.setCookie", key, value, days);
+            await JsRuntime.InvokeVoidAsync("appInterop.setCookie", key, value, days);
         }
         catch
         {

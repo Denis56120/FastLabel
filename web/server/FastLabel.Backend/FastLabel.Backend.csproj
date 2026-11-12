@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\shared\FastLabel.Shared\FastLabel.Shared.csproj" />
+    <ProjectReference Include="..\..\client\FastLabel.Client\FastLabel.Client.csproj" />
   </ItemGroup>
 
 </Project>

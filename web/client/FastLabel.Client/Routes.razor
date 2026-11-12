@@ -1,5 +1,4 @@
-﻿@rendermode InteractiveServer
-@inject TranslationService Translation
+﻿@inject TranslationService Translation
 @inject NavigationManager Navigation
 @implements IDisposable
 
@@ -8,9 +7,11 @@
         <Found Context="routeData">
             <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
                 <NotAuthorized>
-                    @{
-                        Navigation.NavigateTo("/");
-                    }
+                    <div class="container mt-5 text-center">
+                        <h3>Accès non autorisé</h3>
+                        <p>Vous devez vous connecter pour accéder à cette page.</p>
+                        <button class="btn btn-primary mt-3" @onclick="NavigateHome">Accueil</button>
+                    </div>
                 </NotAuthorized>
             </AuthorizeRouteView>
         </Found>
@@ -32,9 +33,9 @@
         Translation.OnChange += StateHasChanged;
     }
 
-    private void OnTranslationChanged()
+    private void NavigateHome()
     {
-        InvokeAsync(StateHasChanged);
+        Navigation.NavigateTo("/");
     }
 
     public void Dispose()

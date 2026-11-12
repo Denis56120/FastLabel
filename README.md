@@ -54,7 +54,7 @@ cd server/FastLabel.Backend
 dotnet run
 ```
 
-Par défaut, le serveur démarre et écoute sur **`http://localhost:6000`**. La base de données SQLite (`FastLabel.Server.db`) est automatiquement créée et initialisée au premier lancement avec des jeux de données de test.
+Par défaut, le serveur démarre et écoute sur **`http://localhost:5001`**. La base de données SQLite (`FastLabel.Server.db`) est automatiquement créée et initialisée au premier lancement avec des jeux de données de test.
 
 ### 2. Configuration du Client Web
 
@@ -62,7 +62,7 @@ Dans le dossier `wwwroot/` de votre application client, assurez-vous que le fich
 
 ```json
 {
-  "BackendUrl": "http://localhost:6000"
+  "BackendUrl": "http://localhost:5001"
 }
 ```
 
@@ -92,9 +92,9 @@ dotnet publish FastLabel.Service -c Release -o ./publish
 ### Connexion Agent <-> Backend
 - L'agent se connecte au WebSocket d'impression du backend en fournissant sa clé API dans la query string :
   ```text
-  ws://localhost:6000/agent-ws?apiKey=<CLÉ_API_AGENT>
+  ws://localhost:5001/agent-ws?apiKey=<CLÉ_API_AGENT>
   ```
-- Le plugin se connecte par défaut au domaine configuré dans l'application ou passé dynamiquement via la méthode `Launch(baseUrl)`. Assurez-vous que l'agent peut initier des connexions sortantes sur le port 443 vers votre instance `fastlabel.com` (ou port 6000 en dev local).
+- Le plugin se connecte par défaut au domaine configuré dans l'application ou passé dynamiquement via la méthode `Launch(baseUrl)`. Assurez-vous que l'agent peut initier des connexions sortantes sur le port 443 vers votre instance `fastlabel.com` (ou port 5001 en dev local).
 
 ---
 

@@ -7,14 +7,17 @@ namespace FastLabel.Client.Services;
 
 public class CustomAuthenticationStateProvider : AuthenticationStateProvider
 {
-    private readonly IJSRuntime _jsRuntime;
+    private readonly IServiceProvider _serviceProvider;
+    private IJSRuntime? _jsRuntime;
+    private IJSRuntime JsRuntime => _jsRuntime ??= _serviceProvider.GetRequiredService<IJSRuntime>();
+
     private readonly ClaimsPrincipal _anonymous = new(new ClaimsIdentity());
     private bool _initialized;
     private AuthenticationState _cachedState;
 
-    public CustomAuthenticationStateProvider(IJSRuntime jsRuntime)
+    public CustomAuthenticationStateProvider(IServiceProvider serviceProvider)
     {
-        _jsRuntime = jsRuntime;
+        _serviceProvider = serviceProvider;
         _cachedState = new AuthenticationState(_anonymous);
     }
 
@@ -28,7 +31,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
         string? token = null;
         try
         {
-            token = await _jsRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+            token = await JsRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
         }
         catch
         {
