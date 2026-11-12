@@ -233,17 +233,38 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("common.cancel", "Cancel", new() { { "fr", "Annuler" }, { "en", "Cancel" } });
         await CreateTextWithTranslationsAsync("common.loading", "Loading...", new() { { "fr", "Chargement en cours..." }, { "en", "Loading..." } });
 
-        await CreateTextWithTranslationsAsync("history.title", "Print History", new() { { "fr", "Historique des impressions" }, { "en", "Print History" } });
-        await CreateTextWithTranslationsAsync("history.description", "Tracking and logs of labels sent to printers.", new() { { "fr", "Suivi et journaux des étiquettes envoyées aux imprimantes." }, { "en", "Tracking and logs of labels sent to printers." } });
-        await CreateTextWithTranslationsAsync("history.no_history", "No print history at the moment.", new() { { "fr", "Aucun historique d'impression pour l'instant." }, { "en", "No print history at the moment." } });
+        await CreateTextWithTranslationsAsync("history.title", "Print History", new() { { "fr", "Historique d'impression" }, { "en", "Print History" } });
+        await CreateTextWithTranslationsAsync("history.description", "View and manage print job logs.", new() { { "fr", "Consultez et gérez l'historique des impressions." }, { "en", "View and manage print job logs." } });
+        await CreateTextWithTranslationsAsync("history.no_history", "No print history available.", new() { { "fr", "Aucun historique d'impression disponible." }, { "en", "No print history available." } });
+        await CreateTextWithTranslationsAsync("history.printer", "Printer", new() { { "fr", "Imprimante" }, { "en", "Printer" } });
+        await CreateTextWithTranslationsAsync("history.template", "Template", new() { { "fr", "Modèle" }, { "en", "Template" } });
+        await CreateTextWithTranslationsAsync("history.quantity", "Quantity", new() { { "fr", "Quantité" }, { "en", "Quantity" } });
+        await CreateTextWithTranslationsAsync("history.status", "Status", new() { { "fr", "Statut" }, { "en", "Status" } });
+        await CreateTextWithTranslationsAsync("history.date", "Date", new() { { "fr", "Date" }, { "en", "Date" } });
+        await CreateTextWithTranslationsAsync("history.response_message", "Response Message", new() { { "fr", "Message de réponse" }, { "en", "Response Message" } });
+        await CreateTextWithTranslationsAsync("history.add_title", "Add History Entry", new() { { "fr", "Ajouter une entrée" }, { "en", "Add History Entry" } });
+        await CreateTextWithTranslationsAsync("history.edit_title", "Edit History Entry", new() { { "fr", "Modifier l'entrée" }, { "en", "Edit History Entry" } });
 
-        await CreateTextWithTranslationsAsync("users.title", "User Management", new() { { "fr", "Gestion des utilisateurs" }, { "en", "User Management" } });
-        await CreateTextWithTranslationsAsync("users.description", "List of users with access to the FastLabel platform.", new() { { "fr", "Liste des utilisateurs ayant accès à la plateforme FastLabel." }, { "en", "List of users with access to the FastLabel platform." } });
-        await CreateTextWithTranslationsAsync("users.no_users", "No other registered users.", new() { { "fr", "Aucun autre utilisateur enregistré." }, { "en", "No other registered users." } });
+        await CreateTextWithTranslationsAsync("users.title", "Users Management", new() { { "fr", "Gestion des utilisateurs" }, { "en", "Users Management" } });
+        await CreateTextWithTranslationsAsync("users.description", "Manage application users and permissions.", new() { { "fr", "Gérez les utilisateurs et leurs permissions." }, { "en", "Manage application users and permissions." } });
+        await CreateTextWithTranslationsAsync("users.no_users", "No users found.", new() { { "fr", "Aucun utilisateur trouvé." }, { "en", "No users found." } });
+        await CreateTextWithTranslationsAsync("users.name", "Name", new() { { "fr", "Nom" }, { "en", "Name" } });
+        await CreateTextWithTranslationsAsync("users.email", "Email", new() { { "fr", "E-mail" }, { "en", "Email" } });
+        await CreateTextWithTranslationsAsync("users.role", "Role", new() { { "fr", "Rôle" }, { "en", "Role" } });
+        await CreateTextWithTranslationsAsync("users.created_at", "Created At", new() { { "fr", "Créé le" }, { "en", "Created At" } });
+        await CreateTextWithTranslationsAsync("users.is_admin", "Administrator", new() { { "fr", "Administrateur" }, { "en", "Administrator" } });
+        await CreateTextWithTranslationsAsync("users.add_title", "Add User", new() { { "fr", "Ajouter un utilisateur" }, { "en", "Add User" } });
+        await CreateTextWithTranslationsAsync("users.edit_title", "Edit User", new() { { "fr", "Modifier l'utilisateur" }, { "en", "Edit User" } });
 
-        await CreateTextWithTranslationsAsync("agents.title", "ZPL Agents", new() { { "fr", "Agents ZPL" }, { "en", "ZPL Agents" } });
-        await CreateTextWithTranslationsAsync("agents.description", "Status of your connected Windows agents.", new() { { "fr", "État de vos agents Windows connectés." }, { "en", "Status of your connected Windows agents." } });
+        await CreateTextWithTranslationsAsync("agents.title", "Agents Management", new() { { "fr", "Gestion des agents" }, { "en", "Agents Management" } });
+        await CreateTextWithTranslationsAsync("agents.description", "Manage connected printing agents.", new() { { "fr", "Gérez les agents d'impression connectés." }, { "en", "Manage connected printing agents." } });
         await CreateTextWithTranslationsAsync("agents.no_agents", "No active agents at the moment.", new() { { "fr", "Aucun agent actif pour le moment." }, { "en", "No active agents at the moment." } });
+        await CreateTextWithTranslationsAsync("agents.name", "Name", new() { { "fr", "Nom" }, { "en", "Name" } });
+        await CreateTextWithTranslationsAsync("agents.type", "Type", new() { { "fr", "Type" }, { "en", "Type" } });
+        await CreateTextWithTranslationsAsync("agents.api_key", "API Key", new() { { "fr", "Clé API" }, { "en", "API Key" } });
+        await CreateTextWithTranslationsAsync("agents.last_seen", "Last Seen", new() { { "fr", "Dernière vue" }, { "en", "Last Seen" } });
+        await CreateTextWithTranslationsAsync("agents.add_title", "Add Agent", new() { { "fr", "Ajouter un agent" }, { "en", "Add Agent" } });
+        await CreateTextWithTranslationsAsync("agents.edit_title", "Edit Agent", new() { { "fr", "Modifier l'agent" }, { "en", "Edit Agent" } });
 
         await CreateTextWithTranslationsAsync("printers.title", "Printers", new() { { "fr", "Imprimantes" }, { "en", "Printers" } });
         await CreateTextWithTranslationsAsync("printers.description", "Manage your network printers.", new() { { "fr", "Gérez vos imprimantes réseau." }, { "en", "Manage your network printers." } });
@@ -257,9 +278,14 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("printers.port", "Port", new() { { "fr", "Port" }, { "en", "Port" } });
         await CreateTextWithTranslationsAsync("printers.status", "Status", new() { { "fr", "Statut" }, { "en", "Status" } });
 
-        await CreateTextWithTranslationsAsync("templates.title", "Label Templates", new() { { "fr", "Modèles d'étiquettes" }, { "en", "Label Templates" } });
-        await CreateTextWithTranslationsAsync("templates.description", "Manage and design your ZPL label templates.", new() { { "fr", "Gérez et concevez vos modèles d'étiquettes ZPL." }, { "en", "Manage and design your ZPL label templates." } });
-        await CreateTextWithTranslationsAsync("templates.no_templates", "No label templates saved at the moment.", new() { { "fr", "Aucun modèle d'étiquette enregistré pour le moment." }, { "en", "No label templates saved at the moment." } });
+        await CreateTextWithTranslationsAsync("templates.title", "Templates Management", new() { { "fr", "Gestion des modèles" }, { "en", "Templates Management" } });
+        await CreateTextWithTranslationsAsync("templates.description", "Manage document and label templates.", new() { { "fr", "Gérez les modèles de documents et d'étiquettes." }, { "en", "Manage document and label templates." } });
+        await CreateTextWithTranslationsAsync("templates.no_templates", "No templates available.", new() { { "fr", "Aucun modèle disponible." }, { "en", "No templates available." } });
+        await CreateTextWithTranslationsAsync("templates.name", "Name", new() { { "fr", "Nom" }, { "en", "Name" } });
+        await CreateTextWithTranslationsAsync("templates.status", "Status", new() { { "fr", "Statut" }, { "en", "Status" } });
+        await CreateTextWithTranslationsAsync("templates.updated_at", "Updated At", new() { { "fr", "Mis à jour le" }, { "en", "Updated At" } });
+        await CreateTextWithTranslationsAsync("templates.add_title", "Add Template", new() { { "fr", "Ajouter un modèle" }, { "en", "Add Template" } });
+        await CreateTextWithTranslationsAsync("templates.edit_title", "Edit Template", new() { { "fr", "Modifier le modèle" }, { "en", "Edit Template" } });
 
         await CreateTextWithTranslationsAsync("nav.home", "Home", new() { { "fr", "Accueil" }, { "en", "Home" } });
         await CreateTextWithTranslationsAsync("nav.templates", "Label Templates", new() { { "fr", "Modèles d'étiquettes" }, { "en", "Label Templates" } });

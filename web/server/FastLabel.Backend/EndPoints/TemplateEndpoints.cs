@@ -1,4 +1,5 @@
 using FastLabel.Backend.Data;
+using FastLabel.Backend.Extensions;
 using FastLabel.Backend.Models;
 using FastLabel.Shared.DTOs;
 using Microsoft.EntityFrameworkCore;
@@ -24,11 +25,17 @@ public static class TemplateEndpoints
             return (userId, isAdmin);
         }
 
-        group.MapGet("/", async (AppDbContext db, ClaimsPrincipal claimsUser) =>
+        group.MapGet("/", async (AppDbContext db, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
         {
             var (userId, isAdmin) = GetUserInfo(claimsUser);
+            var lang = HttpContextExtensions.GetRequestLanguage(httpContext);
 
-            var query = db.LabelTemplates.Include(t => t.BasicStatus).AsQueryable();
+            var query = db.LabelTemplates
+                .Include(t => t.BasicStatus)
+                    .ThenInclude(s => s.Name)
+                        .ThenInclude(t => t.Translations)
+                            .ThenInclude(tr => tr.Language)
+                .AsQueryable();
 
             if (!isAdmin)
             {
@@ -40,7 +47,13 @@ public static class TemplateEndpoints
                 {
                     Id = t.Id,
                     Name = t.Name ?? string.Empty,
-                    BasicStatusName = (t.BasicStatus != null && t.BasicStatus.Name != null ? t.BasicStatus.Name.ToString() : null) ?? string.Empty,
+                    BasicStatusName = t.BasicStatus != null && t.BasicStatus.Name != null 
+                        ? (t.BasicStatus.Name.Translations
+                            .Where(tr => tr.Language.Code == lang)
+                            .Select(tr => tr.TranslatedValue)
+                            .FirstOrDefault() 
+                           ?? t.BasicStatus.Name.DefaultTranslation) 
+                        : string.Empty,
                     JsonData = t.JsonData ?? string.Empty,
                     CreatedAt = t.CreatedAt,
                     UpdatedAt = t.UpdatedAt
@@ -50,11 +63,18 @@ public static class TemplateEndpoints
             return Results.Ok(templates);
         });
 
-        group.MapGet("/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal claimsUser) =>
+        group.MapGet("/{id:int}", async (int id, AppDbContext db, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
         {
             var (userId, isAdmin) = GetUserInfo(claimsUser);
+            var lang = HttpContextExtensions.GetRequestLanguage(httpContext);
 
-            var query = db.LabelTemplates.Include(t => t.BasicStatus).Where(t => t.Id == id).AsQueryable();
+            var query = db.LabelTemplates
+                .Include(t => t.BasicStatus)
+                    .ThenInclude(s => s.Name)
+                        .ThenInclude(t => t.Translations)
+                            .ThenInclude(tr => tr.Language)
+                .Where(t => t.Id == id)
+                .AsQueryable();
 
             if (!isAdmin)
             {
@@ -67,7 +87,13 @@ public static class TemplateEndpoints
                 {
                     Id = t.Id,
                     Name = t.Name ?? string.Empty,
-                    BasicStatusName = (t.BasicStatus != null && t.BasicStatus.Name != null ? t.BasicStatus.Name.ToString() : null) ?? string.Empty,
+                    BasicStatusName = t.BasicStatus != null && t.BasicStatus.Name != null 
+                        ? (t.BasicStatus.Name.Translations
+                            .Where(tr => tr.Language.Code == lang)
+                            .Select(tr => tr.TranslatedValue)
+                            .FirstOrDefault() 
+                           ?? t.BasicStatus.Name.DefaultTranslation) 
+                        : string.Empty,
                     JsonData = t.JsonData ?? string.Empty,
                     CreatedAt = t.CreatedAt,
                     UpdatedAt = t.UpdatedAt

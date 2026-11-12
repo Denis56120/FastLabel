@@ -1,4 +1,5 @@
 using FastLabel.Backend.Data;
+using FastLabel.Backend.Extensions;
 using FastLabel.Backend.Models;
 using FastLabel.Shared.DTOs;
 using Microsoft.EntityFrameworkCore;
@@ -24,12 +25,16 @@ public static class PrinterEndpoints
             return (userId, isAdmin);
         }
 
-        group.MapGet("/", async (AppDbContext db, ClaimsPrincipal claimsUser) =>
+        group.MapGet("/", async (AppDbContext db, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
         {
             var (userId, isAdmin) = GetUserInfo(claimsUser);
+            var lang = HttpContextExtensions.GetRequestLanguage(httpContext);
 
             var query = db.Printers
                 .Include(p => p.BasicStatus)
+                    .ThenInclude(s => s.Name)
+                        .ThenInclude(t => t.Translations)
+                            .ThenInclude(tr => tr.Language)
                 .AsQueryable();
 
             if (!isAdmin)
@@ -45,7 +50,13 @@ public static class PrinterEndpoints
                     Location = p.Location ?? string.Empty,
                     IP = p.IP ?? string.Empty,
                     Port = p.Port,
-                    StatusName = (p.BasicStatus != null && p.BasicStatus.Name != null ? p.BasicStatus.Name.ToString() : null) ?? string.Empty,
+                    StatusName = p.BasicStatus != null && p.BasicStatus.Name != null 
+                        ? (p.BasicStatus.Name.Translations
+                            .Where(tr => tr.Language.Code == lang)
+                            .Select(tr => tr.TranslatedValue)
+                            .FirstOrDefault() 
+                           ?? p.BasicStatus.Name.DefaultTranslation) 
+                        : string.Empty,
                     CreatedAt = p.CreatedAt
                 })
                 .ToListAsync();
@@ -53,12 +64,16 @@ public static class PrinterEndpoints
             return Results.Ok(printers);
         });
 
-        group.MapGet("/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal claimsUser) =>
+        group.MapGet("/{id:int}", async (int id, AppDbContext db, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
         {
             var (userId, isAdmin) = GetUserInfo(claimsUser);
+            var lang = HttpContextExtensions.GetRequestLanguage(httpContext);
 
             var query = db.Printers
                 .Include(p => p.BasicStatus)
+                    .ThenInclude(s => s.Name)
+                        .ThenInclude(t => t.Translations)
+                            .ThenInclude(tr => tr.Language)
                 .Where(p => p.Id == id)
                 .AsQueryable();
 
@@ -76,7 +91,13 @@ public static class PrinterEndpoints
                     Location = p.Location ?? string.Empty,
                     IP = p.IP ?? string.Empty,
                     Port = p.Port,
-                    StatusName = (p.BasicStatus != null && p.BasicStatus.Name != null ? p.BasicStatus.Name.ToString() : null) ?? string.Empty,
+                    StatusName = p.BasicStatus != null && p.BasicStatus.Name != null 
+                        ? (p.BasicStatus.Name.Translations
+                            .Where(tr => tr.Language.Code == lang)
+                            .Select(tr => tr.TranslatedValue)
+                            .FirstOrDefault() 
+                           ?? p.BasicStatus.Name.DefaultTranslation) 
+                        : string.Empty,
                     CreatedAt = p.CreatedAt
                 })
                 .FirstOrDefaultAsync();

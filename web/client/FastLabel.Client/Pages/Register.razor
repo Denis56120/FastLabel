@@ -78,10 +78,6 @@
     {
         _errorMessage = null;
 
-        _registerModel.Language = !string.IsNullOrEmpty(Translation.CurrentLanguage)
-            ? Translation.CurrentLanguage
-            : "en";
-
         try
         {
             var client = ClientFactory.CreateClient("PublicClient");

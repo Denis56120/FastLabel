@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.JSInterop;
@@ -31,14 +30,13 @@ builder.Services.AddHttpClient("AuthClient", client =>
 
 // 3. Services métiers
 builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<TranslationService>();
+builder.Services.AddSingleton<TranslationService>();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
-builder.Services.AddScoped<CookieService>();
+builder.Services.AddSingleton<CookieService>();
 builder.Services.AddSingleton<TokenContainer>();
 
 var host = builder.Build();
 
-// Hydrater le TokenContainer au démarrage depuis le LocalStorage
 var jsRuntime = host.Services.GetRequiredService<IJSRuntime>();
 var tokenContainer = host.Services.GetRequiredService<TokenContainer>();
 
@@ -52,7 +50,6 @@ try
 }
 catch
 {
-    // Ignore si le JS interop n'est pas encore disponible
 }
 
 await host.RunAsync();

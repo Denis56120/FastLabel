@@ -1,83 +1,65 @@
 @page "/users"
 @attribute [Authorize(Roles = "Admin")]
 @inherits TranslatableComponent
-@inject IHttpClientFactory ClientFactory
 
-<div class="container-fluid">
-    <h3 class="mb-3">@Translation.GetString("users.title")</h3>
+<CrudTablePage @ref="_crudTable"
+               TItem="UserDto" 
+               TKey="int"
+               ApiEndpoint="api/users"
+               IdSelector="u => u.Id"
+               CreateNewItem="@(() => new UserDto())"
+               Title="@Translation.GetString("users.title")"
+               Description="@Translation.GetString("users.description")"
+               EmptyMessage="@Translation.GetString("users.no_users")"
+               AddModalTitle="@Translation.GetString("users.add_title")"
+               EditModalTitle="@Translation.GetString("users.edit_title")">
 
-    @if (isLoading)
-    {
-        <div class="d-flex justify-content-center my-5">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">@Translation.GetString("common.loading")</span>
-            </div>
+    <TableHeader>
+        <th>@Translation.GetString("users.name")</th>
+        <th>@Translation.GetString("users.email")</th>
+        <th>@Translation.GetString("users.role")</th>
+        <th>@Translation.GetString("users.created_at")</th>
+    </TableHeader>
+
+    <RowTemplate Context="user">
+        <td>@user.Name</td>
+        <td>@user.Email</td>
+        <td>
+            <span class="badge bg-@(user.IsAdmin ? "danger" : "secondary")">
+                @(user.IsAdmin ? "Admin" : "User")
+            </span>
+        </td>
+        <td>@user.CreatedAt.ToLocalTime().ToString("g")</td>
+    </RowTemplate>
+
+    <FormFields Context="user">
+        <div class="mb-3">
+            <label class="form-label">@Translation.GetString("users.name")</label>
+            <InputText class="form-control" @bind-Value="user.Name" />
         </div>
-    }
-    else if (_users == null || !_users.Any())
-    {
-        <p class="text-muted">@Translation.GetString("users.description")</p>
-    
-        <div class="alert alert-secondary" role="alert">
-            @Translation.GetString("users.no_users")
+        <div class="mb-3">
+            <label class="form-label">@Translation.GetString("users.email")</label>
+            <InputText class="form-control" @bind-Value="user.Email" />
         </div>
-    }
-    else
-    {
-        <div class="table-responsive">
-            <table class="table table-striped align-middle">
-                <thead>
-                    <tr>
-                        <th>@Translation.GetString("users.name")</th>
-                        <th>@Translation.GetString("users.email")</th>
-                        <th>@Translation.GetString("users.role")</th>
-                        <th>@Translation.GetString("users.created_at")</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var user in _users)
-                    {
-                        <tr>
-                            <td>@user.Name</td>
-                            <td>@user.Email</td>
-                            <td>
-                                <span class="badge bg-@(user.IsAdmin ? "danger" : "secondary")">
-                                    @(user.IsAdmin ? "Admin" : "User")
-                                </span>
-                            </td>
-                            <td>@user.CreatedAt.ToLocalTime().ToString("g")</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+        <div class="mb-3 form-check">
+            <InputCheckbox class="form-check-input" id="isAdminCheck" @bind-Value="user.IsAdmin" />
+            <label class="form-check-label" for="isAdminCheck">
+                @Translation.GetString("users.is_admin")
+            </label>
         </div>
-    }
-</div>
+    </FormFields>
+
+</CrudTablePage>
 
 @code {
-    private List<UserDto> _users = new();
-    private bool isLoading = true;
+    private CrudTablePage<UserDto, int>? _crudTable;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnLanguageChangedAsync()
     {
-        await LoadUsersAsync();
-    }
-
-    private async Task LoadUsersAsync()
-    {
-        isLoading = true;
-        try
+        StateHasChanged();
+        if (_crudTable != null)
         {
-            var client = ClientFactory.CreateClient("AuthClient");
-            _users = await client.GetFromJsonAsync<List<UserDto>>("api/users") ?? new();
-        }
-        catch (Exception)
-        {
-            _users = new();
-        }
-        finally
-        {
-            isLoading = false;
+            await _crudTable.LoadDataAsync();
         }
     }
 }

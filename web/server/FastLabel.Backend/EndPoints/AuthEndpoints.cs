@@ -2,6 +2,7 @@ using FastLabel.Backend.Data;
 using FastLabel.Shared.DTOs;
 using FastLabel.Backend.Services;
 using FastLabel.Backend.Models;
+using FastLabel.Backend.Extensions; // Import de l'extension de langue
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -45,7 +46,7 @@ public static class AuthEndpoints
             });
         });
 
-        group.MapPost("/forgot-password", async (ForgotPasswordDto dto, AppDbContext db, IEmailService emailService, IConfiguration configuration) =>
+        group.MapPost("/forgot-password", async (ForgotPasswordDto dto, HttpContext httpContext, AppDbContext db, IEmailService emailService, IConfiguration configuration) =>
         {
             if (string.IsNullOrWhiteSpace(dto.Email))
             {
@@ -68,7 +69,8 @@ public static class AuthEndpoints
             var clientUrl = configuration["ClientUrl"] ?? "http://localhost:5000";
             var resetLink = $"{clientUrl}/reset-password?token={user.PasswordResetToken}";
 
-            var languageCode = string.IsNullOrWhiteSpace(dto.Language) ? "en" : dto.Language;
+            // Utilisation exclusive de l'en-tête HTTP via l'extension
+            var languageCode = httpContext.GetRequestLanguage();
 
             var emailTexts = await db.Texts
                 .Where(t => t.Tag == "email.reset.subject" || t.Tag == "email.reset.body")
@@ -120,7 +122,7 @@ public static class AuthEndpoints
             return Results.Ok(new { message = "auth.success.password_reset" });
         });
 
-        group.MapPost("/register", async (RegisterDto dto, AppDbContext db, IPasswordHasher<User> passwordHasher, IEmailService emailService, IConfiguration configuration) =>
+        group.MapPost("/register", async (RegisterDto dto, HttpContext httpContext, AppDbContext db, IPasswordHasher<User> passwordHasher, IEmailService emailService, IConfiguration configuration) =>
         {
             if (await db.Users.AnyAsync(u => u.Email == dto.Email))
             {
@@ -163,7 +165,7 @@ public static class AuthEndpoints
             var serverUrl = configuration["ServerUrl"] ?? "http://localhost:5001";
             var verificationLink = $"{serverUrl}/api/auth/verify-email?token={user.EmailVerificationToken}";
 
-            var languageCode = string.IsNullOrWhiteSpace(dto.Language) ? "en" : dto.Language;
+            var languageCode = httpContext.GetRequestLanguage();
 
             var emailTexts = await db.Texts
                 .Where(t => t.Tag == "email.activation.subject" || t.Tag == "email.activation.body")

@@ -59,7 +59,6 @@
             var user = authState.User;
 
             var claimsData = user.Claims.Select(c => new { c.Type, c.Value });
-            Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(claimsData, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
 
             var emailClaim = user.FindFirst("email");
             if (emailClaim != null)

@@ -77,7 +77,7 @@ public class TranslationService(IHttpClientFactory httpClientFactory, CookieServ
             if (response.IsSuccessStatusCode)
             {
                 var jsonString = await response.Content.ReadAsStringAsync();
-                
+
                 var options = new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
@@ -109,6 +109,17 @@ public class TranslationService(IHttpClientFactory httpClientFactory, CookieServ
         }
 
         OnChange?.Invoke();
+    }
+
+    public async Task SetLanguageAsync(string language)
+    {
+        if (string.IsNullOrEmpty(language)) return;
+
+        // 1. Sauvegarde dans le cookie pour que le client et le backend s'en souviennent
+        await _cookieService.SetCookieAsync("language", language);
+
+        // 2. Initialise la nouvelle langue (ce qui va fetch les traductions et lever l'événement OnChange)
+        await InitializeAsync(language);
     }
 
     public string GetString(string key)

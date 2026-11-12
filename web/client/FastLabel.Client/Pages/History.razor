@@ -1,86 +1,69 @@
 @page "/history"
 @attribute [Authorize]
 @inherits TranslatableComponent
-@inject IHttpClientFactory ClientFactory
 
-<div class="container-fluid">
-    <h3 class="mb-3">@Translation.GetString("history.title")</h3>
+<CrudTablePage @ref="_crudTable"
+               TItem="PrintHistoryDto" 
+               TKey="int"
+               ApiEndpoint="api/print-history"
+               IdSelector="h => h.Id"
+               CreateNewItem="@(() => new PrintHistoryDto { Quantity = 1 })"
+               Title="@Translation.GetString("history.title")"
+               Description="@Translation.GetString("history.description")"
+               EmptyMessage="@Translation.GetString("history.no_history")"
+               AddModalTitle="@Translation.GetString("history.add_title")"
+               EditModalTitle="@Translation.GetString("history.edit_title")">
 
-    @if (isLoading)
-    {
-        <div class="d-flex justify-content-center my-5">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">@Translation.GetString("common.loading")</span>
-            </div>
+    <TableHeader>
+        <th>@Translation.GetString("history.printer")</th>
+        <th>@Translation.GetString("history.template")</th>
+        <th>@Translation.GetString("history.quantity")</th>
+        <th>@Translation.GetString("history.status")</th>
+        <th>@Translation.GetString("history.date")</th>
+    </TableHeader>
+
+    <RowTemplate Context="item">
+        <td>@item.PrinterName</td>
+        <td>@item.TemplateName</td>
+        <td>@item.Quantity</td>
+        <td>
+            <span class="badge bg-@(string.IsNullOrEmpty(item.ResponseMessage) ? "success" : "warning")">
+                @(string.IsNullOrEmpty(item.ResponseMessage) ? "Success" : "Error")
+            </span>
+        </td>
+        <td>@(item.ProcessedAt?.ToLocalTime().ToString("g") ?? item.CreatedAt.ToLocalTime().ToString("g"))</td>
+    </RowTemplate>
+
+    <FormFields Context="item">
+        <div class="mb-3">
+            <label class="form-label">@Translation.GetString("history.printer")</label>
+            <InputText class="form-control" @bind-Value="item.PrinterName" />
         </div>
-    }
-    else if (_historyItems == null || !_historyItems.Any())
-    {
-        <p class="text-muted">@Translation.GetString("history.description")</p>
-    
-        <div class="alert alert-secondary" role="alert">
-            @Translation.GetString("history.no_history")
+        <div class="mb-3">
+            <label class="form-label">@Translation.GetString("history.template")</label>
+            <InputText class="form-control" @bind-Value="item.TemplateName" />
         </div>
-    }
-    else
-    {
-        <div class="table-responsive">
-            <table class="table table-striped align-middle">
-                <thead>
-                    <tr>
-                        <th>@Translation.GetString("history.printer")</th>
-                        <th>@Translation.GetString("history.template")</th>
-                        <th>@Translation.GetString("history.quantity")</th>
-                        <th>@Translation.GetString("history.status")</th>
-                        <th>@Translation.GetString("history.date")</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in _historyItems)
-                    {
-                        <tr>
-                            <td>@item.PrinterName</td>
-                            <td>@item.TemplateName</td>
-                            <td>@item.Quantity</td>
-                            <td>
-                                <span class="badge bg-@(string.IsNullOrEmpty(item.ResponseMessage) ? "success" : "warning")">
-                                    @(string.IsNullOrEmpty(item.ResponseMessage) ? "Success" : "Error")
-                                </span>
-                            </td>
-                            <td>@(item.ProcessedAt?.ToLocalTime().ToString("g") ?? item.CreatedAt.ToLocalTime().ToString("g"))
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+        <div class="mb-3">
+            <label class="form-label">@Translation.GetString("history.quantity")</label>
+            <InputNumber class="form-control" @bind-Value="item.Quantity" />
         </div>
-    }
-</div>
+        <div class="mb-3">
+            <label class="form-label">@Translation.GetString("history.response_message")</label>
+            <InputText class="form-control" @bind-Value="item.ResponseMessage" />
+        </div>
+    </FormFields>
+
+</CrudTablePage>
 
 @code {
-    private List<PrintHistoryDto> _historyItems = new();
-    private bool isLoading = true;
+    private CrudTablePage<PrintHistoryDto, int>? _crudTable;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnLanguageChangedAsync()
     {
-        await LoadHistoryAsync();
-    }
-
-    private async Task LoadHistoryAsync()
-    {
-        isLoading = true;
-        try
+        StateHasChanged();
+        if (_crudTable != null)
         {
-            var client = ClientFactory.CreateClient("AuthClient");
-            _historyItems = await client.GetFromJsonAsync<List<PrintHistoryDto>>("api/print-history") ?? new();
-        }
-        catch (Exception)
-        {
-            _historyItems = new();
-        }
-        finally
-        {
-            isLoading = false;
+            await _crudTable.LoadDataAsync();
         }
     }
 }

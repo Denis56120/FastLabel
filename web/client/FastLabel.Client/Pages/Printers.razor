@@ -2,7 +2,8 @@
 @attribute [Authorize]
 @inherits TranslatableComponent
 
-<CrudTablePage TItem="PrinterDto" 
+<CrudTablePage @ref="_tableRef"
+               TItem="PrinterDto" 
                TKey="int"
                ApiEndpoint="api/printers"
                IdSelector="p => p.Id"
@@ -41,7 +42,7 @@
                 <label class="form-label">@Translation.GetString("printers.ip")</label>
                 <InputText class="form-control" @bind-Value="printer.IP" />
             </div>
-            <div class="col-md-4 mb-3">
+                <div class="col-md-4 mb-3">
                 <label class="form-label">@Translation.GetString("printers.port")</label>
                 <InputNumber class="form-control" @bind-Value="printer.Port" />
             </div>
@@ -49,3 +50,15 @@
     </FormFields>
 
 </CrudTablePage>
+
+@code {
+    private CrudTablePage<PrinterDto, int> _tableRef = default!;
+
+    protected override async Task OnLanguageChangedAsync()
+    {
+        if (_tableRef != null)
+        {
+            await _tableRef.LoadDataAsync();
+        }
+    }
+}

@@ -1,77 +1,53 @@
 @page "/templates"
 @attribute [Authorize]
 @inherits TranslatableComponent
-@inject IHttpClientFactory ClientFactory
 
-<div class="container-fluid">
-    <h3 class="mb-3">@Translation.GetString("templates.title")</h3>
+<CrudTablePage @ref="_crudTable"
+               TItem="TemplateDto" 
+               TKey="int"
+               ApiEndpoint="api/templates"
+               IdSelector="t => t.Id"
+               CreateNewItem="@(() => new TemplateDto())"
+               Title="@Translation.GetString("templates.title")"
+               Description="@Translation.GetString("templates.description")"
+               EmptyMessage="@Translation.GetString("templates.no_templates")"
+               AddModalTitle="@Translation.GetString("templates.add_title")"
+               EditModalTitle="@Translation.GetString("templates.edit_title")">
 
-    @if (isLoading)
-    {
-        <div class="d-flex justify-content-center my-5">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">@Translation.GetString("common.loading")</span>
-            </div>
+    <TableHeader>
+        <th>@Translation.GetString("templates.name")</th>
+        <th>@Translation.GetString("templates.status")</th>
+        <th>@Translation.GetString("templates.updated_at")</th>
+    </TableHeader>
+
+    <RowTemplate Context="template">
+        <td>@template.Name</td>
+        <td>@template.BasicStatusName</td>
+        <td>@template.UpdatedAt.ToLocalTime().ToString("g")</td>
+    </RowTemplate>
+
+    <FormFields Context="template">
+        <div class="mb-3">
+            <label class="form-label">@Translation.GetString("templates.name")</label>
+            <InputText class="form-control" @bind-Value="template.Name" />
         </div>
-    }
-    else if (_templates == null || !_templates.Any())
-    {
-        <p class="text-muted">@Translation.GetString("templates.description")</p>
-    
-        <div class="alert alert-secondary" role="alert">
-            @Translation.GetString("templates.no_templates")
+        <div class="mb-3">
+            <label class="form-label">@Translation.GetString("templates.status")</label>
+            <InputText class="form-control" @bind-Value="template.BasicStatusName" />
         </div>
-    }
-    else
-    {
-        <div class="table-responsive">
-            <table class="table table-striped align-middle">
-                <thead>
-                    <tr>
-                        <th>@Translation.GetString("templates.name")</th>
-                        <th>@Translation.GetString("templates.status")</th>
-                        <th>@Translation.GetString("templates.updated_at")</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var template in _templates)
-                    {
-                        <tr>
-                            <td>@template.Name</td>
-                            <td>@template.BasicStatusName</td>
-                            <td>@template.UpdatedAt.ToLocalTime().ToString("g")</td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    }
-</div>
+    </FormFields>
+
+</CrudTablePage>
 
 @code {
-    private List<TemplateDto> _templates = new();
-    private bool isLoading = true;
+    private CrudTablePage<TemplateDto, int>? _crudTable;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnLanguageChangedAsync()
     {
-        await LoadTemplatesAsync();
-    }
-
-    private async Task LoadTemplatesAsync()
-    {
-        isLoading = true;
-        try
+        StateHasChanged();
+        if (_crudTable != null)
         {
-            var client = ClientFactory.CreateClient("AuthClient");
-            _templates = await client.GetFromJsonAsync<List<TemplateDto>>("api/templates") ?? new();
-        }
-        catch (Exception)
-        {
-            _templates = new();
-        }
-        finally
-        {
-            isLoading = false;
+            await _crudTable.LoadDataAsync();
         }
     }
 }

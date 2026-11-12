@@ -150,7 +150,6 @@
 
     private void OpenAddModal()
     {
-        Console.WriteLine("Add clicked");
         _isEditMode = false;
         _currentItem = CreateNewItem != null ? CreateNewItem() : new TItem();
         _editContext = new EditContext(_currentItem);
