@@ -9,14 +9,22 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
 {
     private readonly IJSRuntime _jsRuntime;
     private readonly ClaimsPrincipal _anonymous = new(new ClaimsIdentity());
+    private bool _initialized;
+    private AuthenticationState _cachedState;
 
     public CustomAuthenticationStateProvider(IJSRuntime jsRuntime)
     {
         _jsRuntime = jsRuntime;
+        _cachedState = new AuthenticationState(_anonymous);
     }
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {
+        if (_initialized)
+        {
+            return _cachedState;
+        }
+
         string? token = null;
         try
         {
@@ -26,28 +34,30 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
         {
         }
 
-        if (string.IsNullOrWhiteSpace(token))
+        if (!string.IsNullOrWhiteSpace(token))
         {
-            return new AuthenticationState(_anonymous);
+            var identity = new ClaimsIdentity(ParseClaimsFromJwt(token), "jwtAuthType");
+            var user = new ClaimsPrincipal(identity);
+            _cachedState = new AuthenticationState(user);
         }
 
-        var identity = new ClaimsIdentity(ParseClaimsFromJwt(token), "jwtAuthType");
-        var user = new ClaimsPrincipal(identity);
-
-        return new AuthenticationState(user);
+        _initialized = true;
+        return _cachedState;
     }
 
     public void NotifyUserAuthentication(string token)
     {
         var authenticatedUser = new ClaimsPrincipal(new ClaimsIdentity(ParseClaimsFromJwt(token), "jwtAuthType"));
-        var authState = Task.FromResult(new AuthenticationState(authenticatedUser));
-        NotifyAuthenticationStateChanged(authState);
+        _cachedState = new AuthenticationState(authenticatedUser);
+        _initialized = true;
+        NotifyAuthenticationStateChanged(Task.FromResult(_cachedState));
     }
 
     public void NotifyUserLogout()
     {
-        var authState = Task.FromResult(new AuthenticationState(_anonymous));
-        NotifyAuthenticationStateChanged(authState);
+        _cachedState = new AuthenticationState(_anonymous);
+        _initialized = true;
+        NotifyAuthenticationStateChanged(Task.FromResult(_cachedState));
     }
 
     private static IEnumerable<Claim> ParseClaimsFromJwt(string jwt)
@@ -57,7 +67,6 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
         var keyValuePairs = JsonSerializer.Deserialize<Dictionary<string, object>>(jsonBytes);
 
         var claims = new List<Claim>();
-
         if (keyValuePairs == null) return claims;
 
         foreach (var kvp in keyValuePairs)

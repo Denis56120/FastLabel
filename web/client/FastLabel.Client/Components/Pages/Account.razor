@@ -4,11 +4,6 @@
 @inject IHttpClientFactory ClientFactory
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
-@using System.Net
-@using System.Security.Claims
-@using FastLabel.Client.Components
-@using Microsoft.AspNetCore.Authorization
-@using Microsoft.AspNetCore.Components.Authorization
 
 <div class="container mt-4">
     <h2>@Translation.GetString("account.title")</h2>
@@ -64,14 +59,14 @@
             var user = authState.User;
 
             var claimsData = user.Claims.Select(c => new { c.Type, c.Value });
-Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(claimsData, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+            Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(claimsData, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
 
             var emailClaim = user.FindFirst("email");
             if (emailClaim != null)
             {
                 userEmail =  emailClaim.Value;
             }
-            
+
             var roleClaim = user.FindFirst(c => c.Type == ClaimTypes.Role);
             if (roleClaim != null)
             {

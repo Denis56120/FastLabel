@@ -1,0 +1,208 @@
+@using FastLabel.Client.Components
+@using Microsoft.AspNetCore.Components.Forms
+@typeparam TItem where TItem : class, new()
+@typeparam TKey where TKey : notnull
+@inherits TranslatableComponent
+@inject IHttpClientFactory ClientFactory
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">@Title</h3>
+        
+        <div class="btn-group" role="group">
+            <button class="btn btn-primary" @onclick="alert('DOM OK');">
+                <i class="bi bi-plus-lg"></i> @Translation.GetString("common.add")
+            </button>
+            <button class="btn btn-outline-secondary" 
+                    disabled="@(_selectedIds.Count != 1)" 
+                    @onclick="OpenEditModal">
+                <i class="bi bi-pencil"></i> @Translation.GetString("common.edit")
+            </button>
+            <button class="btn btn-outline-danger" 
+                    disabled="@(_selectedIds.Count == 0)" 
+                    @onclick="DeleteSelectedAsync">
+                <i class="bi bi-trash"></i> @Translation.GetString("common.delete") (@_selectedIds.Count)
+            </button>
+        </div>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="d-flex justify-content-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">@Translation.GetString("common.loading")</span>
+            </div>
+        </div>
+    }
+    else if (_items == null || !_items.Any())
+    {
+        @if (!string.IsNullOrEmpty(Description))
+        {
+            <p class="text-muted">@Description</p>
+        }
+        <div class="alert alert-secondary" role="alert">
+            @EmptyMessage
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th style="width: 40px;">
+                            <input type="checkbox" class="form-check-input" 
+                                   checked="@IsAllSelected" 
+                                   @onchange="ToggleSelectAll" />
+                        </th>
+                        @TableHeader
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in _items)
+                    {
+                        var id = IdSelector(item);
+                        <tr class="@(_selectedIds.Contains(id) ? "table-active" : "")">
+                            <td>
+                                <input type="checkbox" class="form-check-input" 
+                                       checked="@_selectedIds.Contains(id)" 
+                                       @onchange="(e) => ToggleSelection(id, e.Value)" />
+                            </td>
+                            @RowTemplate(item)
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<BaseModal IsOpen="@_isModalOpen" 
+           Title="@(_isEditMode ? EditModalTitle : AddModalTitle)" 
+           EditContext="@_editContext"
+           OnSave="SaveItemAsync" 
+           OnClose="CloseModal">
+    @if (_editContext != null)
+    {
+        <EditForm EditContext="@_editContext">
+            <DataAnnotationsValidator />
+            @FormFields(_currentItem)
+        </EditForm>
+    }
+</BaseModal>
+
+@code {
+    [Parameter, EditorRequired] public string ApiEndpoint { get; set; } = string.Empty;
+    [Parameter, EditorRequired] public Func<TItem, TKey> IdSelector { get; set; } = default!;
+    [Parameter] public Func<TItem>? CreateNewItem { get; set; }
+    [Parameter] public Func<TItem, TItem>? CloneItem { get; set; }
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+    [Parameter] public string? Description { get; set; }
+    [Parameter] public string EmptyMessage { get; set; } = "Aucun enregistrement.";
+    [Parameter] public string AddModalTitle { get; set; } = "Ajouter";
+    [Parameter] public string EditModalTitle { get; set; } = "Modifier";
+    [Parameter, EditorRequired] public RenderFragment TableHeader { get; set; } = default!;
+    [Parameter, EditorRequired] public RenderFragment<TItem> RowTemplate { get; set; } = default!;
+    [Parameter, EditorRequired] public RenderFragment<TItem> FormFields { get; set; } = default!;
+    private List<TItem> _items = new();
+    private HashSet<TKey> _selectedIds = new();
+    private bool _isLoading = true;
+    private bool _isModalOpen = false;
+    private bool _isEditMode = false;
+    private TItem _currentItem = new();
+    private EditContext? _editContext;
+
+    private bool IsAllSelected => _items.Any() && _selectedIds.Count == _items.Count;
+
+    protected override async Task OnInitializedAsync() => await LoadDataAsync();
+
+    public async Task LoadDataAsync()
+    {
+        _isLoading = true;
+        _selectedIds.Clear();
+        try
+        {
+            var client = ClientFactory.CreateClient("AuthClient");
+            _items = await client.GetFromJsonAsync<List<TItem>>(ApiEndpoint) ?? new();
+        }
+        catch
+        {
+            _items = new();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void ToggleSelection(TKey id, object? checkedValue)
+    {
+        if (checkedValue is bool isChecked && isChecked) _selectedIds.Add(id);
+        else _selectedIds.Remove(id);
+    }
+
+    private void ToggleSelectAll(ChangeEventArgs e)
+    {
+        if (e.Value is bool isChecked && isChecked)
+            _selectedIds = _items.Select(IdSelector).ToHashSet();
+        else
+            _selectedIds.Clear();
+    }
+
+    private void OpenAddModal()
+    {
+        Console.WriteLine("Add clicked");
+        _isEditMode = false;
+        _currentItem = CreateNewItem != null ? CreateNewItem() : new TItem();
+        _editContext = new EditContext(_currentItem);
+        _isModalOpen = true;
+        StateHasChanged(); 
+    }
+
+    private void OpenEditModal()
+    {
+        if (_selectedIds.Count != 1) return;
+        var selectedId = _selectedIds.First();
+        var itemToEdit = _items.FirstOrDefault(i => EqualityComparer<TKey>.Default.Equals(IdSelector(i), selectedId));
+        
+        if (itemToEdit != null)
+        {
+            _isEditMode = true;
+
+            _currentItem = CloneItem != null 
+                ? CloneItem(itemToEdit) 
+                : System.Text.Json.JsonSerializer.Deserialize<TItem>(System.Text.Json.JsonSerializer.Serialize(itemToEdit))!;
+            
+            _editContext = new EditContext(_currentItem);
+            _isModalOpen = true;
+        }
+    }
+
+    private void CloseModal() => _isModalOpen = false;
+
+    private async Task SaveItemAsync()
+    {
+        var client = ClientFactory.CreateClient("AuthClient");
+        HttpResponseMessage response = _isEditMode
+            ? await client.PutAsJsonAsync($"{ApiEndpoint}/{IdSelector(_currentItem)}", _currentItem)
+            : await client.PostAsJsonAsync(ApiEndpoint, _currentItem);
+
+        if (response.IsSuccessStatusCode)
+        {
+            _isModalOpen = false;
+            await LoadDataAsync();
+        }
+    }
+
+    private async Task DeleteSelectedAsync()
+    {
+        if (!_selectedIds.Any()) return;
+        var client = ClientFactory.CreateClient("AuthClient");
+        var response = await client.PostAsJsonAsync($"{ApiEndpoint}/delete-batch", _selectedIds.ToList());
+
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadDataAsync();
+        }
+    }
+}

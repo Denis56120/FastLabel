@@ -226,7 +226,13 @@ public static class DbInitializer
 
         // 11. Textes UI
         await CreateTextWithTranslationsAsync("common.loading", "Loading...", new() { { "fr", "Chargement en cours..." }, { "en", "Loading..." } });
-        
+        await CreateTextWithTranslationsAsync("common.add", "Add", new() { { "fr", "Ajouter" }, { "en", "Add" } });
+        await CreateTextWithTranslationsAsync("common.edit", "Edit", new() { { "fr", "Modifier" }, { "en", "Edit" } });
+        await CreateTextWithTranslationsAsync("common.delete", "Delete", new() { { "fr", "Supprimer" }, { "en", "Delete" } });
+        await CreateTextWithTranslationsAsync("common.save", "Save", new() { { "fr", "Enregistrer" }, { "en", "Save" } });
+        await CreateTextWithTranslationsAsync("common.cancel", "Cancel", new() { { "fr", "Annuler" }, { "en", "Cancel" } });
+        await CreateTextWithTranslationsAsync("common.loading", "Loading...", new() { { "fr", "Chargement en cours..." }, { "en", "Loading..." } });
+
         await CreateTextWithTranslationsAsync("history.title", "Print History", new() { { "fr", "Historique des impressions" }, { "en", "Print History" } });
         await CreateTextWithTranslationsAsync("history.description", "Tracking and logs of labels sent to printers.", new() { { "fr", "Suivi et journaux des étiquettes envoyées aux imprimantes." }, { "en", "Tracking and logs of labels sent to printers." } });
         await CreateTextWithTranslationsAsync("history.no_history", "No print history at the moment.", new() { { "fr", "Aucun historique d'impression pour l'instant." }, { "en", "No print history at the moment." } });
@@ -239,9 +245,17 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("agents.description", "Status of your connected Windows agents.", new() { { "fr", "État de vos agents Windows connectés." }, { "en", "Status of your connected Windows agents." } });
         await CreateTextWithTranslationsAsync("agents.no_agents", "No active agents at the moment.", new() { { "fr", "Aucun agent actif pour le moment." }, { "en", "No active agents at the moment." } });
 
-        await CreateTextWithTranslationsAsync("printers.title", "Thermal Printers", new() { { "fr", "Imprimantes Thermiques" }, { "en", "Thermal Printers" } });
-        await CreateTextWithTranslationsAsync("printers.description", "List of connected and configured printers.", new() { { "fr", "Liste des imprimantes connectées et configurées." }, { "en", "List of connected and configured printers." } });
-        await CreateTextWithTranslationsAsync("printers.no_printers", "No printers detected.", new() { { "fr", "Aucune imprimante détectée." }, { "en", "No printers detected." } });
+        await CreateTextWithTranslationsAsync("printers.title", "Printers", new() { { "fr", "Imprimantes" }, { "en", "Printers" } });
+        await CreateTextWithTranslationsAsync("printers.description", "Manage your network printers.", new() { { "fr", "Gérez vos imprimantes réseau." }, { "en", "Manage your network printers." } });
+        await CreateTextWithTranslationsAsync("printers.no_printers", "No printers configured.", new() { { "fr", "Aucune imprimante configurée." }, { "en", "No printers configured." } });
+        await CreateTextWithTranslationsAsync("printers.add_title", "Add Printer", new() { { "fr", "Ajouter une imprimante" }, { "en", "Add Printer" } });
+        await CreateTextWithTranslationsAsync("printers.edit_title", "Edit Printer", new() { { "fr", "Modifier l'imprimante" }, { "en", "Edit Printer" } });
+        await CreateTextWithTranslationsAsync("printers.name", "Name", new() { { "fr", "Nom" }, { "en", "Name" } });
+        await CreateTextWithTranslationsAsync("printers.location", "Location", new() { { "fr", "Emplacement" }, { "en", "Location" } });
+        await CreateTextWithTranslationsAsync("printers.ip_port", "IP : Port", new() { { "fr", "IP : Port" }, { "en", "IP : Port" } });
+        await CreateTextWithTranslationsAsync("printers.ip", "IP Address", new() { { "fr", "Adresse IP" }, { "en", "IP Address" } });
+        await CreateTextWithTranslationsAsync("printers.port", "Port", new() { { "fr", "Port" }, { "en", "Port" } });
+        await CreateTextWithTranslationsAsync("printers.status", "Status", new() { { "fr", "Statut" }, { "en", "Status" } });
 
         await CreateTextWithTranslationsAsync("templates.title", "Label Templates", new() { { "fr", "Modèles d'étiquettes" }, { "en", "Label Templates" } });
         await CreateTextWithTranslationsAsync("templates.description", "Manage and design your ZPL label templates.", new() { { "fr", "Gérez et concevez vos modèles d'étiquettes ZPL." }, { "en", "Manage and design your ZPL label templates." } });

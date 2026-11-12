@@ -1,0 +1,51 @@
+@page "/printers"
+@attribute [Authorize]
+@inherits TranslatableComponent
+
+<CrudTablePage TItem="PrinterDto" 
+               TKey="int"
+               ApiEndpoint="api/printers"
+               IdSelector="p => p.Id"
+               CreateNewItem="@(() => new PrinterDto { Port = 9100 })"
+               Title="@Translation.GetString("printers.title")"
+               Description="@Translation.GetString("printers.description")"
+               EmptyMessage="@Translation.GetString("printers.no_printers")"
+               AddModalTitle="@Translation.GetString("printers.add_title")"
+               EditModalTitle="@Translation.GetString("printers.edit_title")">
+
+    <TableHeader>
+        <th>@Translation.GetString("printers.name")</th>
+        <th>@Translation.GetString("printers.location")</th>
+        <th>@Translation.GetString("printers.ip_port")</th>
+        <th>@Translation.GetString("printers.status")</th>
+    </TableHeader>
+
+    <RowTemplate Context="printer">
+        <td>@printer.Name</td>
+        <td>@printer.Location</td>
+        <td>@printer.IP:@printer.Port</td>
+        <td>@printer.StatusName</td>
+    </RowTemplate>
+
+    <FormFields Context="printer">
+        <div class="mb-3">
+            <label class="form-label">@Translation.GetString("printers.name")</label>
+            <InputText class="form-control" @bind-Value="printer.Name" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">@Translation.GetString("printers.location")</label>
+            <InputText class="form-control" @bind-Value="printer.Location" />
+        </div>
+        <div class="row">
+            <div class="col-md-8 mb-3">
+                <label class="form-label">@Translation.GetString("printers.ip")</label>
+                <InputText class="form-control" @bind-Value="printer.IP" />
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">@Translation.GetString("printers.port")</label>
+                <InputNumber class="form-control" @bind-Value="printer.Port" />
+            </div>
+        </div>
+    </FormFields>
+
+</CrudTablePage>

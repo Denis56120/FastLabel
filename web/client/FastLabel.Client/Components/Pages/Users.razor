@@ -1,9 +1,6 @@
 @page "/users"
 @attribute [Authorize(Roles = "Admin")]
 @inherits TranslatableComponent
-@using FastLabel.Client.Components
-@using FastLabel.Shared.DTOs
-@using Microsoft.AspNetCore.Authorization
 @inject IHttpClientFactory ClientFactory
 
 <div class="container-fluid">
