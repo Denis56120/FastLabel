@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.JSInterop;
 using FastLabel.Client;
 using FastLabel.Client.Services;
 
@@ -33,6 +34,25 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<TranslationService>();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 builder.Services.AddScoped<CookieService>();
-builder.Services.AddScoped<TokenContainer>();
+builder.Services.AddSingleton<TokenContainer>();
 
-await builder.Build().RunAsync();
+var host = builder.Build();
+
+// Hydrater le TokenContainer au démarrage depuis le LocalStorage
+var jsRuntime = host.Services.GetRequiredService<IJSRuntime>();
+var tokenContainer = host.Services.GetRequiredService<TokenContainer>();
+
+try
+{
+    var savedToken = await jsRuntime.InvokeAsync<string>("localStorage.getItem", "authToken");
+    if (!string.IsNullOrEmpty(savedToken))
+    {
+        tokenContainer.Token = savedToken;
+    }
+}
+catch
+{
+    // Ignore si le JS interop n'est pas encore disponible
+}
+
+await host.RunAsync();
