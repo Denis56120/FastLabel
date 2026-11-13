@@ -13,7 +13,7 @@ public class CustomAuthorizationMessageHandler : DelegatingHandler
     {
         request.SetBrowserRequestCredentials(BrowserRequestCredentials.Include);
 
-        var currentLang = _translationService?.CurrentLanguage ?? "fr";
+        var currentLang = _translationService?.CurrentLanguage ?? "en";
         request.Headers.Remove("X-Language");
         request.Headers.Add("X-Language", currentLang);
 

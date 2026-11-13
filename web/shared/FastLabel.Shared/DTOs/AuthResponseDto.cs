@@ -1,8 +1,7 @@
 namespace FastLabel.Shared.DTOs;
 
-public record AuthResponseDto(
-    string Token,
+public record UserInfoResponseDto(
     int UserId,
     string Email,
-    DateTime ExpiresAt
+    bool IsAdmin
 );

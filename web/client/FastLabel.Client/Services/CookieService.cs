@@ -7,7 +7,6 @@ public class CookieService(IServiceProvider serviceProvider)
     private readonly IServiceProvider _serviceProvider = serviceProvider;
     private IJSRuntime? _jsRuntime;
 
-    // Résolution différée de IJSRuntime pour éviter l'erreur au démarrage
     private IJSRuntime JsRuntime => 
         _jsRuntime ??= _serviceProvider.GetRequiredService<IJSRuntime>();
 

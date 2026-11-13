@@ -23,9 +23,9 @@ builder.Services.AddHttpClient("AuthClient", client =>
 })
 .AddHttpMessageHandler<CustomAuthorizationMessageHandler>();
 
-builder.Services.AddScoped<CookieService>();
+builder.Services.AddSingleton<CookieService>();
 builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<TranslationService>();
+builder.Services.AddSingleton<TranslationService>();
 
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 

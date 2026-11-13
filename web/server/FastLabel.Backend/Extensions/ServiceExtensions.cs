@@ -2,11 +2,10 @@ using System.Text;
 using FastLabel.Backend.Data;
 using FastLabel.Backend.Models;
 using FastLabel.Backend.Services;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 
 namespace FastLabel.Backend.Extensions;
 
@@ -35,53 +34,29 @@ public static class ServiceExtensions
         });
 
         services.AddControllers();
-        services.AddScoped<TokenService>();
         services.AddScoped<IEmailService, EmailService>();
 
         services.AddSingleton<PrintBrokerService>();
 
-        services.AddAuthentication(options =>
-        {
-            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-        })
-        .AddJwtBearer(options =>
-        {
-            var secretKey = configuration["Jwt:SecretKey"]
-                        ?? throw new InvalidOperationException("Jwt:SecretKey is not configured.");
-            options.TokenValidationParameters = new TokenValidationParameters
+        services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+            .AddCookie(options =>
             {
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
-                ValidateIssuer = false,
-                ValidateAudience = false
-            };
+                options.Cookie.Name = "authentification"; 
+                options.Cookie.HttpOnly = true;
+                options.Cookie.SameSite = SameSiteMode.Lax;
+                options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; 
 
-            options.Events = new JwtBearerEvents
-            {
-                OnMessageReceived = context =>
+                options.Events.OnRedirectToLogin = context =>
                 {
-                    if (context.Request.Cookies.TryGetValue("auth_token", out var token))
-                    {
-                        context.Token = token;
-                    }
-                    return Task.CompletedTask;
-                },
-                OnChallenge = context =>
-                {
-                    context.HandleResponse();
                     context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                    context.Response.ContentType = "application/json";
-                    return context.Response.WriteAsync("{\"error\":\"Unauthorized\"}");
-                },
-                OnForbidden = context =>
+                    return Task.CompletedTask;
+                };
+                options.Events.OnRedirectToAccessDenied = context =>
                 {
                     context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                    context.Response.ContentType = "application/json";
-                    return context.Response.WriteAsync("{\"error\":\"Forbidden\"}");
-                }
-            };
-        });
+                    return Task.CompletedTask;
+                };
+            });
 
         services.AddAuthorizationBuilder()
             .AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));

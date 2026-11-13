@@ -5,16 +5,19 @@ using FastLabel.Backend.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 namespace FastLabel.Backend.Endpoints;
 
 public static class AuthEndpoints
 {
+
     public static void MapAuthEndpoints(this IEndpointRouteBuilder routes)
     {
         var group = routes.MapGroup("/api/auth");
 
-        group.MapPost("/login", async (LoginRequest request, HttpContext httpContext, AppDbContext db, TokenService tokenService, IPasswordHasher<User> passwordHasher) =>
+        group.MapPost("/login", async (LoginRequest request, HttpContext httpContext, AppDbContext db, IPasswordHasher<User> passwordHasher) =>
         {
             var user = await db.Users
                 .OrderBy(u => u.Id) 
@@ -37,50 +40,61 @@ public static class AuthEndpoints
                 return Results.BadRequest(new { message = "auth.error.account_inactive" });
             }
 
-            var token = tokenService.GenerateToken(user);
+            var role = user.IsAdmin ? "Admin" : "Standard";
 
-            httpContext.Response.Cookies.Append("auth_token", token, new CookieOptions
+            var claims = new List<Claim>
             {
-                HttpOnly = true,
-                Secure = false, 
-                SameSite = SameSiteMode.Lax,
-                Expires = DateTimeOffset.UtcNow.AddDays(7)
+                new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new(ClaimTypes.Name, user.Name ?? string.Empty),
+                new(ClaimTypes.Email, user.Email ?? string.Empty),
+                new(ClaimTypes.Role, role)
+            };
+
+            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+
+            await httpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), new AuthenticationProperties
+            {
+                IsPersistent = true,
+                ExpiresUtc = DateTimeOffset.UtcNow.AddDays(7)
             });
 
             return Results.Ok(new
             {
-                user = new { user.Id, user.Email, user.Name } 
+                user = new { user.Id, user.Email, user.Name, user.IsAdmin } 
             });
         });
 
-        group.MapPost("/logout", (HttpContext httpContext) =>
+        group.MapPost("/logout", async (HttpContext httpContext) =>
         {
-            httpContext.Response.Cookies.Delete("auth_token", new CookieOptions
-            {
-                HttpOnly = true,
-                Secure = false, 
-                SameSite = SameSiteMode.Lax
-            });
-
+            await httpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return Results.Ok(new { message = "auth.success.logout" });
         }).RequireAuthorization();
 
-        group.MapGet("/me", (ClaimsPrincipal user) =>
+        group.MapGet("/me", async (ClaimsPrincipal userPrincipal, AppDbContext db) =>
         {
-            if (user.Identity?.IsAuthenticated != true)
+            if (userPrincipal.Identity?.IsAuthenticated != true)
             {
                 return Results.Unauthorized();
             }
 
-            var idClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var name = user.FindFirst(ClaimTypes.Name)?.Value ?? string.Empty;
-            var email = user.FindFirst(ClaimTypes.Email)?.Value ?? string.Empty;
+            var idClaim = userPrincipal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (!int.TryParse(idClaim, out var userId))
+            {
+                return Results.Unauthorized();
+            }
+
+            var user = await db.Users.FindAsync(userId);
+            if (user == null)
+            {
+                return Results.Unauthorized();
+            }
 
             return Results.Ok(new
             {
-                Id = int.TryParse(idClaim, out var id) ? id : 0,
-                Name = name,
-                Email = email
+                Id = user.Id,
+                Name = user.Name ?? string.Empty,
+                Email = user.Email ?? string.Empty,
+                IsAdmin = user.IsAdmin
             });
         }).RequireAuthorization();
 

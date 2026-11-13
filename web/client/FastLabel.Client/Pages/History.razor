@@ -1,11 +1,12 @@
 @page "/history"
+@layout MainLayout
 @attribute [Authorize]
 @inherits TranslatableComponent
 
 <CrudTablePage @ref="_crudTable"
                TItem="PrintHistoryDto" 
                TKey="int"
-               ApiEndpoint="api/print-history"
+               ApiEndpoint="api/jobs"
                IdSelector="h => h.Id"
                CreateNewItem="@(() => new PrintHistoryDto { Quantity = 1 })"
                Title="@Translation.GetString("history.title")"

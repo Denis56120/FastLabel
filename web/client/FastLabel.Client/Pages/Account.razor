@@ -1,4 +1,5 @@
 @page "/account"
+@layout MainLayout
 @attribute [Authorize]
 @inherits TranslatableComponent
 @inject IHttpClientFactory ClientFactory
@@ -60,25 +61,26 @@
 
             var claimsData = user.Claims.Select(c => new { c.Type, c.Value });
 
-            var emailClaim = user.FindFirst("email");
+            var emailClaim = user.FindFirst(ClaimTypes.Email);
             if (emailClaim != null)
             {
-                userEmail =  emailClaim.Value;
+                userEmail = emailClaim.Value;
             }
 
-            var roleClaim = user.FindFirst(c => c.Type == ClaimTypes.Role);
+            var roleClaim = user.FindFirst(ClaimTypes.Role);
             if (roleClaim != null)
             {
                 userRole = roleClaim.Value;
             }
 
-            var nameClaim = user.FindFirst("unique_name");
+            var nameClaim = user.FindFirst(ClaimTypes.Name);
             if (nameClaim != null)
             {
-                userName =  nameClaim.Value;
+                userName = nameClaim.Value;
             }
         }
-        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode ==
+HttpStatusCode.Forbidden)
         {
             Navigation.NavigateTo("/");
         }
