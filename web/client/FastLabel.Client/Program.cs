@@ -1,8 +1,3 @@
-using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using Microsoft.AspNetCore.Components.Authorization;
-using FastLabel.Client;
-using FastLabel.Client.Services; 
-
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 var serverAddress = builder.Configuration["ServerUrl"] ?? "http://localhost:5001";
 

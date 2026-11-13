@@ -1,9 +1,3 @@
-using System.Security.Claims;
-using FastLabel.Backend.Data;
-using FastLabel.Backend.Models;
-using FastLabel.Shared.DTOs;
-using Microsoft.EntityFrameworkCore;
-
 namespace FastLabel.Backend.Endpoints;
 
 public static class UserEndpoints

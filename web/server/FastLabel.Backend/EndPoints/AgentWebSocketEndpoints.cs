@@ -1,11 +1,3 @@
-using System.Net.WebSockets;
-using System.Text;
-using System.Text.Json;
-using FastLabel.Backend.Data;
-using FastLabel.Backend.Models;
-using FastLabel.Backend.Services;
-using Microsoft.EntityFrameworkCore;
-
 namespace FastLabel.Backend.Endpoints;
 
 public static class AgentWebSocketEndpoints

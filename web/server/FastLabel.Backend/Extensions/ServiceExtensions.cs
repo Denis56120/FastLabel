@@ -1,11 +1,3 @@
-using FastLabel.Backend.Data;
-using FastLabel.Backend.Models;
-using FastLabel.Backend.Services;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.ResponseCompression;
-using Microsoft.EntityFrameworkCore;
-
 namespace FastLabel.Backend.Extensions;
 
 public static class ServiceExtensions

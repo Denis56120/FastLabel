@@ -1,6 +1,3 @@
-using FastLabel.Backend.Models;
-using Microsoft.EntityFrameworkCore;
-
 namespace FastLabel.Backend.Data;
 
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)

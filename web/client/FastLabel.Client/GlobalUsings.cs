@@ -1,0 +1,11 @@
+global using FastLabel.Client;
+global using FastLabel.Client.Services;
+global using FastLabel.Shared.DTOs;
+global using Microsoft.AspNetCore.Components;
+global using Microsoft.AspNetCore.Components.Authorization;
+global using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+global using Microsoft.AspNetCore.Components.WebAssembly.Http;
+global using Microsoft.JSInterop;
+global using System.Net.Http.Json;
+global using System.Security.Claims;
+global using System.Text.Json;

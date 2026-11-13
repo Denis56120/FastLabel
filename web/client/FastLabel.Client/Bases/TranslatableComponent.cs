@@ -1,6 +1,4 @@
-using Microsoft.AspNetCore.Components;
-
-namespace FastLabel.Client.Components;
+namespace FastLabel.Client.Bases;
 
 public abstract class TranslatableComponent : LayoutComponentBase, IDisposable
 {

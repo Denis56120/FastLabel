@@ -1,8 +1,3 @@
-using FastLabel.Backend.Data;
-using FastLabel.Backend.Endpoints;
-using FastLabel.Backend.Models;
-using Microsoft.AspNetCore.Identity;
-
 namespace FastLabel.Backend.Extensions;
 
 public static class AppExtensions

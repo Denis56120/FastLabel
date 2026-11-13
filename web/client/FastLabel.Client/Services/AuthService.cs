@@ -1,6 +1,4 @@
-using System.Net.Http.Json;
-using Microsoft.AspNetCore.Components.Authorization;
-using FastLabel.Shared.DTOs; // <-- Importe le namespace partagé ici
+namespace FastLabel.Client.Services;
 
 public class AuthService
 {

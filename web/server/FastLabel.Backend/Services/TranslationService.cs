@@ -1,5 +1,3 @@
-using FastLabel.Shared.DTOs;
-
 namespace FastLabel.Backend.Services;
 
 public class TranslationService(IHttpClientFactory httpClientFactory)

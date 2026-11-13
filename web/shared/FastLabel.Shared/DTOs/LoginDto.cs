@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-
 namespace FastLabel.Shared.DTOs;
 
 public class LoginDto

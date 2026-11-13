@@ -1,7 +1,3 @@
-using FastLabel.Backend.Models;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-
 namespace FastLabel.Backend.Data;
 
 public static class DbInitializer

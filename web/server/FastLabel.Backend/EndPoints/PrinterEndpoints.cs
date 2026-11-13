@@ -1,9 +1,3 @@
-using FastLabel.Backend.Data;
-using FastLabel.Backend.Models;
-using FastLabel.Shared.DTOs;
-using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
-
 namespace FastLabel.Backend.Endpoints;
 
 public static class PrinterEndpoints

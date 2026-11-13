@@ -1,3 +1,5 @@
+namespace FastLabel.Backend.Extensions;
+
 public static class HttpContextExtensions
 {
     public static string GetRequestLanguage(this HttpContext context)

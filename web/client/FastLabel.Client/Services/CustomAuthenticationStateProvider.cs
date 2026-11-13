@@ -1,7 +1,4 @@
-using System.Security.Claims;
-using System.Net.Http.Json;
-using Microsoft.AspNetCore.Components.Authorization;
-using FastLabel.Shared.DTOs; 
+namespace FastLabel.Client.Services;
 
 public class CustomAuthenticationStateProvider : AuthenticationStateProvider
 {

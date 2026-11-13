@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Components.WebAssembly.Http;
+namespace FastLabel.Client.Services;
 
 public class CustomAuthorizationMessageHandler : DelegatingHandler
 {

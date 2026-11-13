@@ -1,5 +1,3 @@
-using Microsoft.JSInterop;
-
 namespace FastLabel.Client.Services;
 
 public class CookieService(IServiceProvider serviceProvider)

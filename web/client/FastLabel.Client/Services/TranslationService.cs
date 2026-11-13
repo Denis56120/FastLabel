@@ -1,6 +1,4 @@
-using System.Text.Json;
-using FastLabel.Client.Services;
-using FastLabel.Shared.DTOs;
+namespace FastLabel.Client.Services;
 
 public class TranslationService(IHttpClientFactory httpClientFactory, CookieService cookieService)
 {
