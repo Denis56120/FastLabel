@@ -19,7 +19,7 @@ public class Subscription
     public Plan Plan { get; set; } = null!;
 
     [Required]
-    public int SubscriptionPeriod { get; set; } // En mois
+    public int SubscriptionPeriod { get; set; }
 
     public int SubscriptionTypeId { get; set; }
 

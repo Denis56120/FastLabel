@@ -4,9 +4,9 @@ using FastLabel.Client;
 using FastLabel.Client.Services; 
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
-builder.RootComponents.Add<App>("#app");
-
 var serverAddress = builder.Configuration["ServerUrl"] ?? "http://localhost:5001";
+
+builder.RootComponents.Add<App>("#app");
 
 builder.Services.AddAuthorizationCore();
 
@@ -26,7 +26,6 @@ builder.Services.AddHttpClient("AuthClient", client =>
 builder.Services.AddSingleton<CookieService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddSingleton<TranslationService>();
-
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
 
 var host = builder.Build();

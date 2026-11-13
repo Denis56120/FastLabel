@@ -2,18 +2,12 @@ using FastLabel.Shared.DTOs;
 
 namespace FastLabel.Backend.Services;
 
-public class TranslationService
+public class TranslationService(IHttpClientFactory httpClientFactory)
 {
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
     private Dictionary<string, string> _translations = new(StringComparer.OrdinalIgnoreCase);
     private string _currentLanguage = string.Empty;
-
     public event Action? OnChange;
-
-    public TranslationService(IHttpClientFactory httpClientFactory)
-    {
-        _httpClientFactory = httpClientFactory;
-    }
 
     public async Task InitializeAsync(string language)
     {

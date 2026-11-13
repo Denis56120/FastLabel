@@ -1,4 +1,3 @@
-using System.Text;
 using FastLabel.Backend.Data;
 using FastLabel.Backend.Models;
 using FastLabel.Backend.Services;

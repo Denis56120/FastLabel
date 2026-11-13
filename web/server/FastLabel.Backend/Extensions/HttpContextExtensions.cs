@@ -6,7 +6,7 @@ public static class HttpContextExtensions
 
         if (string.IsNullOrEmpty(lang))
         {
-            lang = context.Request.Headers["Accept-Language"].ToString();
+            lang = context.Request.Headers.AcceptLanguage.ToString();
         }
 
         if (string.IsNullOrEmpty(lang)) return "en"; 

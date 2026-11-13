@@ -18,6 +18,5 @@ public class Language
 
     public byte[]? Flag { get; set; }
 
-    // Relation inverse
     public ICollection<Translation> Translations { get; set; } = [];
 }

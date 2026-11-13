@@ -3,12 +3,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FastLabel.Backend.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
-    {
-    }
-
     public DbSet<Language> Languages => Set<Language>();
     public DbSet<Text> Texts => Set<Text>();
     public DbSet<Translation> Translations => Set<Translation>();
@@ -20,7 +16,6 @@ public class AppDbContext : DbContext
     public DbSet<AgentType> AgentTypes => Set<AgentType>();
     public DbSet<Plan> Plans => Set<Plan>();
     public DbSet<Stripe> Stripes => Set<Stripe>();
-
     public DbSet<User> Users => Set<User>();
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
     public DbSet<LabelTemplate> LabelTemplates => Set<LabelTemplate>();
