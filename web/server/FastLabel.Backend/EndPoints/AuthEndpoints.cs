@@ -6,7 +6,7 @@ public static class AuthEndpoints
     {
         var group = routes.MapGroup("/api/auth");
 
-        group.MapPost("/login", async (LoginRequest request, HttpContext httpContext, AppDbContext db, IPasswordHasher<User> passwordHasher) =>
+        group.MapPost("/login", async (LoginDto request, HttpContext httpContext, AppDbContext db, IPasswordHasher<User> passwordHasher) =>
         {
             if (!ValidationExtensions.TryValidateModel(request, out var errorResult))
             {
@@ -167,7 +167,7 @@ public static class AuthEndpoints
             return Results.Ok(new { message = "auth.success.password_reset" });
         });
 
-        group.MapPost("/register", async (RegisterRequest dto, HttpContext httpContext, AppDbContext db, IPasswordHasher<User> passwordHasher, IEmailService emailService, IConfiguration configuration) =>
+        group.MapPost("/register", async (RegisterDto dto, HttpContext httpContext, AppDbContext db, IPasswordHasher<User> passwordHasher, IEmailService emailService, IConfiguration configuration) =>
         {
             if (!ValidationExtensions.TryValidateModel(dto, out var errorResult))
             {
