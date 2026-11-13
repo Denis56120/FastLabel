@@ -277,6 +277,11 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("agents.add_title", "Add Agent", new() { { "fr", "Ajouter un agent" }, { "en", "Add Agent" } });
         await CreateTextWithTranslationsAsync("agents.edit_title", "Edit Agent", new() { { "fr", "Modifier l'agent" }, { "en", "Edit Agent" } });
 
+        await CreateTextWithTranslationsAsync("printers.select_protocol", "Select a protocol...", new() { { "fr", "Sélectionner un protocole..." }, { "en", "Select a protocol..." } });
+        await CreateTextWithTranslationsAsync("printers.select_resolution", "Select a resolution...", new() { { "fr", "Sélectionner une résolution..." }, { "en", "Select a resolution..." } });
+        await CreateTextWithTranslationsAsync("printers.protocol", "Protocol", new() { { "fr", "Protocole" }, { "en", "Protocol" } });
+        await CreateTextWithTranslationsAsync("printers.resolution", "Resolution", new() { { "fr", "Résolution" }, { "en", "Resolution" } });
+        await CreateTextWithTranslationsAsync("printers.created_at", "Created At", new() { { "fr", "Créé le" }, { "en", "Created At" } });
         await CreateTextWithTranslationsAsync("printers.title", "Printers", new() { { "fr", "Imprimantes" }, { "en", "Printers" } });
         await CreateTextWithTranslationsAsync("printers.description", "Manage your network printers.", new() { { "fr", "Gérez vos imprimantes réseau." }, { "en", "Manage your network printers." } });
         await CreateTextWithTranslationsAsync("printers.no_printers", "No printers configured.", new() { { "fr", "Aucune imprimante configurée." }, { "en", "No printers configured." } });
@@ -362,6 +367,11 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("email.reset.body", "Hello {0},\n\nPlease click the following link to reset your password:\n{1}", new() { { "fr", "Bonjour {0},\n\nVeuillez cliquer sur le lien suivant pour réinitialiser votre mot de passe :\n{1}" }, { "en", "Hello {0},\n\nPlease click the following link to reset your password:\n{1}" } });
     
         // DTOs Rectrictions
+        await CreateTextWithTranslationsAsync("resolutions.error.value_required", "Resolution value is required", new() { { "fr", "La valeur de la résolution est requise" }, { "en", "Resolution value is required" } });
+        await CreateTextWithTranslationsAsync("resolutions.error.value_range", "Resolution value must be greater than 0", new() { { "fr", "La valeur de la résolution doit être supérieure à 0" }, { "en", "Resolution value must be greater than 0" } });
+
+        await CreateTextWithTranslationsAsync("protocols.error.name_required", "Protocol name is required", new() { { "fr", "Le nom du protocole est requis" }, { "en", "Protocol name is required" } });
+
         await CreateTextWithTranslationsAsync("agent.error.name_required", "Agent name is required", new() { { "fr", "Le nom de l'agent est requis" }, { "en", "Agent name is required" } });
         await CreateTextWithTranslationsAsync("agent.error.name_max_length", "Agent name cannot exceed 100 characters", new() { { "fr", "Le nom de l'agent ne peut pas dépasser 100 caractères" }, { "en", "Agent name cannot exceed 100 characters" } });
         await CreateTextWithTranslationsAsync("agent.error.type_required", "Agent type is required", new() { { "fr", "Le type d'agent est requis" }, { "en", "Agent type is required" } });
@@ -396,6 +406,8 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("auth.error.password_required", "Password is required", new() { { "fr", "Le mot de passe est requis" }, { "en", "Password is required" } });
         await CreateTextWithTranslationsAsync("auth.error.token_required", "Token is required", new() { { "fr", "Le jeton est requis" }, { "en", "Token is required" } });
 
+        await CreateTextWithTranslationsAsync("printer.error.protocol_required", "Please select a protocol", new() { { "fr", "Veuillez sélectionner un protocole" }, { "en", "Please select a protocol" } });
+        await CreateTextWithTranslationsAsync("printer.error.resolution_required", "Please select a resolution", new() { { "fr", "Veuillez sélectionner une résolution" }, { "en", "Please select a resolution" } });
         await CreateTextWithTranslationsAsync("printer.error.name_required", "Printer name is required", new() { { "fr", "Le nom de l'imprimante est requis" }, { "en", "Printer name is required" } });
         await CreateTextWithTranslationsAsync("printer.error.name_max_length", "Printer name cannot exceed 100 characters", new() { { "fr", "Le nom de l'imprimante ne peut pas dépasser 100 caractères" }, { "en", "Printer name cannot exceed 100 characters" } });
         await CreateTextWithTranslationsAsync("printer.error.location_required", "Location is required", new() { { "fr", "L'emplacement est requis" }, { "en", "Location is required" } });
@@ -415,6 +427,8 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("job.error.invalid_limit", "Limit must be greater than zero", new() { { "fr", "La limite doit être supérieure à zéro" }, { "en", "Limit must be greater than zero" } });
         await CreateTextWithTranslationsAsync("job.error.not_found", "Print job not found", new() { { "fr", "Tâche d'impression introuvable" }, { "en", "Print job not found" } });
         
+        await CreateTextWithTranslationsAsync("printer.error.invalid_protocol", "Invalid protocol selected", new() { { "fr", "Protocole sélectionné invalide" }, { "en", "Invalid protocol selected" } });
+        await CreateTextWithTranslationsAsync("printer.error.invalid_resolution", "Invalid resolution selected", new() { { "fr", "Résolution sélectionnée invalide" }, { "en", "Invalid resolution selected" } });
         await CreateTextWithTranslationsAsync("printer.error.not_found", "Printer not found", new() { { "fr", "Imprimante introuvable" }, { "en", "Printer not found" } });
 
         await CreateTextWithTranslationsAsync("language.error.invalid", "Unsupported language", new() { { "fr", "Langue non supportée" }, { "en", "Unsupported language" } });

@@ -2,6 +2,7 @@
 @layout MainLayout
 @attribute [Authorize]
 @inherits TranslatableComponent
+@inject ApiClient ApiClient
 
 <CrudTablePage @ref="_tableRef"
                TItem="PrinterDto" 
@@ -19,14 +20,20 @@
         <th>@Translation.GetString("printers.name")</th>
         <th>@Translation.GetString("printers.location")</th>
         <th>@Translation.GetString("printers.ip_port")</th>
+        <th>@Translation.GetString("printers.protocol")</th>
+        <th>@Translation.GetString("printers.resolution")</th>
         <th>@Translation.GetString("printers.status")</th>
+        <th>@Translation.GetString("printers.created_at")</th>
     </TableHeader>
 
     <RowTemplate Context="printer">
         <td>@printer.Name</td>
         <td>@printer.Location</td>
         <td>@printer.IP:@printer.Port</td>
+        <td>@printer.ProtocolName</td>
+        <td>@printer.ResolutionDpiName</td>
         <td>@printer.StatusName</td>
+        <td>@printer.CreatedAt.ToLocalTime().ToString("g")</td>
     </RowTemplate>
 
     <FormFields Context="printer">
@@ -43,9 +50,37 @@
                 <label class="form-label">@Translation.GetString("printers.ip")</label>
                 <InputText class="form-control" @bind-Value="printer.IP" />
             </div>
-                <div class="col-md-4 mb-3">
+            <div class="col-md-4 mb-3">
                 <label class="form-label">@Translation.GetString("printers.port")</label>
                 <InputNumber class="form-control" @bind-Value="printer.Port" />
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">@Translation.GetString("printers.protocol")</label>
+                <InputSelect class="form-select" @bind-Value="printer.ProtocolId">
+                    <option value="">@Translation.GetString("printers.select_protocol")</option>
+                    @if (_protocols != null)
+                    {
+                        @foreach (var proto in _protocols)
+                        {
+                            <option value="@proto.Id">@proto.Name</option>
+                        }
+                    }
+                </InputSelect>
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">@Translation.GetString("printers.resolution")</label>
+                <InputSelect class="form-select" @bind-Value="printer.ResolutionDpiId">
+                    <option value="">@Translation.GetString("printers.select_resolution")</option>
+                    @if (_resolutions != null)
+                    {
+                        @foreach (var res in _resolutions)
+                        {
+                            <option value="@res.Id">@res.Value DPI</option>
+                        }
+                    }
+                </InputSelect>
             </div>
         </div>
     </FormFields>
@@ -54,9 +89,32 @@
 
 @code {
     private CrudTablePage<PrinterDto, int> _tableRef = default!;
+    private List<ProtocolDto> _protocols = new();
+    private List<ResolutionDpiDto> _resolutions = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await LoadDropdownDataAsync();
+    }
+
+    private async Task LoadDropdownDataAsync()
+    {
+        try
+        {
+            _protocols = await ApiClient.GetFromJsonAsync<List<ProtocolDto>>("api/protocols") ?? new();
+            _resolutions = await ApiClient.GetFromJsonAsync<List<ResolutionDpiDto>>("api/resolutions") ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur chargement listes: {ex.Message}");
+        }
+    }
 
     protected override async Task OnLanguageChangedAsync()
     {
+        await LoadDropdownDataAsync();
+
         if (_tableRef != null)
         {
             await _tableRef.LoadDataAsync();

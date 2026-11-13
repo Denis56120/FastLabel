@@ -41,6 +41,8 @@ public static class AppExtensions
         app.MapTranslationEndpoints();
         app.MapLanguageEndpoints();
         app.MapAgentTypeEndpoints();
+        app.MapProtocolEndpoints();
+        app.MapResolutionDpiEndpoints();
 
         return app;
     }

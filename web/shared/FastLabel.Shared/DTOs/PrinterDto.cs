@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace FastLabel.Shared.DTOs;
 
 public class PrinterDto
@@ -17,8 +19,16 @@ public class PrinterDto
     [Range(1, 65535, ErrorMessage = "printer.error.port_invalid")]
     public int Port { get; set; }
 
-    public string ProtocolName { get; set; } = string.Empty;       
-    public string ResolutionDpiName { get; set; } = string.Empty; 
-    public string StatusName { get; set; } = string.Empty;        
+    [Range(1, int.MaxValue, ErrorMessage = "printer.error.protocol_required")]
+    public int ProtocolId { get; set; }
+    public string ProtocolName { get; set; } = string.Empty;
+
+    [Range(1, int.MaxValue, ErrorMessage = "printer.error.resolution_required")]
+    public int ResolutionDpiId { get; set; }
+    public string ResolutionDpiName { get; set; } = string.Empty;
+
+    public int BasicStatusId { get; set; }
+    public string StatusName { get; set; } = string.Empty;
+
     public DateTime CreatedAt { get; set; }
 }

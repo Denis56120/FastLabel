@@ -24,6 +24,11 @@ public static class PrinterEndpoints
             var lang = HttpContextExtensions.GetRequestLanguage(httpContext);
 
             var query = db.Printers
+                .Include(p => p.Protocol)
+                    .ThenInclude(pr => pr.Name)
+                        .ThenInclude(t => t.Translations)
+                            .ThenInclude(tr => tr.Language)
+                .Include(p => p.ResolutionDpi)
                 .Include(p => p.BasicStatus)
                     .ThenInclude(s => s.Name)
                         .ThenInclude(t => t.Translations)
@@ -43,6 +48,17 @@ public static class PrinterEndpoints
                     Location = p.Location ?? string.Empty,
                     IP = p.IP ?? string.Empty,
                     Port = p.Port,
+                    ProtocolId = p.ProtocolId,
+                    ProtocolName = p.Protocol != null && p.Protocol.Name != null
+                        ? (p.Protocol.Name.Translations
+                            .Where(tr => tr.Language.Code == lang)
+                            .Select(tr => tr.TranslatedValue)
+                            .FirstOrDefault()
+                           ?? p.Protocol.Name.DefaultTranslation)
+                        : string.Empty,
+                    ResolutionDpiId = p.ResolutionDpiId,
+                    ResolutionDpiName = p.ResolutionDpi != null ? $"{p.ResolutionDpi.Value} DPI" : string.Empty,
+                    BasicStatusId = p.BasicStatusId,
                     StatusName = p.BasicStatus != null && p.BasicStatus.Name != null 
                         ? (p.BasicStatus.Name.Translations
                             .Where(tr => tr.Language.Code == lang)
@@ -63,6 +79,11 @@ public static class PrinterEndpoints
             var lang = HttpContextExtensions.GetRequestLanguage(httpContext);
 
             var query = db.Printers
+                .Include(p => p.Protocol)
+                    .ThenInclude(pr => pr.Name)
+                        .ThenInclude(t => t.Translations)
+                            .ThenInclude(tr => tr.Language)
+                .Include(p => p.ResolutionDpi)
                 .Include(p => p.BasicStatus)
                     .ThenInclude(s => s.Name)
                         .ThenInclude(t => t.Translations)
@@ -76,7 +97,6 @@ public static class PrinterEndpoints
             }
 
             var printer = await query
-                .OrderBy(p => p.Id)
                 .Select(p => new PrinterDto
                 {
                     Id = p.Id,
@@ -84,6 +104,17 @@ public static class PrinterEndpoints
                     Location = p.Location ?? string.Empty,
                     IP = p.IP ?? string.Empty,
                     Port = p.Port,
+                    ProtocolId = p.ProtocolId,
+                    ProtocolName = p.Protocol != null && p.Protocol.Name != null
+                        ? (p.Protocol.Name.Translations
+                            .Where(tr => tr.Language.Code == lang)
+                            .Select(tr => tr.TranslatedValue)
+                            .FirstOrDefault()
+                           ?? p.Protocol.Name.DefaultTranslation)
+                        : string.Empty,
+                    ResolutionDpiId = p.ResolutionDpiId,
+                    ResolutionDpiName = p.ResolutionDpi != null ? $"{p.ResolutionDpi.Value} DPI" : string.Empty,
+                    BasicStatusId = p.BasicStatusId,
                     StatusName = p.BasicStatus != null && p.BasicStatus.Name != null 
                         ? (p.BasicStatus.Name.Translations
                             .Where(tr => tr.Language.Code == lang)
@@ -110,6 +141,12 @@ public static class PrinterEndpoints
             var (userId, _) = GetUserInfo(claimsUser);
             if (userId == 0) return Results.Unauthorized();
 
+            var protocolExists = await db.Protocols.AnyAsync(p => p.Id == dto.ProtocolId);
+            if (!protocolExists) return Results.BadRequest(new ErrorResponseDto { Message = "printer.error.invalid_protocol" });
+
+            var resolutionExists = await db.ResolutionDpis.AnyAsync(r => r.Id == dto.ResolutionDpiId);
+            if (!resolutionExists) return Results.BadRequest(new ErrorResponseDto { Message = "printer.error.invalid_resolution" });
+
             var printer = new Printer
             {
                 UserId = userId,
@@ -117,9 +154,9 @@ public static class PrinterEndpoints
                 Location = dto.Location,
                 IP = dto.IP,
                 Port = dto.Port,
-                ProtocolId = 1,
-                ResolutionDpiId = 1,
-                BasicStatusId = 1,
+                ProtocolId = dto.ProtocolId,
+                ResolutionDpiId = dto.ResolutionDpiId,
+                BasicStatusId = dto.BasicStatusId > 0 ? dto.BasicStatusId : 1,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -127,6 +164,7 @@ public static class PrinterEndpoints
             await db.SaveChangesAsync();
 
             dto.Id = printer.Id;
+            dto.CreatedAt = printer.CreatedAt;
             return Results.Created($"/api/printers/{printer.Id}", dto);
         });
 
@@ -147,13 +185,21 @@ public static class PrinterEndpoints
                 return Results.Forbid();
             }
 
+            var protocolExists = await db.Protocols.AnyAsync(p => p.Id == updatedDto.ProtocolId);
+            if (!protocolExists) return Results.BadRequest(new ErrorResponseDto { Message = "printer.error.invalid_protocol" });
+
+            var resolutionExists = await db.ResolutionDpis.AnyAsync(r => r.Id == updatedDto.ResolutionDpiId);
+            if (!resolutionExists) return Results.BadRequest(new ErrorResponseDto { Message = "printer.error.invalid_resolution" });
+
             printer.Name = updatedDto.Name;
             printer.Location = updatedDto.Location;
             printer.IP = updatedDto.IP;
             printer.Port = updatedDto.Port;
+            printer.ProtocolId = updatedDto.ProtocolId;
+            printer.ResolutionDpiId = updatedDto.ResolutionDpiId;
 
             await db.SaveChangesAsync();
-            return Results.Ok(printer);
+            return Results.Ok(updatedDto);
         });
 
         group.MapDelete("/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal claimsUser) =>
