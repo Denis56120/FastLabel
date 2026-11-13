@@ -96,19 +96,19 @@
                 {
                 }
 
-                ToastService.ShowSuccess("auth.success.registered");
+                ToastService.ShowSuccess(Translation.GetString("auth.success.registered"));
                 Navigation.NavigateTo("/");
             }
             else
             {
                 var errorContent = await response.Content.ReadFromJsonAsync<ErrorResponseDto>();
                 string errorKey = !string.IsNullOrEmpty(errorContent?.Message) ? errorContent.Message : "auth.error.registration_failed";
-                ToastService.ShowError(errorKey);
+                ToastService.ShowError(Translation.GetString(errorKey));
             }
         }
         catch (Exception)
         {
-            ToastService.ShowError("auth.error.server_unreachable");
+            ToastService.ShowError(Translation.GetString("auth.error.server_unreachable"));
         }
         finally
         {

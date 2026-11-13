@@ -24,7 +24,7 @@ public static class PrintEndpoints
             var printer = await db.Printers.FindAsync(request.PrinterId);
             if (printer == null)
             {
-                return Results.BadRequest(new ErrorResponseDto { Message = "print.error.printer_not_found" });
+                return Results.BadRequest(new ErrorResponseDto { Message = "printer.error.not_found" });
             }
 
             string zplData = request.RawData ?? string.Empty;

@@ -76,18 +76,17 @@
 
     protected override void OnParametersSet()
     {
-        // Déclenchement des toasts de succès en fonction des query strings reçues après redirection
         if (ActivatedParam == true)
         {
-            ToastService.ShowSuccess("auth.success.account_activated");
+            ToastService.ShowSuccess(Translation.GetString("auth.success.account_activated"));
         }
         if (PwResetParam == true)
         {
-            ToastService.ShowSuccess("auth.forgot_success_message");
+            ToastService.ShowSuccess(Translation.GetString("auth.forgot_success_message"));
         }
         if (PwUpdatedParam == true)
         {
-            ToastService.ShowSuccess("auth.success.password_reset");
+            ToastService.ShowSuccess(Translation.GetString("auth.success.password_reset"));
         }
     }
 
@@ -115,17 +114,17 @@
                     // Ignorer les erreurs non bloquantes de cookie de langue
                 }
 
-                ToastService.ShowSuccess("auth.success.login");
+                ToastService.ShowSuccess(Translation.GetString("auth.success.login"));
                 Navigation.NavigateTo("/dashboard");
             }
             else
             {
-                ToastService.ShowError("auth.error.invalid_credentials");
+                ToastService.ShowError(Translation.GetString("auth.error.invalid_credentials"));
             }
         }
         catch (Exception)
         {
-            ToastService.ShowError("auth.error.server_unreachable");
+            ToastService.ShowError(Translation.GetString("auth.error.server_unreachable"));
         }
         finally
         {

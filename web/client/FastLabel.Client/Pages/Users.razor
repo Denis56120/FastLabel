@@ -27,7 +27,7 @@
         <td>@user.Email</td>
         <td>
             <span class="badge bg-@(user.IsAdmin ? "danger" : "secondary")">
-                @(user.IsAdmin ? "Admin" : "User")
+                @(user.IsAdmin ? Translation.GetString("users.role_admin") : Translation.GetString("users.role_user"))
             </span>
         </td>
         <td>@user.CreatedAt.ToLocalTime().ToString("g")</td>

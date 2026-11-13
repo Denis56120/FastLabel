@@ -34,7 +34,7 @@ public static class AuthEndpoints
                 return Results.BadRequest(new ErrorResponseDto { Message = "auth.error.account_inactive" });
             }
 
-            var role = user.IsAdmin ? "Admin" : "Standard";
+            var role = user.IsAdmin ? "Admin" : "User";
 
             var claims = new List<Claim>
             {
@@ -133,7 +133,7 @@ public static class AuthEndpoints
                         ?? "Reset your FastLabel password";
 
             var bodyTemplate = emailTexts.FirstOrDefault(t => t.Tag == "email.reset.body")?.Value
-                                    ?? "Hello {0},\n\nPlease click the following link to reset your password:\n{1}";
+                                        ?? "Hello {0},\n\nPlease click the following link to reset your password:\n{1}";
 
             var message = string.Format(bodyTemplate, user.Name, resetLink);
 
@@ -233,7 +233,7 @@ public static class AuthEndpoints
                         ?? "Activate your FastLabel account";
 
             var bodyTemplate = emailTexts.FirstOrDefault(t => t.Tag == "email.activation.body")?.Value
-                                    ?? "Hello {0},\n\nPlease click the following link to activate your account:\n{1}";
+                                        ?? "Hello {0},\n\nPlease click the following link to activate your account:\n{1}";
 
             var message = string.Format(bodyTemplate, user.Name, verificationLink);
 

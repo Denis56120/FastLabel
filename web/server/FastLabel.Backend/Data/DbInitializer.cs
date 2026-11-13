@@ -221,7 +221,14 @@ public static class DbInitializer
         }
 
         // 11. Textes UI
-        await CreateTextWithTranslationsAsync("common.loading", "Loading...", new() { { "fr", "Chargement en cours..." }, { "en", "Loading..." } });
+        await CreateTextWithTranslationsAsync("app.loading", "Loading...", new() { { "fr", "Chargement..." }, { "en", "Loading..." } });
+        await CreateTextWithTranslationsAsync("app.error.unknown", "Une erreur inattendue s'est produite.", new() { { "fr", "Une erreur inattendue s'est produite." }, { "en", "An unexpected error occurred." } });
+        await CreateTextWithTranslationsAsync("app.success.saved", "Saved successfully.", new() { { "fr", "Enregistré avec succès." }, { "en", "Saved successfully." } });
+        await CreateTextWithTranslationsAsync("app.success.deleted", "Deleted successfully.", new() { { "fr", "Supprimé avec succès." }, { "en", "Deleted successfully." } });
+        await CreateTextWithTranslationsAsync("app.success.login", "Login successful.", new() { { "fr", "Connexion réussie." }, { "en", "Login successful." } });
+
+        await CreateTextWithTranslationsAsync("common.no_records", "No records found.", new() { { "fr", "Aucun enregistrement." }, { "en", "No records found." } });
+        await CreateTextWithTranslationsAsync("common.form", "Form", new() { { "fr", "Formulaire" }, { "en", "Form" } });
         await CreateTextWithTranslationsAsync("common.add", "Add", new() { { "fr", "Ajouter" }, { "en", "Add" } });
         await CreateTextWithTranslationsAsync("common.edit", "Edit", new() { { "fr", "Modifier" }, { "en", "Edit" } });
         await CreateTextWithTranslationsAsync("common.delete", "Delete", new() { { "fr", "Supprimer" }, { "en", "Delete" } });
@@ -229,6 +236,8 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("common.cancel", "Cancel", new() { { "fr", "Annuler" }, { "en", "Cancel" } });
         await CreateTextWithTranslationsAsync("common.loading", "Loading...", new() { { "fr", "Chargement en cours..." }, { "en", "Loading..." } });
 
+        await CreateTextWithTranslationsAsync("history.status.success", "Success", new() { { "fr", "Succès" }, { "en", "Success" } });
+        await CreateTextWithTranslationsAsync("history.status.error", "Error", new() { { "fr", "Erreur" }, { "en", "Error" } });
         await CreateTextWithTranslationsAsync("history.title", "Print History", new() { { "fr", "Historique d'impression" }, { "en", "Print History" } });
         await CreateTextWithTranslationsAsync("history.description", "View and manage print job logs.", new() { { "fr", "Consultez et gérez l'historique des impressions." }, { "en", "View and manage print job logs." } });
         await CreateTextWithTranslationsAsync("history.no_history", "No print history available.", new() { { "fr", "Aucun historique d'impression disponible." }, { "en", "No print history available." } });
@@ -241,6 +250,8 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("history.add_title", "Add History Entry", new() { { "fr", "Ajouter une entrée" }, { "en", "Add History Entry" } });
         await CreateTextWithTranslationsAsync("history.edit_title", "Edit History Entry", new() { { "fr", "Modifier l'entrée" }, { "en", "Edit History Entry" } });
 
+        await CreateTextWithTranslationsAsync("users.role_admin", "Admin", new() { { "fr", "Admin" }, { "en", "Admin" } });
+        await CreateTextWithTranslationsAsync("users.role_user", "User", new() { { "fr", "Utilisateur" }, { "en", "User" } });
         await CreateTextWithTranslationsAsync("users.title", "Users Management", new() { { "fr", "Gestion des utilisateurs" }, { "en", "Users Management" } });
         await CreateTextWithTranslationsAsync("users.description", "Manage application users and permissions.", new() { { "fr", "Gérez les utilisateurs et leurs permissions." }, { "en", "Manage application users and permissions." } });
         await CreateTextWithTranslationsAsync("users.no_users", "No users found.", new() { { "fr", "Aucun utilisateur trouvé." }, { "en", "No users found." } });
@@ -302,6 +313,10 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("error.not_found_title", "Page not found", new() { { "fr", "Page non trouvée" }, { "en", "Page not found" } });
         await CreateTextWithTranslationsAsync("error.not_found_message", "Sorry, the page you are looking for does not exist.", new() { { "fr", "Désolé, la page que vous recherchez n'existe pas." }, { "en", "Sorry, the page you are looking for does not exist." } });
 
+        await CreateTextWithTranslationsAsync("auth.submitting", "Submitting...", new() { { "fr", "En cours..." }, { "en", "Submitting..." } });
+        await CreateTextWithTranslationsAsync("auth.processing", "Processing...", new() { { "fr", "Traitement en cours..." }, { "en", "Processing..." } });
+        await CreateTextWithTranslationsAsync("auth.success.email_sent", "Recovery email sent successfully.", new() { { "fr", "Email de récupération envoyé avec succès." }, { "en", "Recovery email sent successfully." } });
+        await CreateTextWithTranslationsAsync("auth.error.general", "An error occurred.", new() { { "fr", "Une erreur est survenue." }, { "en", "An error occurred." } });
         await CreateTextWithTranslationsAsync("auth.error.unauthorized_title", "Unauthorized access", new() { { "fr", "Accès non autorisé" }, { "en", "Unauthorized access" } });
         await CreateTextWithTranslationsAsync("auth.error.unauthorized_message", "You must log in to access this page.", new() { { "fr", "Vous devez vous connecter pour accéder à cette page." }, { "en", "You must log in to access this page." } });
         await CreateTextWithTranslationsAsync("auth.error.invalid_or_expired_token", "Invalid or expired reset token.", new() { { "fr", "Jeton de réinitialisation invalide ou expiré." }, { "en", "Invalid or expired reset token." } });
@@ -401,16 +416,11 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("language.error.invalid", "Unsupported language", new() { { "fr", "Langue non supportée" }, { "en", "Unsupported language" } });
 
         await CreateTextWithTranslationsAsync("print.error.agent_not_connected", "The print agent is not connected", new() { { "fr", "L'agent d'impression n'est pas connecté" }, { "en", "The print agent is not connected" } });
-        await CreateTextWithTranslationsAsync("print.error.printer_not_found", "Printer not found", new() { { "fr", "Imprimante introuvable" }, { "en", "Printer not found" } });
         await CreateTextWithTranslationsAsync("print.error.template_not_found", "Template not found", new() { { "fr", "Modèle introuvable" }, { "en", "Template not found" } });
         await CreateTextWithTranslationsAsync("print.error.timeout", "Timeout: The local agent did not respond", new() { { "fr", "Délai dépassé : L'agent local n'a pas répondu" }, { "en", "Timeout: The local agent did not respond" } });
 
-        await CreateTextWithTranslationsAsync("auth.error.invalid_credentials", "Invalid credentials", new() { { "fr", "Identifiants invalides" }, { "en", "Invalid credentials" } });
         await CreateTextWithTranslationsAsync("auth.error.account_inactive", "Account is inactive", new() { { "fr", "Votre compte est inactif" }, { "en", "Account is inactive" } });
         await CreateTextWithTranslationsAsync("auth.error.missing_email", "Email is required", new() { { "fr", "L'adresse e-mail est requise" }, { "en", "Email is required" } });
-        await CreateTextWithTranslationsAsync("auth.error.missing_token", "Token is required", new() { { "fr", "Le jeton est requis" }, { "en", "Token is required" } });
-        await CreateTextWithTranslationsAsync("auth.error.invalid_or_expired_token", "Invalid or expired token", new() { { "fr", "Jeton invalide ou expiré" }, { "en", "Invalid or expired token" } });
-        await CreateTextWithTranslationsAsync("auth.error.email_already_taken", "Email is already taken", new() { { "fr", "Cette adresse e-mail est déjà utilisée" }, { "en", "Email is already taken" } });
         await CreateTextWithTranslationsAsync("auth.error.invalid_token", "Invalid token", new() { { "fr", "Jeton invalide" }, { "en", "Invalid token" } });
 
         await CreateTextWithTranslationsAsync("agent.error.not_found", "Agent not found", new() { { "fr", "Agent introuvable" }, { "en", "Agent not found" } });

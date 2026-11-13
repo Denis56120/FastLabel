@@ -97,9 +97,9 @@
     [Parameter] public Func<TItem, TItem>? CloneItem { get; set; }
     [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
     [Parameter] public string? Description { get; set; }
-    [Parameter] public string EmptyMessage { get; set; } = "Aucun enregistrement.";
-    [Parameter] public string AddModalTitle { get; set; } = "Ajouter";
-    [Parameter] public string EditModalTitle { get; set; } = "Modifier";
+    [Parameter] public string EmptyMessage { get; set; } = string.Empty;
+    [Parameter] public string AddModalTitle { get; set; } = string.Empty;
+    [Parameter] public string EditModalTitle { get; set; } = string.Empty;
     [Parameter, EditorRequired] public RenderFragment TableHeader { get; set; } = default!;
     [Parameter, EditorRequired] public RenderFragment<TItem> RowTemplate { get; set; } = default!;
     [Parameter, EditorRequired] public RenderFragment<TItem> FormFields { get; set; } = default!;
@@ -116,6 +116,14 @@
 
     protected override async Task OnInitializedAsync() => await LoadDataAsync();
 
+    protected override void OnParametersSet()
+    {
+        base.OnParametersSet();
+        if (string.IsNullOrEmpty(EmptyMessage)) EmptyMessage = Translation.GetString("common.no_records");
+        if (string.IsNullOrEmpty(AddModalTitle)) AddModalTitle = Translation.GetString("common.add");
+        if (string.IsNullOrEmpty(EditModalTitle)) EditModalTitle = Translation.GetString("common.edit");
+    }
+
     public async Task LoadDataAsync()
     {
         _isLoading = true;
@@ -127,7 +135,7 @@
         catch
         {
             _items = new();
-            ToastService.ShowError("app.error.unknown");
+            ToastService.ShowError(Translation.GetString("app.error.unknown"));
         }
         finally
         {
@@ -202,22 +210,19 @@
         if (isSuccess)
         {
             _isModalOpen = false;
-            ToastService.ShowSuccess("app.success.saved");
+            ToastService.ShowSuccess(Translation.GetString("app.success.saved"));
             await LoadDataAsync();
         }
         else
         {
-            ToastService.ShowError(errorKey ?? "app.error.unknown");
+            var keyToTranslate = errorKey ?? "app.error.unknown";
+            ToastService.ShowError(Translation.GetString(keyToTranslate));
         }
     }
 
     private async Task DeleteSelectedAsync()
     {
         if (!_selectedIds.Any()) return;
-
-        var endpoint = _selectedIds.Count == 1 
-            ? $"{ApiEndpoint}/{_selectedIds.First()}" 
-            : $"{ApiEndpoint}/delete-batch";
 
         bool isSuccess;
         string? errorKey;
@@ -233,12 +238,13 @@
 
         if (isSuccess)
         {
-            ToastService.ShowSuccess("app.success.deleted");
+            ToastService.ShowSuccess(Translation.GetString("app.success.deleted"));
             await LoadDataAsync();
         }
         else
         {
-            ToastService.ShowError(errorKey ?? "app.error.unknown");
+            var keyToTranslate = errorKey ?? "app.error.unknown";
+            ToastService.ShowError(Translation.GetString(keyToTranslate));
         }
     }
 }

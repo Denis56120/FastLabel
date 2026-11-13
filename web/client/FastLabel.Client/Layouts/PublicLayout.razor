@@ -4,9 +4,11 @@
 
 @if (!_isLoaded)
 {
-    <PageTitle>FastLabel - Loading...</PageTitle>
+    <PageTitle>FastLabel - @Translation.GetString("app.loading")</PageTitle>
     <div class="d-flex justify-content-center align-items-center vh-100 bg-light">
-        <div class="spinner-border text-primary" role="status"></div>
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">@Translation.GetString("app.loading")</span>
+        </div>
     </div>
 }
 else
@@ -89,21 +91,14 @@ else
     {
         var uri = Navigation.Uri.ToLower();
 
-        if (uri.Contains("/register"))
+        string key = uri switch
         {
-            var title = Translation.GetString("auth.register_title");
-            return title == "auth.register_title" ? (Translation.CurrentLanguage.StartsWith("fr") ? "Inscription" : "Register") : title;
-        }
-        else if (uri.Contains("/forgot-password"))
-        {
-            var title = Translation.GetString("auth.forgot_heading");
-            return title == "auth.forgot_heading" ? (Translation.CurrentLanguage.StartsWith("fr") ? "Mot de passe oublié" : "Forgot Password") : title;
-        }
-        else
-        {
-            var title = Translation.GetString("auth.login_title");
-            return title == "auth.login_title" ? (Translation.CurrentLanguage.StartsWith("fr") ? "Connexion" : "Sign In") : title;
-        }
+            var u when u.Contains("/register") => "auth.register_title",
+            var u when u.Contains("/forgot-password") => "auth.forgot_heading",
+            _ => "auth.login_title"
+        };
+
+        return Translation.GetString(key);
     }
 
     private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
@@ -132,5 +127,6 @@ else
 
         await CookieService.SetCookieAsync("language", languageCode, days: 365);
         await Translation.InitializeAsync(languageCode);
+        StateHasChanged();
     }
 }

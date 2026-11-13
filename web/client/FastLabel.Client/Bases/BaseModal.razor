@@ -6,7 +6,8 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">@Title</h5>
+                    <!-- On passe toujours le titre par le système de traduction -->
+                    <h5 class="modal-title">@GetResolvedTitle()</h5>
                     <button type="button" class="btn-close" @onclick="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -27,15 +28,24 @@
 
 @code {
     [Parameter] public bool IsOpen { get; set; }
-    [Parameter] public string Title { get; set; } = "Formulaire";
+    [Parameter] public string Title { get; set; } = string.Empty;
     [Parameter] public RenderFragment? ChildContent { get; set; }
     [Parameter] public EditContext? EditContext { get; set; }
     [Parameter] public EventCallback OnSave { get; set; }
     [Parameter] public EventCallback OnClose { get; set; }
 
+    private string GetResolvedTitle()
+    {
+        if (string.IsNullOrWhiteSpace(Title))
+        {
+            return Translation.GetString("common.form");
+        }
+        
+        return Translation.GetString(Title); 
+    }
+
     private async Task Save()
     {
-        // Si un EditContext est fourni, on vérifie la validité du formulaire
         if (EditContext != null && !EditContext.Validate())
         {
             return;

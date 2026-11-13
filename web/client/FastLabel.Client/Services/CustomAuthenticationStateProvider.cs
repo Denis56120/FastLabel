@@ -22,7 +22,7 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
                 {
                     new(ClaimTypes.Name, userInfo.Name),
                     new(ClaimTypes.Email, userInfo.Email),
-                    new(ClaimTypes.Role, userInfo.IsAdmin ? "Admin" : "Standard")
+                    new(ClaimTypes.Role, userInfo.IsAdmin ? "Admin" : "User")
                 };
 
                 var identity = new ClaimsIdentity(claims, "cookieAuth");

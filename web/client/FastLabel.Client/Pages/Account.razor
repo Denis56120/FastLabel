@@ -34,7 +34,7 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label text-muted">@Translation.GetString("account.role_label")</label>
-                            <input type="text" class="form-control" value="@userRole" disabled />
+                            <input type="text" class="form-control" value="@DisplayUserRole" disabled />
                         </div>
                     </div>
                 </div>
@@ -47,7 +47,13 @@
     private bool isLoading = true;
     private string userEmail = string.Empty;
     private string userName = string.Empty;
-    private string userRole = "Standard";
+    private string userRole = string.Empty;
+
+    private string DisplayUserRole => userRole.ToLower() switch
+    {
+        "admin" => Translation.GetString("users.role_admin"),
+        _ => Translation.GetString("users.role_user")
+    };
 
     protected override async Task OnInitializedAsync()
     {
@@ -78,7 +84,7 @@
         }
         catch (Exception)
         {
-            ToastService.ShowError("app.error.unknown");
+            ToastService.ShowError(Translation.GetString("app.error.unknown"));
             Navigation.NavigateTo("/");
         }
         finally
