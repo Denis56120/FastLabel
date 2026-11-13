@@ -224,6 +224,7 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("app.success.deleted", "Deleted successfully.", new() { { "fr", "Supprimé avec succès." }, { "en", "Deleted successfully." } });
         await CreateTextWithTranslationsAsync("app.success.login", "Login successful.", new() { { "fr", "Connexion réussie." }, { "en", "Login successful." } });
 
+        await CreateTextWithTranslationsAsync("common.back", "Back", new() { { "fr", "Retour" }, { "en", "Back" } });
         await CreateTextWithTranslationsAsync("common.no_records", "No records found.", new() { { "fr", "Aucun enregistrement." }, { "en", "No records found." } });
         await CreateTextWithTranslationsAsync("common.form", "Form", new() { { "fr", "Formulaire" }, { "en", "Form" } });
         await CreateTextWithTranslationsAsync("common.add", "Add", new() { { "fr", "Ajouter" }, { "en", "Add" } });
@@ -294,6 +295,9 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("printers.port", "Port", new() { { "fr", "Port" }, { "en", "Port" } });
         await CreateTextWithTranslationsAsync("printers.status", "Status", new() { { "fr", "Statut" }, { "en", "Status" } });
 
+        await CreateTextWithTranslationsAsync("templates.render.title", "Label Renderer Editor", new() { { "fr", "Éditeur de rendu d'étiquette" }, { "en", "Label Renderer Editor" } });
+        await CreateTextWithTranslationsAsync("templates.render.preview", "Preview", new() { { "fr", "Prévisualisation" }, { "en", "Preview" } });
+        await CreateTextWithTranslationsAsync("templates.edit_renderer", "Edit Label Renderer", new() { { "fr", "Éditer le rendu de l'étiquette" }, { "en", "Edit Label Renderer" } });
         await CreateTextWithTranslationsAsync("templates.title", "Templates Management", new() { { "fr", "Gestion des modèles" }, { "en", "Templates Management" } });
         await CreateTextWithTranslationsAsync("templates.description", "Manage document and label templates.", new() { { "fr", "Gérez les modèles de documents et d'étiquettes." }, { "en", "Manage document and label templates." } });
         await CreateTextWithTranslationsAsync("templates.no_templates", "No templates available.", new() { { "fr", "Aucun modèle disponible." }, { "en", "No templates available." } });
@@ -390,6 +394,8 @@ public static class DbInitializer
 
         await CreateTextWithTranslationsAsync("auth.error.password_min_length", "Password must be at least 8 characters long", new() { { "fr", "Le mot de passe doit contenir au moins 8 caractères" }, { "en", "Password must be at least 8 characters long" } });
 
+        await CreateTextWithTranslationsAsync("templates.created_at", "Created At", new() { { "fr", "Créé le" }, { "en", "Created At" } });
+        await CreateTextWithTranslationsAsync("templates.json_data", "JSON Data", new() { { "fr", "Données JSON" }, { "en", "JSON Data" } });
         await CreateTextWithTranslationsAsync("template.error.name_required", "Template name is required", new() { { "fr", "Le nom du modèle est requis" }, { "en", "Template name is required" } });
         await CreateTextWithTranslationsAsync("template.error.name_max_length", "Template name cannot exceed 150 characters", new() { { "fr", "Le nom du modèle ne peut pas dépasser 150 caractères" }, { "en", "Template name cannot exceed 150 characters" } });
         await CreateTextWithTranslationsAsync("template.error.json_data_required", "Template JSON data is required", new() { { "fr", "Les données JSON du modèle sont requises" }, { "en", "Template JSON data is required" } });
@@ -423,6 +429,18 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("user.error.not_found", "User not found", new() { { "fr", "Utilisateur introuvable" }, { "en", "User not found" } });
 
         await CreateTextWithTranslationsAsync("template.error.not_found", "Label template not found", new() { { "fr", "Modèle d'étiquette introuvable" }, { "en", "Label template not found" } });
+        await CreateTextWithTranslationsAsync("templates.title", "Templates", new() { { "fr", "Modèles" }, { "en", "Templates" } });
+        await CreateTextWithTranslationsAsync("templates.description", "Manage your label printing templates.", new() { { "fr", "Gérez vos modèles d'impression d'étiquettes." }, { "en", "Manage your label printing templates." } });
+        await CreateTextWithTranslationsAsync("templates.no_templates", "No templates found.", new() { { "fr", "Aucun modèle trouvé." }, { "en", "No templates found." } });
+        await CreateTextWithTranslationsAsync("templates.add_title", "Add Template", new() { { "fr", "Ajouter un modèle" }, { "en", "Add Template" } });
+        await CreateTextWithTranslationsAsync("templates.edit_title", "Edit Template", new() { { "fr", "Modifier le modèle" }, { "en", "Edit Template" } });
+        await CreateTextWithTranslationsAsync("templates.name", "Name", new() { { "fr", "Nom" }, { "en", "Name" } });
+        await CreateTextWithTranslationsAsync("templates.status", "Status", new() { { "fr", "Statut" }, { "en", "Status" } });
+        await CreateTextWithTranslationsAsync("templates.updated_at", "Updated At", new() { { "fr", "Mis à jour le" }, { "en", "Updated At" } });
+        await CreateTextWithTranslationsAsync("template.error.name_required", "Template name is required", new() { { "fr", "Le nom du modèle est requis" }, { "en", "Template name is required" } });
+        await CreateTextWithTranslationsAsync("template.error.name_max_length", "Template name cannot exceed 150 characters", new() { { "fr", "Le nom du modèle ne peut pas dépasser 150 caractères" }, { "en", "Template name cannot exceed 150 characters" } });
+        await CreateTextWithTranslationsAsync("template.error.json_data_required", "JSON data is required", new() { { "fr", "Les données JSON sont requises" }, { "en", "JSON data is required" } });
+        await CreateTextWithTranslationsAsync("template.error.not_found", "Template not found", new() { { "fr", "Modèle introuvable" }, { "en", "Template not found" } });
 
         await CreateTextWithTranslationsAsync("job.error.invalid_limit", "Limit must be greater than zero", new() { { "fr", "La limite doit être supérieure à zéro" }, { "en", "Limit must be greater than zero" } });
         await CreateTextWithTranslationsAsync("job.error.not_found", "Print job not found", new() { { "fr", "Tâche d'impression introuvable" }, { "en", "Print job not found" } });

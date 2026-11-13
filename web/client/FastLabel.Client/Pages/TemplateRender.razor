@@ -1,0 +1,143 @@
+@page "/templates/render/{Id:int}"
+@layout MainLayout
+@attribute [Authorize]
+@inherits TranslatableComponent
+@inject ApiClient ApiClient
+@inject NavigationManager Navigation
+@inject ToastService ToastService
+
+<div class="container-fluid px-4">
+    <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
+        <div>
+            <h2>@Translation.GetString("templates.render.title")</h2>
+            <p class="text-muted">@_template?.Name</p>
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-outline-secondary" @onclick="GoBack">
+                <i class="bi bi-arrow-left"></i> @Translation.GetString("common.back")
+            </button>
+            <button class="btn btn-primary" @onclick="SaveTemplateAsync" disabled="@(_isSaving)">
+                <i class="bi bi-save"></i> @Translation.GetString("common.save")
+            </button>
+        </div>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="d-flex justify-content-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">@Translation.GetString("common.loading")</span>
+            </div>
+        </div>
+    }
+    else if (_template == null)
+    {
+        <div class="alert alert-danger" role="alert">
+            @Translation.GetString("template.error.not_found")
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-md-6 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header bg-light">
+                        <strong>@Translation.GetString("templates.json_data")</strong>
+                    </div>
+                    <div class="card-body d-flex flex-column">
+                        <textarea class="form-control font-monospace flex-grow-1" 
+                                  style="min-height: 400px;" 
+                                  @bind="_template.JsonData" 
+                                  @bind:event="oninput">
+                        </textarea>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header bg-light">
+                        <strong>@Translation.GetString("templates.render.preview")</strong>
+                    </div>
+                    <div class="card-body d-flex justify-content-center align-items-center bg-white border rounded m-3" style="min-height: 400px;">
+                        <div class="border p-3 text-center bg-light w-75 shadow-sm" style="aspect-ratio: 2/1;">
+                            <span class="text-muted fst-italic">[Prévisualisation de l'étiquette]</span>
+                            <div class="mt-2 text-start small font-monospace text-break">
+                                @_template.JsonData
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private TemplateDto? _template;
+    private bool _isLoading = true;
+    private bool _isSaving = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await LoadTemplateAsync();
+    }
+
+    private async Task LoadTemplateAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            _template = await ApiClient.GetFromJsonAsync<TemplateDto>($"api/templates/{Id}");
+            if (_template == null)
+            {
+                ToastService.ShowError(Translation.GetString("template.error.not_found"));
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur chargement template: {ex.Message}");
+            ToastService.ShowError(Translation.GetString("app.error.unknown"));
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task SaveTemplateAsync()
+    {
+        if (_template == null) return;
+
+        _isSaving = true;
+        try
+        {
+            var (isSuccess, errorKey) = await ApiClient.PutAsync($"api/templates/{Id}", _template);
+            if (isSuccess)
+            {
+                ToastService.ShowSuccess(Translation.GetString("app.success.saved"));
+            }
+            else
+            {
+                ToastService.ShowError(Translation.GetString(errorKey ?? "app.error.unknown"));
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur sauvegarde template: {ex.Message}");
+            ToastService.ShowError(Translation.GetString("app.error.unknown"));
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/templates");
+    }
+}

@@ -3,17 +3,15 @@
 @attribute [Authorize]
 @inherits TranslatableComponent
 
-<CrudTablePage @ref="_crudTable"
+<CrudTablePage @ref="_tableRef"
                TItem="PrintHistoryDto" 
                TKey="int"
                ApiEndpoint="api/jobs"
                IdSelector="h => h.Id"
-               CreateNewItem="@(() => new PrintHistoryDto { Quantity = 1 })"
+               IsReadOnly="true"
                Title="@Translation.GetString("history.title")"
                Description="@Translation.GetString("history.description")"
-               EmptyMessage="@Translation.GetString("history.no_history")"
-               AddModalTitle="@Translation.GetString("history.add_title")"
-               EditModalTitle="@Translation.GetString("history.edit_title")">
+               EmptyMessage="@Translation.GetString("history.no_history")">
 
     <TableHeader>
         <th>@Translation.GetString("history.printer")</th>
@@ -35,36 +33,16 @@
         <td>@(item.ProcessedAt?.ToLocalTime().ToString("g") ?? item.CreatedAt.ToLocalTime().ToString("g"))</td>
     </RowTemplate>
 
-    <FormFields Context="item">
-        <div class="mb-3">
-            <label class="form-label">@Translation.GetString("history.printer")</label>
-            <InputText class="form-control" @bind-Value="item.PrinterName" />
-        </div>
-        <div class="mb-3">
-            <label class="form-label">@Translation.GetString("history.template")</label>
-            <InputText class="form-control" @bind-Value="item.TemplateName" />
-        </div>
-        <div class="mb-3">
-            <label class="form-label">@Translation.GetString("history.quantity")</label>
-            <InputNumber class="form-control" @bind-Value="item.Quantity" />
-        </div>
-        <div class="mb-3">
-            <label class="form-label">@Translation.GetString("history.response_message")</label>
-            <InputText class="form-control" @bind-Value="item.ResponseMessage" />
-        </div>
-    </FormFields>
-
 </CrudTablePage>
 
 @code {
-    private CrudTablePage<PrintHistoryDto, int>? _crudTable;
+    private CrudTablePage<PrintHistoryDto, int> _tableRef = default!;
 
     protected override async Task OnLanguageChangedAsync()
     {
-        StateHasChanged();
-        if (_crudTable != null)
+        if (_tableRef != null)
         {
-            await _crudTable.LoadDataAsync();
+            await _tableRef.LoadDataAsync();
         }
     }
 }

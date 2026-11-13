@@ -1,3 +1,9 @@
+using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
+using FastLabel.Backend.Data;
+using FastLabel.Backend.Models;
+using FastLabel.Shared.DTOs;
+
 namespace FastLabel.Backend.Endpoints;
 
 public static class TemplateEndpoints
@@ -108,20 +114,23 @@ public static class TemplateEndpoints
             var (userId, _) = GetUserInfo(claimsUser);
             if (userId == 0) return Results.Unauthorized();
 
+            var now = DateTime.UtcNow;
             var template = new LabelTemplate
             {
                 UserId = userId,
                 Name = dto.Name,
                 JsonData = dto.JsonData,
-                BasicStatusId = 1, 
-                CreatedAt = DateTime.UtcNow,
-                UpdatedAt = DateTime.UtcNow
+                BasicStatusId = 1,
+                CreatedAt = now,
+                UpdatedAt = now
             };
 
             db.LabelTemplates.Add(template);
             await db.SaveChangesAsync();
 
             dto.Id = template.Id;
+            dto.CreatedAt = template.CreatedAt;
+            dto.UpdatedAt = template.UpdatedAt;
             return Results.Created($"/api/templates/{template.Id}", dto);
         });
 
@@ -147,7 +156,10 @@ public static class TemplateEndpoints
             template.UpdatedAt = DateTime.UtcNow;
 
             await db.SaveChangesAsync();
-            return Results.Ok(template);
+            
+            updatedDto.CreatedAt = template.CreatedAt;
+            updatedDto.UpdatedAt = template.UpdatedAt;
+            return Results.Ok(updatedDto);
         });
 
         group.MapDelete("/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal claimsUser) =>

@@ -8,20 +8,43 @@
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h3 class="mb-0">@Title</h3>
         
-        <div class="btn-group" role="group">
-            <button class="btn btn-primary" @onclick="OpenAddModal">
-                <i class="bi bi-plus-lg"></i> @Translation.GetString("common.add")
-            </button>
-            <button class="btn btn-outline-secondary" 
-                    disabled="@(_selectedIds.Count != 1)" 
-                    @onclick="OpenEditModal">
-                <i class="bi bi-pencil"></i> @Translation.GetString("common.edit")
-            </button>
-            <button class="btn btn-outline-danger" 
-                    disabled="@(_selectedIds.Count == 0)" 
-                    @onclick="DeleteSelectedAsync">
-                <i class="bi bi-trash"></i> @Translation.GetString("common.delete") (@_selectedIds.Count)
-            </button>
+        <div class="d-flex align-items-center gap-2">
+            @if (CustomToolbarActions != null && _selectedIds.Count == 1)
+            {
+                var selectedItem = _items.FirstOrDefault(i => EqualityComparer<TKey>.Default.Equals(IdSelector(i), _selectedIds.First()));
+                if (selectedItem != null)
+                {
+                    @CustomToolbarActions(selectedItem)
+                }
+            }
+
+            @if (!IsReadOnly)
+            {
+                <div class="btn-group" role="group">
+                    @if (!DisableAdd)
+                    {
+                        <button class="btn btn-primary" @onclick="OpenAddModal">
+                            <i class="bi bi-plus-lg"></i> @Translation.GetString("common.add")
+                        </button>
+                    }
+                    @if (!DisableEdit)
+                    {
+                        <button class="btn btn-outline-secondary" 
+                                disabled="@(_selectedIds.Count != 1)" 
+                                @onclick="OpenEditModal">
+                            <i class="bi bi-pencil"></i> @Translation.GetString("common.edit")
+                        </button>
+                    }
+                    @if (!DisableDelete)
+                    {
+                        <button class="btn btn-outline-danger" 
+                                disabled="@(_selectedIds.Count == 0)" 
+                                @onclick="DeleteSelectedAsync">
+                            <i class="bi bi-trash"></i> @Translation.GetString("common.delete") (@_selectedIds.Count)
+                        </button>
+                    }
+                </div>
+            }
         </div>
     </div>
 
@@ -45,15 +68,22 @@
     }
     else
     {
+        @if (!string.IsNullOrEmpty(Description))
+        {
+            <p class="text-muted">@Description</p>
+        }
         <div class="table-responsive">
             <table class="table table-striped table-hover align-middle">
                 <thead>
                     <tr>
-                        <th style="width: 40px;">
-                            <input type="checkbox" class="form-check-input" 
-                                   checked="@IsAllSelected" 
-                                   @onchange="ToggleSelectAll" />
-                        </th>
+                        @if (!IsReadOnly && (!DisableEdit || !DisableDelete))
+                        {
+                            <th style="width: 40px;">
+                                <input type="checkbox" class="form-check-input" 
+                                       checked="@IsAllSelected" 
+                                       @onchange="ToggleSelectAll" />
+                            </th>
+                        }
                         @TableHeader
                     </tr>
                 </thead>
@@ -62,11 +92,14 @@
                     {
                         var id = IdSelector(item);
                         <tr class="@(_selectedIds.Contains(id) ? "table-active" : "")">
-                            <td>
-                                <input type="checkbox" class="form-check-input" 
-                                       checked="@_selectedIds.Contains(id)" 
-                                       @onchange="(e) => ToggleSelection(id, e.Value)" />
-                            </td>
+                            @if (!IsReadOnly && (!DisableEdit || !DisableDelete))
+                            {
+                                <td>
+                                    <input type="checkbox" class="form-check-input" 
+                                           checked="@_selectedIds.Contains(id)" 
+                                           @onchange="(e) => ToggleSelection(id, e.Value)" />
+                                </td>
+                            }
                             @RowTemplate(item)
                         </tr>
                     }
@@ -76,19 +109,22 @@
     }
 </div>
 
-<BaseModal IsOpen="@_isModalOpen" 
-           Title="@(_isEditMode ? EditModalTitle : AddModalTitle)" 
-           EditContext="@_editContext"
-           OnSave="SaveItemAsync" 
-           OnClose="CloseModal">
-    @if (_editContext != null)
-    {
-        <EditForm EditContext="@_editContext">
-            <DataAnnotationsValidator />
-            @FormFields(_currentItem)
-        </EditForm>
-    }
-</BaseModal>
+@if (!IsReadOnly)
+{
+    <BaseModal IsOpen="@_isModalOpen" 
+               Title="@(_isEditMode ? EditModalTitle : AddModalTitle)" 
+               EditContext="@_editContext"
+               OnSave="SaveItemAsync" 
+               OnClose="CloseModal">
+        @if (_editContext != null && FormFields != null)
+        {
+            <EditForm EditContext="@_editContext">
+                <DataAnnotationsValidator />
+                @FormFields(_currentItem)
+            </EditForm>
+        }
+    </BaseModal>
+}
 
 @code {
     [Parameter, EditorRequired] public string ApiEndpoint { get; set; } = string.Empty;
@@ -102,7 +138,14 @@
     [Parameter] public string EditModalTitle { get; set; } = string.Empty;
     [Parameter, EditorRequired] public RenderFragment TableHeader { get; set; } = default!;
     [Parameter, EditorRequired] public RenderFragment<TItem> RowTemplate { get; set; } = default!;
-    [Parameter, EditorRequired] public RenderFragment<TItem> FormFields { get; set; } = default!;
+    [Parameter] public RenderFragment<TItem>? FormFields { get; set; }
+    [Parameter] public RenderFragment<TItem>? CustomToolbarActions { get; set; }
+
+    // Paramètres pour désactiver le CRUD
+    [Parameter] public bool IsReadOnly { get; set; } = false;
+    [Parameter] public bool DisableAdd { get; set; } = false;
+    [Parameter] public bool DisableEdit { get; set; } = false;
+    [Parameter] public bool DisableDelete { get; set; } = false;
     
     private List<TItem> _items = new();
     private HashSet<TKey> _selectedIds = new();
@@ -159,6 +202,7 @@
 
     private void OpenAddModal()
     {
+        if (IsReadOnly || DisableAdd) return;
         _isEditMode = false;
         _currentItem = CreateNewItem != null ? CreateNewItem() : new TItem();
         _editContext = new EditContext(_currentItem);
@@ -168,14 +212,13 @@
 
     private void OpenEditModal()
     {
-        if (_selectedIds.Count != 1) return;
+        if (IsReadOnly || DisableEdit || _selectedIds.Count != 1) return;
         var selectedId = _selectedIds.First();
         var itemToEdit = _items.FirstOrDefault(i => EqualityComparer<TKey>.Default.Equals(IdSelector(i), selectedId));
         
         if (itemToEdit != null)
         {
             _isEditMode = true;
-
             _currentItem = CloneItem != null 
                 ? CloneItem(itemToEdit) 
                 : System.Text.Json.JsonSerializer.Deserialize<TItem>(System.Text.Json.JsonSerializer.Serialize(itemToEdit))!;
@@ -189,10 +232,8 @@
 
     private async Task SaveItemAsync()
     {
-        if (_editContext != null && !_editContext.Validate())
-        {
-            return;
-        }
+        if (IsReadOnly) return;
+        if (_editContext != null && !_editContext.Validate()) return;
 
         bool isSuccess;
         string? errorKey;
@@ -222,7 +263,7 @@
 
     private async Task DeleteSelectedAsync()
     {
-        if (!_selectedIds.Any()) return;
+        if (IsReadOnly || DisableDelete || !_selectedIds.Any()) return;
 
         bool isSuccess;
         string? errorKey;

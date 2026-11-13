@@ -2,6 +2,7 @@
 @layout MainLayout
 @attribute [Authorize]
 @inherits TranslatableComponent
+@inject NavigationManager Navigation
 
 <CrudTablePage @ref="_crudTable"
                TItem="TemplateDto" 
@@ -15,15 +16,23 @@
                AddModalTitle="@Translation.GetString("templates.add_title")"
                EditModalTitle="@Translation.GetString("templates.edit_title")">
 
+    <CustomToolbarActions Context="template">
+        <button class="btn btn-outline-primary" @onclick="() => EditRenderer(template.Id)">
+            <i class="bi bi-palette"></i> @Translation.GetString("templates.edit_renderer")
+        </button>
+    </CustomToolbarActions>
+
     <TableHeader>
         <th>@Translation.GetString("templates.name")</th>
         <th>@Translation.GetString("templates.status")</th>
+        <th>@Translation.GetString("templates.created_at")</th>
         <th>@Translation.GetString("templates.updated_at")</th>
     </TableHeader>
 
     <RowTemplate Context="template">
         <td>@template.Name</td>
         <td>@template.BasicStatusName</td>
+        <td>@template.CreatedAt.ToLocalTime().ToString("g")</td>
         <td>@template.UpdatedAt.ToLocalTime().ToString("g")</td>
     </RowTemplate>
 
@@ -33,8 +42,8 @@
             <InputText class="form-control" @bind-Value="template.Name" />
         </div>
         <div class="mb-3">
-            <label class="form-label">@Translation.GetString("templates.status")</label>
-            <InputText class="form-control" @bind-Value="template.BasicStatusName" />
+            <label class="form-label">@Translation.GetString("templates.json_data")</label>
+            <InputTextArea class="form-control font-monospace" rows="5" @bind-Value="template.JsonData" />
         </div>
     </FormFields>
 
@@ -42,6 +51,11 @@
 
 @code {
     private CrudTablePage<TemplateDto, int>? _crudTable;
+
+    private void EditRenderer(int id)
+    {
+        Navigation.NavigateTo($"/templates/render/{id}");
+    }
 
     protected override async Task OnLanguageChangedAsync()
     {
