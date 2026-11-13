@@ -16,7 +16,7 @@ public class CookieService(IServiceProvider serviceProvider)
         }
         catch
         {
-            return null;
+            return string.Empty;
         }
     }
 

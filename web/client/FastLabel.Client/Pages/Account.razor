@@ -19,8 +19,8 @@
     }
     else
     {
-        <div class="row">
-            <div class="col-md-6 mb-4">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6 mb-4">
                 <div class="card shadow-sm">
                     <div class="card-body">
                         <div class="mb-3">
@@ -38,8 +38,6 @@
                     </div>
                 </div>
             </div>
-
-            
         </div>
     }
 </div>
@@ -59,8 +57,6 @@
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             var user = authState.User;
 
-            var claimsData = user.Claims.Select(c => new { c.Type, c.Value });
-
             var emailClaim = user.FindFirst(ClaimTypes.Email);
             if (emailClaim != null)
             {
@@ -79,8 +75,7 @@
                 userName = nameClaim.Value;
             }
         }
-        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode ==
-HttpStatusCode.Forbidden)
+        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
         {
             Navigation.NavigateTo("/");
         }

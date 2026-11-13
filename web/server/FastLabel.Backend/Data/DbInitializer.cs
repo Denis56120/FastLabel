@@ -297,7 +297,7 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("account.email_label", "Email Address", new() { { "fr", "Adresse Email" }, { "en", "Email Address" } });
         await CreateTextWithTranslationsAsync("account.role_label", "Role / Plan", new() { { "fr", "Rôle / Plan" }, { "en", "Role / Plan" } });
 
-        await CreateTextWithTranslationsAsync("dashboard.title", "FastLabel - Dashboard", new() { { "fr", "FastLabel - Tableau de bord" }, { "en", "FastLabel - Dashboard" } });
+        await CreateTextWithTranslationsAsync("dashboard.title", "Dashboard", new() { { "fr", "Tableau de bord" }, { "en", "Dashboard" } });
 
         await CreateTextWithTranslationsAsync("error.not_found_title", "Page not found", new() { { "fr", "Page non trouvée" }, { "en", "Page not found" } });
         await CreateTextWithTranslationsAsync("error.not_found_message", "Sorry, the page you are looking for does not exist.", new() { { "fr", "Désolé, la page que vous recherchez n'existe pas." }, { "en", "Sorry, the page you are looking for does not exist." } });

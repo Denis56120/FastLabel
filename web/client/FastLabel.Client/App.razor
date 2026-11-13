@@ -8,6 +8,7 @@
         <Found Context="routeData">
             <AuthorizeRouteView RouteData="@routeData">
                 <NotAuthorized>
+                    <PageTitle>FastLabel - @TranslationService["auth.error.unauthorized_title"]</PageTitle>
                     <LayoutView Layout="@typeof(PublicLayout)">
                         <div class="container mt-5 text-center">
                             <h3>@TranslationService["auth.error.unauthorized_title"]</h3>
@@ -21,7 +22,7 @@
             </AuthorizeRouteView>
         </Found>
         <NotFound>
-            <PageTitle>@TranslationService["error.not_found_title"]</PageTitle>
+            <PageTitle>FastLabel - @TranslationService["error.not_found_title"]</PageTitle>
             <LayoutView Layout="@typeof(PublicLayout)">
                 <div class="container mt-5 text-center">
                     <h3>@TranslationService["error.not_found_title"]</h3>

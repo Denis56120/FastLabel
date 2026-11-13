@@ -12,10 +12,16 @@ public abstract class TranslatableComponent : LayoutComponentBase, IDisposable
 
     private async void OnTranslationChanged()
     {
-        await OnLanguageChangedAsync();
-
-        await InvokeAsync(StateHasChanged);
+        try
+        {
+            await OnLanguageChangedAsync();
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception)
+        {
+        }
     }
+
 
     protected virtual Task OnLanguageChangedAsync()
     {
