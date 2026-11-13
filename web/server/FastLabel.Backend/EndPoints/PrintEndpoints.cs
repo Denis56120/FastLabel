@@ -6,6 +6,11 @@ public static class PrintEndpoints
     {
         app.MapPost("/api/print", async (PrintRequest request, AppDbContext db, PrintBrokerService broker) =>
         {
+            if (!ValidationExtensions.TryValidateModel(request, out var errorResult))
+            {
+                return errorResult!;
+            }
+
             var agent = await db.Agents
                 .OrderBy(a => a.Id)
                 .FirstOrDefaultAsync(a => a.ApiKey == request.ApiKey);
@@ -13,20 +18,23 @@ public static class PrintEndpoints
 
             if (!broker.ActiveAgents.TryGetValue(agent.Id, out var ws) || ws.State != WebSocketState.Open)
             {
-                return Results.Problem(detail: $"L'agent (ID: {agent.Id}) n'est pas connecté.", statusCode: 503);
+                return Results.BadRequest(new ErrorResponseDto { Message = "print.error.agent_not_connected" });
             }
 
             var printer = await db.Printers.FindAsync(request.PrinterId);
             if (printer == null)
             {
-                return Results.BadRequest(new { message = "Imprimante introuvable." });
+                return Results.BadRequest(new ErrorResponseDto { Message = "print.error.printer_not_found" });
             }
 
             string zplData = request.RawData ?? string.Empty;
             if (request.TemplateId.HasValue)
             {
                 var template = await db.LabelTemplates.FindAsync(request.TemplateId.Value);
-                if (template == null) return Results.BadRequest(new { message = "Modèle introuvable." });
+                if (template == null) 
+                {
+                    return Results.BadRequest(new ErrorResponseDto { Message = "print.error.template_not_found" });
+                }
             }
 
             var job = new PrintJob
@@ -66,7 +74,7 @@ public static class PrintEndpoints
             else
             {
                 broker.PendingJobs.TryRemove(jobIdStr, out _);
-                return Results.Problem(detail: "Timeout : L'agent local n'a pas répondu.", statusCode: 504);
+                return Results.BadRequest(new ErrorResponseDto { Message = "print.error.timeout" });
             }
         });
     }

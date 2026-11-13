@@ -39,7 +39,7 @@ public static class UserEndpoints
                 .FirstOrDefaultAsync();
 
             if (userDto == null)
-                return Results.NotFound(new { message = "User not found." });
+                return Results.NotFound(new ErrorResponseDto { Message = "user.error.not_found" });
 
             return Results.Ok(userDto);
         }).RequireAuthorization();
@@ -103,13 +103,18 @@ public static class UserEndpoints
                 })
                 .FirstOrDefaultAsync();
 
-            if (dto == null) return Results.NotFound();
+            if (dto == null) return Results.NotFound(new ErrorResponseDto { Message = "user.error.not_found" });
 
             return Results.Ok(dto);
         });
 
         adminGroup.MapPost("/", async (UserDto dto, AppDbContext db) =>
         {
+            if (!ValidationExtensions.TryValidateModel(dto, out var errorResult))
+            {
+                return errorResult!;
+            }
+
             var user = new User
             {
                 Name = dto.Name,
@@ -128,8 +133,13 @@ public static class UserEndpoints
 
         adminGroup.MapPut("/{id:int}", async (int id, UserDto updatedDto, AppDbContext db) =>
         {
+            if (!ValidationExtensions.TryValidateModel(updatedDto, out var errorResult))
+            {
+                return errorResult!;
+            }
+
             var user = await db.Users.FindAsync(id);
-            if (user == null) return Results.NotFound();
+            if (user == null) return Results.NotFound(new ErrorResponseDto { Message = "user.error.not_found" });
 
             user.Name = updatedDto.Name;
             user.Email = updatedDto.Email;
@@ -142,7 +152,7 @@ public static class UserEndpoints
         adminGroup.MapDelete("/{id:int}", async (int id, AppDbContext db) =>
         {
             var user = await db.Users.FindAsync(id);
-            if (user == null) return Results.NotFound();
+            if (user == null) return Results.NotFound(new ErrorResponseDto { Message = "user.error.not_found" });
 
             db.Users.Remove(user);
             await db.SaveChangesAsync();

@@ -2,20 +2,24 @@ namespace FastLabel.Backend.Endpoints;
 
 public static class AuthEndpoints
 {
-
     public static void MapAuthEndpoints(this IEndpointRouteBuilder routes)
     {
         var group = routes.MapGroup("/api/auth");
 
         group.MapPost("/login", async (LoginRequest request, HttpContext httpContext, AppDbContext db, IPasswordHasher<User> passwordHasher) =>
         {
+            if (!ValidationExtensions.TryValidateModel(request, out var errorResult))
+            {
+                return errorResult!;
+            }
+
             var user = await db.Users
                 .OrderBy(u => u.Id) 
                 .FirstOrDefaultAsync(u => u.Email == request.Email);
             
             if (user == null || passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password) == PasswordVerificationResult.Failed)
             {
-                return Results.BadRequest(new { message = "Identifiants invalides." });
+                return Results.BadRequest(new ErrorResponseDto { Message = "auth.error.invalid_credentials" });
             }
 
             var statusTag = await db.Texts
@@ -27,7 +31,7 @@ public static class AuthEndpoints
 
             if (statusTag == "status.inactive")
             {
-                return Results.BadRequest(new { message = "auth.error.account_inactive" });
+                return Results.BadRequest(new ErrorResponseDto { Message = "auth.error.account_inactive" });
             }
 
             var role = user.IsAdmin ? "Admin" : "Standard";
@@ -90,9 +94,9 @@ public static class AuthEndpoints
 
         group.MapPost("/forgot-password", async (ForgotPasswordDto dto, HttpContext httpContext, AppDbContext db, IEmailService emailService, IConfiguration configuration) =>
         {
-            if (string.IsNullOrWhiteSpace(dto.Email))
+            if (!ValidationExtensions.TryValidateModel(dto, out var errorResult))
             {
-                return Results.BadRequest(new ErrorResponseDto { Message = "auth.error.missing_email" });
+                return errorResult!;
             }
 
             var user = await db.Users
@@ -129,7 +133,7 @@ public static class AuthEndpoints
                         ?? "Reset your FastLabel password";
 
             var bodyTemplate = emailTexts.FirstOrDefault(t => t.Tag == "email.reset.body")?.Value
-                            ?? "Hello {0},\n\nPlease click the following link to reset your password:\n{1}";
+                                    ?? "Hello {0},\n\nPlease click the following link to reset your password:\n{1}";
 
             var message = string.Format(bodyTemplate, user.Name, resetLink);
 
@@ -140,9 +144,9 @@ public static class AuthEndpoints
 
         group.MapPost("/reset-password", async (ResetPasswordDto dto, AppDbContext db, IPasswordHasher<User> passwordHasher) =>
         {
-            if (string.IsNullOrWhiteSpace(dto.Token) || string.IsNullOrWhiteSpace(dto.NewPassword))
+            if (!ValidationExtensions.TryValidateModel(dto, out var errorResult))
             {
-                return Results.BadRequest(new ErrorResponseDto { Message = "auth.error.missing_token" });
+                return errorResult!;
             }
 
             var user = await db.Users
@@ -163,8 +167,13 @@ public static class AuthEndpoints
             return Results.Ok(new { message = "auth.success.password_reset" });
         });
 
-        group.MapPost("/register", async (RegisterDto dto, HttpContext httpContext, AppDbContext db, IPasswordHasher<User> passwordHasher, IEmailService emailService, IConfiguration configuration) =>
+        group.MapPost("/register", async (RegisterRequest dto, HttpContext httpContext, AppDbContext db, IPasswordHasher<User> passwordHasher, IEmailService emailService, IConfiguration configuration) =>
         {
+            if (!ValidationExtensions.TryValidateModel(dto, out var errorResult))
+            {
+                return errorResult!;
+            }
+
             if (await db.Users.AnyAsync(u => u.Email == dto.Email))
             {
                 return Results.BadRequest(new ErrorResponseDto { Message = "auth.error.email_already_taken" });
@@ -224,7 +233,7 @@ public static class AuthEndpoints
                         ?? "Activate your FastLabel account";
 
             var bodyTemplate = emailTexts.FirstOrDefault(t => t.Tag == "email.activation.body")?.Value
-                            ?? "Hello {0},\n\nPlease click the following link to activate your account:\n{1}";
+                                    ?? "Hello {0},\n\nPlease click the following link to activate your account:\n{1}";
 
             var message = string.Format(bodyTemplate, user.Name, verificationLink);
 
@@ -237,7 +246,7 @@ public static class AuthEndpoints
         {
             if (string.IsNullOrWhiteSpace(token))
             {
-                return Results.BadRequest(new { message = "Token invalide." });
+                return Results.BadRequest(new ErrorResponseDto { Message = "auth.error.invalid_token" });
             }
 
             var user = await db.Users
@@ -245,7 +254,7 @@ public static class AuthEndpoints
                 .FirstOrDefaultAsync(u => u.EmailVerificationToken == token);
             if (user == null)
             {
-                return Results.BadRequest(new { message = "Jeton de validation invalide ou expiré." });
+                return Results.BadRequest(new ErrorResponseDto { Message = "auth.error.invalid_or_expired_token" });
             }
 
             var activeStatus = await db.BasicStatuses

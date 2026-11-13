@@ -43,7 +43,21 @@ public static class ServiceExtensions
             });
         });
 
-        services.AddControllers();
+        services.AddControllers()
+            .ConfigureApiBehaviorOptions(options =>
+            {
+                options.InvalidModelStateResponseFactory = context =>
+                {
+                    var errorMessage = context.ModelState
+                        .Values
+                        .SelectMany(v => v.Errors)
+                        .Select(e => e.ErrorMessage)
+                        .FirstOrDefault() ?? string.Empty;
+
+                    var response = new ErrorResponseDto { Message = errorMessage };
+                    return new BadRequestObjectResult(response);
+                };
+            });
         services.AddScoped<IEmailService, EmailService>();
 
         services.AddSingleton<PrintBrokerService>();

@@ -341,5 +341,78 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("email.activation.body", "Hello {0},\n\nPlease click the following link to activate your account:\n{1}", new() { { "fr", "Bonjour {0},\n\nVeuillez cliquer sur le lien suivant pour activer votre compte :\n{1}" }, { "en", "Hello {0},\n\nPlease click the following link to activate your account:\n{1}" } });
         await CreateTextWithTranslationsAsync("email.reset.subject", "Reset your FastLabel password", new() { { "fr", "Réinitialisez votre mot de passe FastLabel" }, { "en", "Reset your FastLabel password" } });
         await CreateTextWithTranslationsAsync("email.reset.body", "Hello {0},\n\nPlease click the following link to reset your password:\n{1}", new() { { "fr", "Bonjour {0},\n\nVeuillez cliquer sur le lien suivant pour réinitialiser votre mot de passe :\n{1}" }, { "en", "Hello {0},\n\nPlease click the following link to reset your password:\n{1}" } });
+    
+        // DTOs Rectrictions
+        await CreateTextWithTranslationsAsync("agent.error.name_required", "Agent name is required", new() { { "fr", "Le nom de l'agent est requis" }, { "en", "Agent name is required" } });
+        await CreateTextWithTranslationsAsync("agent.error.name_max_length", "Agent name cannot exceed 100 characters", new() { { "fr", "Le nom de l'agent ne peut pas dépasser 100 caractères" }, { "en", "Agent name cannot exceed 100 characters" } });
+        await CreateTextWithTranslationsAsync("agent.error.type_required", "Agent type is required", new() { { "fr", "Le type d'agent est requis" }, { "en", "Agent type is required" } });
+        await CreateTextWithTranslationsAsync("agent.error.apikey_required", "API key is required", new() { { "fr", "La clé d'API est requise" }, { "en", "API key is required" } });
+
+        await CreateTextWithTranslationsAsync("printhistory.error.printer_name_required", "Printer name is required", new() { { "fr", "Le nom de l'imprimante est requis" }, { "en", "Printer name is required" } });
+        await CreateTextWithTranslationsAsync("printhistory.error.template_name_required", "Template name is required", new() { { "fr", "Le nom du modèle est requis" }, { "en", "Template name is required" } });
+        await CreateTextWithTranslationsAsync("printhistory.error.input_data_required", "Input data JSON is required", new() { { "fr", "Les données d'entrée JSON sont requises" }, { "en", "Input data JSON is required" } });
+        await CreateTextWithTranslationsAsync("printhistory.error.quantity_range", "Quantity must be between 1 and 10000", new() { { "fr", "La quantité doit être comprise entre 1 et 10000" }, { "en", "Quantity must be between 1 and 10000" } });
+
+        await CreateTextWithTranslationsAsync("print.error.apikey_required", "API key is required", new() { { "fr", "La clé d'API est requise" }, { "en", "API key is required" } });
+        await CreateTextWithTranslationsAsync("print.error.printer_id_required", "Printer ID is required", new() { { "fr", "L'identifiant de l'imprimante est requis" }, { "en", "Printer ID is required" } });
+        await CreateTextWithTranslationsAsync("print.error.printer_id_invalid", "PrinterId must be a valid positive number", new() { { "fr", "L'identifiant de l'imprimante doit être un nombre positif valide" }, { "en", "PrinterId must be a valid positive number" } });
+        await CreateTextWithTranslationsAsync("print.error.quantity_required", "Quantity is required", new() { { "fr", "La quantité est requise" }, { "en", "Quantity is required" } });
+        await CreateTextWithTranslationsAsync("print.error.quantity_range", "Quantity must be between 1 and 10000", new() { { "fr", "La quantité doit être comprise entre 1 et 10000" }, { "en", "Quantity must be between 1 and 10000" } });
+
+        await CreateTextWithTranslationsAsync("auth.error.password_min_length", "Password must be at least 8 characters long", new() { { "fr", "Le mot de passe doit contenir au moins 8 caractères" }, { "en", "Password must be at least 8 characters long" } });
+
+        await CreateTextWithTranslationsAsync("template.error.name_required", "Template name is required", new() { { "fr", "Le nom du modèle est requis" }, { "en", "Template name is required" } });
+        await CreateTextWithTranslationsAsync("template.error.name_max_length", "Template name cannot exceed 150 characters", new() { { "fr", "Le nom du modèle ne peut pas dépasser 150 caractères" }, { "en", "Template name cannot exceed 150 characters" } });
+        await CreateTextWithTranslationsAsync("template.error.json_data_required", "Template JSON data is required", new() { { "fr", "Les données JSON du modèle sont requises" }, { "en", "Template JSON data is required" } });
+
+        await CreateTextWithTranslationsAsync("translation.error.key_required", "Translation key is required", new() { { "fr", "La clé de traduction est requise" }, { "en", "Translation key is required" } });
+        await CreateTextWithTranslationsAsync("translation.error.value_required", "Translation value is required", new() { { "fr", "La valeur de traduction est requise" }, { "en", "Translation value is required" } });
+
+        await CreateTextWithTranslationsAsync("user.error.name_required", "User name is required", new() { { "fr", "Le nom d'utilisateur est requis" }, { "en", "User name is required" } });
+        await CreateTextWithTranslationsAsync("user.error.name_max_length", "User name cannot exceed 100 characters", new() { { "fr", "Le nom d'utilisateur ne peut pas dépasser 100 caractères" }, { "en", "User name cannot exceed 100 characters" } });
+
+        await CreateTextWithTranslationsAsync("auth.error.name_required", "Name is required", new() { { "fr", "Le nom est requis" }, { "en", "Name is required" } });
+        await CreateTextWithTranslationsAsync("auth.error.email_required", "Email is required", new() { { "fr", "L'adresse email est requise" }, { "en", "Email is required" } });
+        await CreateTextWithTranslationsAsync("auth.error.email_invalid", "Invalid email address", new() { { "fr", "Adresse email invalide" }, { "en", "Invalid email address" } });
+        await CreateTextWithTranslationsAsync("auth.error.password_required", "Password is required", new() { { "fr", "Le mot de passe est requis" }, { "en", "Password is required" } });
+        await CreateTextWithTranslationsAsync("auth.error.token_required", "Token is required", new() { { "fr", "Le jeton est requis" }, { "en", "Token is required" } });
+
+        await CreateTextWithTranslationsAsync("printer.error.name_required", "Printer name is required", new() { { "fr", "Le nom de l'imprimante est requis" }, { "en", "Printer name is required" } });
+        await CreateTextWithTranslationsAsync("printer.error.name_max_length", "Printer name cannot exceed 100 characters", new() { { "fr", "Le nom de l'imprimante ne peut pas dépasser 100 caractères" }, { "en", "Printer name cannot exceed 100 characters" } });
+        await CreateTextWithTranslationsAsync("printer.error.location_required", "Location is required", new() { { "fr", "L'emplacement est requis" }, { "en", "Location is required" } });
+        await CreateTextWithTranslationsAsync("printer.error.ip_required", "IP address is required", new() { { "fr", "L'adresse IP est requise" }, { "en", "IP address is required" } });
+        await CreateTextWithTranslationsAsync("printer.error.port_invalid", "Port must be between 1 and 65535", new() { { "fr", "Le port doit être compris entre 1 et 65535" }, { "en", "Port must be between 1 and 65535" } });
+
+        await CreateTextWithTranslationsAsync("label.error.name_required", "Label name is required", new() { { "fr", "Le nom de l'étiquette est requis" }, { "en", "Label name is required" } });
+        await CreateTextWithTranslationsAsync("label.error.name_max_length", "Label name cannot exceed 150 characters", new() { { "fr", "Le nom de l'étiquette ne peut pas dépasser 150 caractères" }, { "en", "Label name cannot exceed 150 characters" } });
+        await CreateTextWithTranslationsAsync("label.error.content_required", "Label content is required", new() { { "fr", "Le contenu de l'étiquette est requis" }, { "en", "Label content is required" } });
+        await CreateTextWithTranslationsAsync("label.error.description_max_length", "Description cannot exceed 500 characters", new() { { "fr", "La description ne peut pas dépasser 500 caractères" }, { "en", "Description cannot exceed 500 characters" } });
+    
+        // Endpoints
+        await CreateTextWithTranslationsAsync("user.error.not_found", "User not found", new() { { "fr", "Utilisateur introuvable" }, { "en", "User not found" } });
+
+        await CreateTextWithTranslationsAsync("template.error.not_found", "Label template not found", new() { { "fr", "Modèle d'étiquette introuvable" }, { "en", "Label template not found" } });
+
+        await CreateTextWithTranslationsAsync("job.error.invalid_limit", "Limit must be greater than zero", new() { { "fr", "La limite doit être supérieure à zéro" }, { "en", "Limit must be greater than zero" } });
+        await CreateTextWithTranslationsAsync("job.error.not_found", "Print job not found", new() { { "fr", "Tâche d'impression introuvable" }, { "en", "Print job not found" } });
+        
+        await CreateTextWithTranslationsAsync("printer.error.not_found", "Printer not found", new() { { "fr", "Imprimante introuvable" }, { "en", "Printer not found" } });
+
+        await CreateTextWithTranslationsAsync("language.error.invalid", "Unsupported language", new() { { "fr", "Langue non supportée" }, { "en", "Unsupported language" } });
+
+        await CreateTextWithTranslationsAsync("print.error.agent_not_connected", "The print agent is not connected", new() { { "fr", "L'agent d'impression n'est pas connecté" }, { "en", "The print agent is not connected" } });
+        await CreateTextWithTranslationsAsync("print.error.printer_not_found", "Printer not found", new() { { "fr", "Imprimante introuvable" }, { "en", "Printer not found" } });
+        await CreateTextWithTranslationsAsync("print.error.template_not_found", "Template not found", new() { { "fr", "Modèle introuvable" }, { "en", "Template not found" } });
+        await CreateTextWithTranslationsAsync("print.error.timeout", "Timeout: The local agent did not respond", new() { { "fr", "Délai dépassé : L'agent local n'a pas répondu" }, { "en", "Timeout: The local agent did not respond" } });
+
+        await CreateTextWithTranslationsAsync("auth.error.invalid_credentials", "Invalid credentials", new() { { "fr", "Identifiants invalides" }, { "en", "Invalid credentials" } });
+        await CreateTextWithTranslationsAsync("auth.error.account_inactive", "Account is inactive", new() { { "fr", "Votre compte est inactif" }, { "en", "Account is inactive" } });
+        await CreateTextWithTranslationsAsync("auth.error.missing_email", "Email is required", new() { { "fr", "L'adresse e-mail est requise" }, { "en", "Email is required" } });
+        await CreateTextWithTranslationsAsync("auth.error.missing_token", "Token is required", new() { { "fr", "Le jeton est requis" }, { "en", "Token is required" } });
+        await CreateTextWithTranslationsAsync("auth.error.invalid_or_expired_token", "Invalid or expired token", new() { { "fr", "Jeton invalide ou expiré" }, { "en", "Invalid or expired token" } });
+        await CreateTextWithTranslationsAsync("auth.error.email_already_taken", "Email is already taken", new() { { "fr", "Cette adresse e-mail est déjà utilisée" }, { "en", "Email is already taken" } });
+        await CreateTextWithTranslationsAsync("auth.error.invalid_token", "Invalid token", new() { { "fr", "Jeton invalide" }, { "en", "Invalid token" } });
+
+        await CreateTextWithTranslationsAsync("agent.error.not_found", "Agent not found", new() { { "fr", "Agent introuvable" }, { "en", "Agent not found" } });
     }
 }

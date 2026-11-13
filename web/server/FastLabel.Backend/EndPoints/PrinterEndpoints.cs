@@ -95,11 +95,18 @@ public static class PrinterEndpoints
                 })
                 .FirstOrDefaultAsync();
 
-            return printer is not null ? Results.Ok(printer) : Results.NotFound();
+            return printer is not null 
+                ? Results.Ok(printer) 
+                : Results.NotFound(new ErrorResponseDto { Message = "printer.error.not_found" });
         });
 
         group.MapPost("/", async (PrinterDto dto, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
+            if (!ValidationExtensions.TryValidateModel(dto, out var errorResult))
+            {
+                return errorResult!;
+            }
+
             var (userId, _) = GetUserInfo(claimsUser);
             if (userId == 0) return Results.Unauthorized();
 
@@ -125,10 +132,15 @@ public static class PrinterEndpoints
 
         group.MapPut("/{id:int}", async (int id, PrinterDto updatedDto, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
+            if (!ValidationExtensions.TryValidateModel(updatedDto, out var errorResult))
+            {
+                return errorResult!;
+            }
+
             var (userId, isAdmin) = GetUserInfo(claimsUser);
 
             var printer = await db.Printers.FindAsync(id);
-            if (printer is null) return Results.NotFound();
+            if (printer is null) return Results.NotFound(new ErrorResponseDto { Message = "printer.error.not_found" });
 
             if (!isAdmin && printer.UserId != userId)
             {
@@ -149,7 +161,7 @@ public static class PrinterEndpoints
             var (userId, isAdmin) = GetUserInfo(claimsUser);
 
             var printer = await db.Printers.FindAsync(id);
-            if (printer is null) return Results.NotFound();
+            if (printer is null) return Results.NotFound(new ErrorResponseDto { Message = "printer.error.not_found" });
 
             if (!isAdmin && printer.UserId != userId)
             {

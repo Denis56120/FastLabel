@@ -8,6 +8,11 @@ public static class LanguageEndpoints
         
         group.MapGet("/set", (string language, HttpResponse response) =>
         {
+            if (string.IsNullOrWhiteSpace(language) || (language != "fr" && language != "en"))
+            {
+                return Results.BadRequest(new ErrorResponseDto { Message = "language.error.invalid" });
+            }
+
             response.Cookies.Append("language", language, new CookieOptions
             {
                 Expires = DateTimeOffset.UtcNow.AddYears(1),
@@ -15,6 +20,7 @@ public static class LanguageEndpoints
                 SameSite = SameSiteMode.Lax,
                 HttpOnly = false
             });
+
             return Results.Ok();
         });
     }

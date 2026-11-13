@@ -20,6 +20,11 @@ public static class PrintJobEndpoints
 
         group.MapGet("/", async (AppDbContext db, int? limit, ClaimsPrincipal claimsUser) =>
         {
+            if (limit.HasValue && limit.Value <= 0)
+            {
+                return Results.BadRequest(new ErrorResponseDto { Message = "job.error.invalid_limit" });
+            }
+
             var (userId, isAdmin) = GetUserInfo(claimsUser);
 
             var query = db.PrintJobs
@@ -33,7 +38,7 @@ public static class PrintJobEndpoints
                 query = query.Where(j => j.Printer.UserId == userId);
             }
 
-            var takeCount = limit.HasValue ? limit.Value : 100;
+            var takeCount = limit.HasValue ? Math.Min(limit.Value, 500) : 100;
 
             var jobs = await query
                 .Take(takeCount)
@@ -85,7 +90,9 @@ public static class PrintJobEndpoints
                 })
                 .FirstOrDefaultAsync();
 
-            return jobDto is not null ? Results.Ok(jobDto) : Results.NotFound();
+            return jobDto is not null 
+                ? Results.Ok(jobDto) 
+                : Results.NotFound(new ErrorResponseDto { Message = "job.error.not_found" });
         });
     }
 }

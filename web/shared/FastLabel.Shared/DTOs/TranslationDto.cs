@@ -1,8 +1,10 @@
-namespace FastLabel.Shared.DTOs
+namespace FastLabel.Shared.DTOs;
+
+public class TranslationDto
 {
-    public class TranslationDto
-    {
-        public string Key { get; set; } = string.Empty;
-        public string Value { get; set; } = string.Empty;
-    }
+    [Required(ErrorMessage = "translation.error.key_required")]
+    public string Key { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "translation.error.value_required")]
+    public string Value { get; set; } = string.Empty;
 }

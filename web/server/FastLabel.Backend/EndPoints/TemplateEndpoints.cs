@@ -93,11 +93,18 @@ public static class TemplateEndpoints
                 })
                 .FirstOrDefaultAsync();
 
-            return template is not null ? Results.Ok(template) : Results.NotFound();
+            return template is not null 
+                ? Results.Ok(template) 
+                : Results.NotFound(new ErrorResponseDto { Message = "template.error.not_found" });
         });
 
         group.MapPost("/", async (TemplateDto dto, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
+            if (!ValidationExtensions.TryValidateModel(dto, out var errorResult))
+            {
+                return errorResult!;
+            }
+
             var (userId, _) = GetUserInfo(claimsUser);
             if (userId == 0) return Results.Unauthorized();
 
@@ -120,10 +127,15 @@ public static class TemplateEndpoints
 
         group.MapPut("/{id:int}", async (int id, TemplateDto updatedDto, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
+            if (!ValidationExtensions.TryValidateModel(updatedDto, out var errorResult))
+            {
+                return errorResult!;
+            }
+
             var (userId, isAdmin) = GetUserInfo(claimsUser);
 
             var template = await db.LabelTemplates.FindAsync(id);
-            if (template is null) return Results.NotFound();
+            if (template is null) return Results.NotFound(new ErrorResponseDto { Message = "template.error.not_found" });
 
             if (!isAdmin && template.UserId != userId)
             {
@@ -143,7 +155,7 @@ public static class TemplateEndpoints
             var (userId, isAdmin) = GetUserInfo(claimsUser);
 
             var template = await db.LabelTemplates.FindAsync(id);
-            if (template is null) return Results.NotFound();
+            if (template is null) return Results.NotFound(new ErrorResponseDto { Message = "template.error.not_found" });
 
             if (!isAdmin && template.UserId != userId)
             {
