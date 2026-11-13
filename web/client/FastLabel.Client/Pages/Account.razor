@@ -7,7 +7,7 @@
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
 
-<div class="container mt-4">
+<div class="container mt-4 mb-5">
     <h2>@Translation.GetString("account.title")</h2>
 
     @if (isLoading)
@@ -21,21 +21,101 @@
     else
     {
         <div class="row justify-content-center">
-            <div class="col-md-8 col-lg-6 mb-4">
+            <div class="col-md-8 col-lg-6">
+                <!-- Cadre Profil & Modification -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <h4 class="card-title mb-3">@Translation.GetString("account.profile_section")</h4>
+                        
+                        <EditForm Model="_userModel" OnValidSubmit="HandleUpdateAccountAsync">
+                            <DataAnnotationsValidator />
+
+                            <div class="mb-3">
+                                <label class="form-label text-muted">@Translation.GetString("account.name_label")</label>
+                                <InputText class="form-control" @bind-Value="_userModel.Name" />
+                                <ValidationMessage For="@(() => _userModel.Name)" class="text-danger small" />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label text-muted">@Translation.GetString("account.email_label")</label>
+                                <InputText class="form-control" @bind-Value="_userModel.Email" />
+                                <ValidationMessage For="@(() => _userModel.Email)" class="text-danger small" />
+                                <div class="form-text text-warning small">@Translation.GetString("account.email_change_warning")</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label text-muted">@Translation.GetString("account.role_label")</label>
+                                <input type="text" class="form-control" value="@DisplayUserRole" disabled />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label text-muted">@Translation.GetString("users.status")</label>
+                                <input type="text" class="form-control" value="@_userModel.BasicStatusName" disabled />
+                            </div>
+
+                            <hr class="my-4" />
+
+                            <h5 class="mb-3">@Translation.GetString("account.password_section")</h5>
+
+                            <div class="mb-3">
+                                <label class="form-label">@Translation.GetString("account.new_password_label")</label>
+                                <InputText type="password" class="form-control" @bind-Value="_userModel.Password" placeholder="@Translation.GetString("account.password_placeholder_leave_blank")" />
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100" disabled="@_isSaving">
+                                @if (_isSaving)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                }
+                                @Translation.GetString("common.save")
+                            </button>
+                        </EditForm>
+                    </div>
+                </div>
+
+                <!-- Cadre Souscriptions -->
                 <div class="card shadow-sm">
                     <div class="card-body">
-                        <div class="mb-3">
-                            <label class="form-label text-muted">@Translation.GetString("account.name_label")</label>
-                            <input type="text" class="form-control" value="@userName" disabled />
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label text-muted">@Translation.GetString("account.email_label")</label>
-                            <input type="text" class="form-control" value="@userEmail" disabled />
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label text-muted">@Translation.GetString("account.role_label")</label>
-                            <input type="text" class="form-control" value="@DisplayUserRole" disabled />
-                        </div>
+                        <h4 class="card-title mb-3">@Translation.GetString("account.subscriptions_title")</h4>
+
+                        @if (_subscriptions == null)
+                        {
+                            <div class="text-center py-3">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                            </div>
+                        }
+                        else if (!_subscriptions.Any())
+                        {
+                            <div class="alert alert-secondary m-0" role="alert">
+                                @Translation.GetString("account.no_subscriptions")
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+                                <table class="table table-striped align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>@Translation.GetString("account.subscription.plan")</th>
+                                            <th>@Translation.GetString("account.subscription.type")</th>
+                                            <th>@Translation.GetString("account.subscription.period")</th>
+                                            <th>@Translation.GetString("account.subscription.date")</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach (var sub in _subscriptions)
+                                        {
+                                            <tr>
+                                                <td>@sub.PlanName</td>
+                                                <td>@sub.SubscriptionTypeName</td>
+                                                <td>@sub.SubscriptionPeriod</td>
+                                                <td>@sub.CreatedAt.ToLocalTime().ToString("g")</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        }
                     </div>
                 </div>
             </div>
@@ -45,42 +125,27 @@
 
 @code {
     private bool isLoading = true;
-    private string userEmail = string.Empty;
-    private string userName = string.Empty;
-    private string userRole = string.Empty;
+    private bool _isSaving = false;
+    private UserDto _userModel = new();
+    private List<SubscriptionDto>? _subscriptions;
 
-    private string DisplayUserRole => userRole.ToLower() switch
-    {
-        "admin" => Translation.GetString("users.role_admin"),
-        _ => Translation.GetString("users.role_user")
-    };
+    private string DisplayUserRole => _userModel.IsAdmin 
+        ? Translation.GetString("users.role_admin") 
+        : Translation.GetString("users.role_user");
 
     protected override async Task OnInitializedAsync()
+    {
+        await LoadUserDataAsync();
+    }
+
+    private async Task LoadUserDataAsync()
     {
         try
         {
             isLoading = true;
 
-            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-            var user = authState.User;
-
-            var emailClaim = user.FindFirst(ClaimTypes.Email) ?? user.FindFirst("email");
-            if (emailClaim != null)
-            {
-                userEmail = emailClaim.Value;
-            }
-
-            var roleClaim = user.FindFirst(ClaimTypes.Role) ?? user.FindFirst("role");
-            if (roleClaim != null)
-            {
-                userRole = roleClaim.Value;
-            }
-
-            var nameClaim = user.FindFirst(ClaimTypes.Name) ?? user.FindFirst("name") ?? user.FindFirst(ClaimTypes.GivenName);
-            if (nameClaim != null)
-            {
-                userName = nameClaim.Value;
-            }
+            _userModel = await ApiClient.GetFromJsonAsync<UserDto>("api/users/me") ?? new();
+            _subscriptions = await ApiClient.GetFromJsonAsync<List<SubscriptionDto>>("api/account/subscriptions") ?? new();
         }
         catch (Exception)
         {
@@ -91,5 +156,46 @@
         {
             isLoading = false;
         }
+    }
+
+    private async Task HandleUpdateAccountAsync()
+    {
+        _isSaving = true;
+        try
+        {
+            var (isSuccess, errorKey) = await ApiClient.PutAsync("api/users/me", _userModel);
+            if (isSuccess)
+            {
+                ToastService.ShowSuccess(Translation.GetString("account.success.updated"));
+                
+                ToastService.ShowWarning(Translation.GetString("account.warning.email_changed_inactive"));
+
+                _userModel.Password = null; 
+                await LoadUserDataAsync(); 
+            }
+            else
+            {
+                ToastService.ShowError(Translation.GetString(errorKey ?? "app.error.unknown"));
+            }
+        }
+        catch (Exception)
+        {
+            ToastService.ShowError(Translation.GetString("app.error.unknown"));
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+
+    protected override async Task OnLanguageChangedAsync()
+    {
+        StateHasChanged();
+        await LoadUserDataAsync();
+    }
+
+    private class AccountUpdateResponseDto
+    {
+        public bool EmailChanged { get; set; }
     }
 }

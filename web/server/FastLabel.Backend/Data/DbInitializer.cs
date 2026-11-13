@@ -316,10 +316,23 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("nav.my_account", "My Account", new() { { "fr", "Mon Compte" }, { "en", "My Account" } });
         await CreateTextWithTranslationsAsync("nav.logout", "Logout", new() { { "fr", "Déconnexion" }, { "en", "Logout" } });
 
+        await CreateTextWithTranslationsAsync("account.email_change_warning", "Changing your email will require you to reactivate your account.", new() { { "fr", "Modifier votre e-mail nécessitera une réactivation de votre compte via le lien reçu." }, { "en", "Changing your email will require you to reactivate your account." } });
+        await CreateTextWithTranslationsAsync("account.password_section", "Change Password", new() { { "fr", "Modifier le mot de passe" }, { "en", "Change Password" } });
+        await CreateTextWithTranslationsAsync("account.new_password_label", "New Password", new() { { "fr", "Nouveau mot de passe" }, { "en", "New Password" } });
+        await CreateTextWithTranslationsAsync("account.password_placeholder_leave_blank", "Leave blank to keep current password", new() { { "fr", "Laisser vide pour conserver le mot de passe actuel" }, { "en", "Leave blank to keep current password" } });
+        await CreateTextWithTranslationsAsync("account.success.updated", "Account updated successfully", new() { { "fr", "Compte mis à jour avec succès" }, { "en", "Account updated successfully" } });
+        await CreateTextWithTranslationsAsync("account.warning.email_changed_inactive", "Your email has changed. Please check your inbox to activate your account.", new() { { "fr", "Votre e-mail a changé. Veuillez vérifier votre boîte de réception pour réactiver votre compte." }, { "en", "Your email has changed. Please check your inbox to activate your account." } });
         await CreateTextWithTranslationsAsync("account.title", "My Account", new() { { "fr", "Mon Compte" }, { "en", "My Account" } });
+        await CreateTextWithTranslationsAsync("account.profile_section", "Profile Information", new() { { "fr", "Informations du profil" }, { "en", "Profile Information" } });
         await CreateTextWithTranslationsAsync("account.name_label", "Name", new() { { "fr", "Nom" }, { "en", "Name" } });
-        await CreateTextWithTranslationsAsync("account.email_label", "Email Address", new() { { "fr", "Adresse Email" }, { "en", "Email Address" } });
-        await CreateTextWithTranslationsAsync("account.role_label", "Role / Plan", new() { { "fr", "Rôle / Plan" }, { "en", "Role / Plan" } });
+        await CreateTextWithTranslationsAsync("account.email_label", "Email", new() { { "fr", "E-mail" }, { "en", "Email" } });
+        await CreateTextWithTranslationsAsync("account.role_label", "Role", new() { { "fr", "Rôle" }, { "en", "Role" } });
+        await CreateTextWithTranslationsAsync("account.subscriptions_title", "My Subscriptions", new() { { "fr", "Mes abonnements" }, { "en", "My Subscriptions" } });
+        await CreateTextWithTranslationsAsync("account.no_subscriptions", "No subscriptions found.", new() { { "fr", "Aucun abonnement trouvé." }, { "en", "No subscriptions found." } });
+        await CreateTextWithTranslationsAsync("account.subscription.plan", "Plan", new() { { "fr", "Plan" }, { "en", "Plan" } });
+        await CreateTextWithTranslationsAsync("account.subscription.type", "Type", new() { { "fr", "Type" }, { "en", "Type" } });
+        await CreateTextWithTranslationsAsync("account.subscription.period", "Period", new() { { "fr", "Période" }, { "en", "Period" } });
+        await CreateTextWithTranslationsAsync("account.subscription.date", "Created At", new() { { "fr", "Créé le" }, { "en", "Created At" } });
 
         await CreateTextWithTranslationsAsync("dashboard.title", "Dashboard", new() { { "fr", "Tableau de bord" }, { "en", "Dashboard" } });
 
@@ -371,6 +384,10 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("email.reset.body", "Hello {0},\n\nPlease click the following link to reset your password:\n{1}", new() { { "fr", "Bonjour {0},\n\nVeuillez cliquer sur le lien suivant pour réinitialiser votre mot de passe :\n{1}" }, { "en", "Hello {0},\n\nPlease click the following link to reset your password:\n{1}" } });
     
         // DTOs Rectrictions
+        await CreateTextWithTranslationsAsync("subscription.error.plan_required", "Plan name is required", new() { { "fr", "Le nom du plan est requis" }, { "en", "Plan name is required" } });
+        await CreateTextWithTranslationsAsync("subscription.error.type_required", "Subscription type is required", new() { { "fr", "Le type d'abonnement est requis" }, { "en", "Subscription type is required" } });
+        await CreateTextWithTranslationsAsync("subscription.error.period_invalid", "Invalid subscription period", new() { { "fr", "Période d'abonnement invalide" }, { "en", "Invalid subscription period" } });
+
         await CreateTextWithTranslationsAsync("resolutions.error.value_required", "Resolution value is required", new() { { "fr", "La valeur de la résolution est requise" }, { "en", "Resolution value is required" } });
         await CreateTextWithTranslationsAsync("resolutions.error.value_range", "Resolution value must be greater than 0", new() { { "fr", "La valeur de la résolution doit être supérieure à 0" }, { "en", "Resolution value must be greater than 0" } });
 
@@ -426,6 +443,9 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("label.error.description_max_length", "Description cannot exceed 500 characters", new() { { "fr", "La description ne peut pas dépasser 500 caractères" }, { "en", "Description cannot exceed 500 characters" } });
     
         // Endpoints
+        await CreateTextWithTranslationsAsync("subscription.error.unauthorized", "Unauthorized access", new() { { "fr", "Accès non autorisé" }, { "en", "Unauthorized access" } });
+
+        await CreateTextWithTranslationsAsync("user.error.email_already_taken", "This email is already in use", new() { { "fr", "Cet e-mail est déjà utilisé" }, { "en", "This email is already in use" } });
         await CreateTextWithTranslationsAsync("user.error.not_found", "User not found", new() { { "fr", "Utilisateur introuvable" }, { "en", "User not found" } });
 
         await CreateTextWithTranslationsAsync("template.error.not_found", "Label template not found", new() { { "fr", "Modèle d'étiquette introuvable" }, { "en", "Label template not found" } });

@@ -1,3 +1,10 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using FastLabel.Backend.Data;
+using FastLabel.Shared.DTOs;
+using FastLabel.Backend.Models;
+
 namespace FastLabel.Backend.Endpoints;
 
 public static class UserEndpoints
@@ -42,6 +49,96 @@ public static class UserEndpoints
                 return Results.NotFound(new ErrorResponseDto { Message = "user.error.not_found" });
 
             return Results.Ok(userDto);
+        }).RequireAuthorization();
+
+        routes.MapPut("/api/users/me", async (UserDto updatedDto, AppDbContext db, IPasswordHasher<User> passwordHasher, IEmailService emailService, IConfiguration configuration, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
+        {
+            if (!ValidationExtensions.TryValidateModel(updatedDto, out var errorResult))
+            {
+                return errorResult!;
+            }
+
+            var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier) 
+                                ?? claimsUser.FindFirstValue("nameid");
+
+            if (!int.TryParse(userIdString, out var userId))
+                return Results.Unauthorized();
+
+            var user = await db.Users.FindAsync(userId);
+            if (user == null)
+                return Results.NotFound(new ErrorResponseDto { Message = "user.error.not_found" });
+
+            bool emailChanged = !string.Equals(user.Email, updatedDto.Email, StringComparison.OrdinalIgnoreCase);
+            if (emailChanged)
+            {
+                bool emailExists = await db.Users.AnyAsync(u => u.Email == updatedDto.Email && u.Id != userId);
+                if (emailExists)
+                {
+                    return Results.BadRequest(new ErrorResponseDto { Message = "user.error.email_already_taken" });
+                }
+
+                user.Email = updatedDto.Email;
+                user.EmailVerificationToken = Guid.NewGuid().ToString();
+
+                var inactiveStatus = await db.BasicStatuses
+                    .Join(db.Texts, bs => bs.NameTextId, t => t.Id, (bs, t) => new { bs, t.Tag })
+                    .Where(x => x.Tag == "status.inactive")
+                    .OrderBy(x => x.bs.Id)
+                    .Select(x => x.bs)
+                    .FirstOrDefaultAsync();
+
+                if (inactiveStatus != null)
+                {
+                    user.BasicStatusId = inactiveStatus.Id;
+                }
+                else
+                {
+                    var fallbackStatus = await db.BasicStatuses.OrderBy(s => s.Id).Skip(1).FirstOrDefaultAsync();
+                    if (fallbackStatus != null)
+                    {
+                        user.BasicStatusId = fallbackStatus.Id;
+                    }
+                }
+
+                // Envoi de l'e-mail d'activation avec le nouveau token
+                var serverUrl = configuration["Url:ServerUrl"] ?? "https://fastlabel.com";
+                var verificationLink = $"{serverUrl}/api/auth/verify-email?token={user.EmailVerificationToken}";
+
+                var languageCode = httpContext.GetRequestLanguage();
+
+                var emailTexts = await db.Texts
+                    .Where(t => t.Tag == "email.activation.subject" || t.Tag == "email.activation.body")
+                    .Select(t => new
+                    {
+                        t.Tag,
+                        Value = t.Translations
+                            .Where(tr => tr.Language.Code == languageCode)
+                            .Select(tr => tr.TranslatedValue)
+                            .FirstOrDefault() ?? t.DefaultTranslation
+                    })
+                    .ToListAsync();
+
+                var subject = emailTexts.FirstOrDefault(t => t.Tag == "email.activation.subject")?.Value
+                            ?? string.Empty;
+
+                var bodyTemplate = emailTexts.FirstOrDefault(t => t.Tag == "email.activation.body")?.Value
+                                            ?? string.Empty;
+
+                var message = string.Format(bodyTemplate, updatedDto.Name, verificationLink);
+
+                await emailService.SendEmailAsync(user.Email, subject, message);
+            }
+
+            user.Name = updatedDto.Name;
+
+            if (!string.IsNullOrWhiteSpace(updatedDto.Password))
+            {
+                user.PasswordHash = passwordHasher.HashPassword(user, updatedDto.Password);
+            }
+
+            await db.SaveChangesAsync();
+
+            return Results.Ok(new { emailChanged });
         }).RequireAuthorization();
 
         var adminGroup = routes.MapGroup("/api/users").RequireAuthorization("AdminOnly");

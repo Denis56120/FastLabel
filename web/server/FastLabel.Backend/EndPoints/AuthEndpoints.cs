@@ -230,10 +230,10 @@ public static class AuthEndpoints
                 .ToListAsync();
 
             var subject = emailTexts.FirstOrDefault(t => t.Tag == "email.activation.subject")?.Value
-                        ?? "Activate your FastLabel account";
+                        ?? string.Empty;
 
             var bodyTemplate = emailTexts.FirstOrDefault(t => t.Tag == "email.activation.body")?.Value
-                                        ?? "Hello {0},\n\nPlease click the following link to activate your account:\n{1}";
+                                        ?? string.Empty;
 
             var message = string.Format(bodyTemplate, user.Name, verificationLink);
 

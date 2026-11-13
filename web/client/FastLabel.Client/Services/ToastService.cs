@@ -6,10 +6,12 @@ public class ToastService
 
     public void ShowError(string messageKey) => OnShow?.Invoke(messageKey, ToastType.Error);
     public void ShowSuccess(string messageKey) => OnShow?.Invoke(messageKey, ToastType.Success);
+    public void ShowWarning(string messageKey) => OnShow?.Invoke(messageKey, ToastType.Warning);
 }
 
 public enum ToastType 
 { 
     Success, 
-    Error 
+    Error, 
+    Warning 
 }

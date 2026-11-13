@@ -43,6 +43,7 @@ public static class AppExtensions
         app.MapAgentTypeEndpoints();
         app.MapProtocolEndpoints();
         app.MapResolutionDpiEndpoints();
+        app.MapSubscriptionEndpoints();
 
         return app;
     }
