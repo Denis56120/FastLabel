@@ -40,6 +40,7 @@ public static class AppExtensions
         app.MapUserEndpoints();
         app.MapTranslationEndpoints();
         app.MapLanguageEndpoints();
+        app.MapAgentTypeEndpoints();
 
         return app;
     }

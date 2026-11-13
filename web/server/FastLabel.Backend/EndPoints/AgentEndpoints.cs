@@ -18,12 +18,16 @@ public static class AgentEndpoints
             return (userId, isAdmin);
         }
 
-        group.MapGet("/", async (AppDbContext db, PrintBrokerService broker, ClaimsPrincipal claimsUser) =>
+        group.MapGet("/", async (AppDbContext db, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
         {
             var (userId, isAdmin) = GetUserInfo(claimsUser);
+            var lang = HttpContextExtensions.GetRequestLanguage(httpContext);
 
             var query = db.Agents
                 .Include(a => a.AgentType)
+                    .ThenInclude(at => at.Name)
+                        .ThenInclude(n => n.Translations)
+                            .ThenInclude(tr => tr.Language)
                 .AsQueryable();
 
             if (!isAdmin)
@@ -31,19 +35,77 @@ public static class AgentEndpoints
                 query = query.Where(a => a.UserId == userId);
             }
 
-            var agents = await query.ToListAsync();
-
-            var result = agents.Select(a => new AgentDto
+            var result = await query.Select(a => new AgentDto
             {
                 Id = a.Id,
-                Name = (a.AgentType != null && a.AgentType.Name != null ? a.AgentType.Name.ToString() : null) ?? "Agent",
-                AgentTypeName = (a.AgentType != null && a.AgentType.Name != null ? a.AgentType.Name.ToString() : null) ?? string.Empty,
+                AgentTypeId = a.AgentTypeId,
+                AgentTypeName = a.AgentType != null && a.AgentType.Name != null
+                    ? (a.AgentType.Name.Translations
+                        .Where(tr => tr.Language.Code == lang)
+                        .Select(tr => tr.TranslatedValue)
+                        .FirstOrDefault()
+                       ?? a.AgentType.Name.DefaultTranslation)
+                    : string.Empty,
                 ApiKey = a.ApiKey ?? string.Empty,
                 CreatedAt = a.CreatedAt,
                 LastSeenAt = a.LastSeenAt
-            }).ToList();
+            }).ToListAsync();
 
             return Results.Ok(result);
+        });
+
+        group.MapPost("/", async (AgentDto dto, AppDbContext db, ClaimsPrincipal claimsUser) =>
+        {
+            var (userId, _) = GetUserInfo(claimsUser);
+
+            var typeExists = await db.AgentTypes.AnyAsync(at => at.Id == dto.AgentTypeId);
+            if (!typeExists)
+            {
+                return Results.BadRequest(new { message = "agents.error.invalid_type" });
+            }
+
+            var agent = new Agent
+            {
+                AgentTypeId = dto.AgentTypeId,
+                UserId = userId,
+                ApiKey = string.IsNullOrWhiteSpace(dto.ApiKey) ? Guid.NewGuid().ToString("N") : dto.ApiKey,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            db.Agents.Add(agent);
+            await db.SaveChangesAsync();
+
+            dto.Id = agent.Id;
+            dto.CreatedAt = agent.CreatedAt;
+            dto.ApiKey = agent.ApiKey;
+
+            return Results.Created($"/api/agents/{agent.Id}", dto);
+        });
+
+        group.MapPut("/{id:int}", async (int id, AgentDto updatedDto, AppDbContext db, ClaimsPrincipal claimsUser) =>
+        {
+            var (userId, isAdmin) = GetUserInfo(claimsUser);
+
+            var agent = await db.Agents.FindAsync(id);
+            if (agent is null) return Results.NotFound();
+
+            if (!isAdmin && agent.UserId != userId)
+            {
+                return Results.Forbid();
+            }
+
+            var typeExists = await db.AgentTypes.AnyAsync(at => at.Id == updatedDto.AgentTypeId);
+            if (!typeExists)
+            {
+                return Results.BadRequest(new { message = "agents.error.invalid_type" });
+            }
+
+            agent.AgentTypeId = updatedDto.AgentTypeId;
+            
+            updatedDto.ApiKey = agent.ApiKey;
+
+            await db.SaveChangesAsync();
+            return Results.Ok(updatedDto);
         });
 
         group.MapDelete("/{id:int}", async (int id, AppDbContext db, PrintBrokerService broker, ClaimsPrincipal claimsUser) =>
@@ -62,7 +124,7 @@ public static class AgentEndpoints
             {
                 try 
                 { 
-                    await ws.CloseAsync(System.Net.WebSockets.WebSocketCloseStatus.NormalClosure, "Agent deleted", CancellationToken.None); 
+                    await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Agent deleted", CancellationToken.None); 
                 } 
                 catch {}
             }

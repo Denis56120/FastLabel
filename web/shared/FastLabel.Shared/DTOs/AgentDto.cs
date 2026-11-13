@@ -4,16 +4,14 @@ public class AgentDto
 {
     public int Id { get; set; }
 
-    [Required(ErrorMessage = "agent.error.name_required")]
-    [StringLength(100, ErrorMessage = "agent.error.name_max_length")]
-    public string Name { get; set; } = string.Empty;
+    [Range(1, int.MaxValue, ErrorMessage = "agents.error.type_required")]
+    public int AgentTypeId { get; set; }
 
-    [Required(ErrorMessage = "agent.error.type_required")]
-    public string AgentTypeName { get; set; } = string.Empty;
+    public string? AgentTypeName { get; set; }
 
-    [Required(ErrorMessage = "agent.error.apikey_required")]
     public string ApiKey { get; set; } = string.Empty;
 
-    public DateTime CreatedAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
     public DateTime? LastSeenAt { get; set; }
 }

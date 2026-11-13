@@ -19,6 +19,7 @@
         <th>@Translation.GetString("users.name")</th>
         <th>@Translation.GetString("users.email")</th>
         <th>@Translation.GetString("users.role")</th>
+        <th>@Translation.GetString("users.status")</th>
         <th>@Translation.GetString("users.created_at")</th>
     </TableHeader>
 
@@ -28,6 +29,11 @@
         <td>
             <span class="badge bg-@(user.IsAdmin ? "danger" : "secondary")">
                 @(user.IsAdmin ? Translation.GetString("users.role_admin") : Translation.GetString("users.role_user"))
+            </span>
+        </td>
+        <td>
+            <span class="badge bg-light text-dark border">
+                @user.BasicStatusName
             </span>
         </td>
         <td>@user.CreatedAt.ToLocalTime().ToString("g")</td>
@@ -42,6 +48,16 @@
             <label class="form-label">@Translation.GetString("users.email")</label>
             <InputText class="form-control" @bind-Value="user.Email" />
         </div>
+        <div class="mb-3">
+            <label class="form-label">@Translation.GetString("users.password")</label>
+            <div class="input-group">
+                <InputText type="@(_showPassword ? "text" : "password")" class="form-control" @bind-Value="user.Password" />
+                <button type="button" class="btn btn-outline-secondary" style="border-color: #ced4da;" @onclick="TogglePasswordVisibility">
+                    <i class="bi bi-@(_showPassword ? "eye-slash" : "eye")"></i>
+                </button>
+            </div>
+            <small class="form-text text-muted">@Translation.GetString("users.password_help")</small>
+        </div>
         <div class="mb-3 form-check">
             <InputCheckbox class="form-check-input" id="isAdminCheck" @bind-Value="user.IsAdmin" />
             <label class="form-check-label" for="isAdminCheck">
@@ -54,6 +70,12 @@
 
 @code {
     private CrudTablePage<UserDto, int>? _crudTable;
+    private bool _showPassword = false;
+
+    private void TogglePasswordVisibility()
+    {
+        _showPassword = !_showPassword;
+    }
 
     protected override async Task OnLanguageChangedAsync()
     {

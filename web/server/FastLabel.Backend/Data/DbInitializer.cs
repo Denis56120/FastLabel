@@ -100,12 +100,10 @@ public static class DbInitializer
         {
             var a1 = await CreateTextWithTranslationsAsync("agenttype.windows", "FastLabel Windows Agent", new() { { "fr", "Agent Windows FastLabel" }, { "en", "FastLabel Windows Agent" } });
             var a2 = await CreateTextWithTranslationsAsync("agenttype.linux", "FastLabel Linux Agent", new() { { "fr", "Agent Linux FastLabel" }, { "en", "FastLabel Linux Agent" } });
-            var a3 = await CreateTextWithTranslationsAsync("agenttype.browser", "Web Browser", new() { { "fr", "Navigateur Web" }, { "en", "Web Browser" } });
-
+ 
             context.AgentTypes.AddRange(
                 new AgentType { NameTextId = a1.Id },
-                new AgentType { NameTextId = a2.Id },
-                new AgentType { NameTextId = a3.Id }
+                new AgentType { NameTextId = a2.Id }
             );
             await context.SaveChangesAsync();
         }
@@ -252,6 +250,9 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("users.role_admin", "Admin", new() { { "fr", "Admin" }, { "en", "Admin" } });
         await CreateTextWithTranslationsAsync("users.role_user", "User", new() { { "fr", "Utilisateur" }, { "en", "User" } });
         await CreateTextWithTranslationsAsync("users.title", "Users Management", new() { { "fr", "Gestion des utilisateurs" }, { "en", "Users Management" } });
+        await CreateTextWithTranslationsAsync("users.password", "Password", new() { { "fr", "Mot de passe" }, { "en", "Password" } });
+        await CreateTextWithTranslationsAsync("users.password_help", "Leave blank to keep the current password when editing.", new() { { "fr", "Laisser vide pour conserver le mot de passe actuel lors d'une modification." }, { "en", "Leave blank to keep the current password when editing." } });
+        await CreateTextWithTranslationsAsync("users.status", "Status", new() { { "fr", "Statut" }, { "en", "Status" } });
         await CreateTextWithTranslationsAsync("users.description", "Manage application users and permissions.", new() { { "fr", "Gérez les utilisateurs et leurs permissions." }, { "en", "Manage application users and permissions." } });
         await CreateTextWithTranslationsAsync("users.no_users", "No users found.", new() { { "fr", "Aucun utilisateur trouvé." }, { "en", "No users found." } });
         await CreateTextWithTranslationsAsync("users.name", "Name", new() { { "fr", "Nom" }, { "en", "Name" } });
@@ -262,6 +263,10 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("users.add_title", "Add User", new() { { "fr", "Ajouter un utilisateur" }, { "en", "Add User" } });
         await CreateTextWithTranslationsAsync("users.edit_title", "Edit User", new() { { "fr", "Modifier l'utilisateur" }, { "en", "Edit User" } });
 
+        await CreateTextWithTranslationsAsync("agents.created_at", "Created At", new() { { "fr", "Créé le" }, { "en", "Created At" } });
+        await CreateTextWithTranslationsAsync("agents.error.type_required", "Please select an agent type", new() { { "fr", "Veuillez sélectionner un type d'agent" }, { "en", "Please select an agent type" } });
+        await CreateTextWithTranslationsAsync("agents.api_key_readonly_help", "This key is automatically generated and cannot be modified.", new() { { "fr", "Cette clé est générée automatiquement et ne peut pas être modifiée." }, { "en", "This key is automatically generated and cannot be modified." } });
+        await CreateTextWithTranslationsAsync("agents.select_type", "-- Select a type --", new() { { "fr", "-- Sélectionner un type --" }, { "en", "-- Select a type --" } });
         await CreateTextWithTranslationsAsync("agents.title", "Agents Management", new() { { "fr", "Gestion des agents" }, { "en", "Agents Management" } });
         await CreateTextWithTranslationsAsync("agents.description", "Manage connected printing agents.", new() { { "fr", "Gérez les agents d'impression connectés." }, { "en", "Manage connected printing agents." } });
         await CreateTextWithTranslationsAsync("agents.no_agents", "No active agents at the moment.", new() { { "fr", "Aucun agent actif pour le moment." }, { "en", "No active agents at the moment." } });

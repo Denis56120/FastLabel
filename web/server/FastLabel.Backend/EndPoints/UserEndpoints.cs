@@ -108,7 +108,7 @@ public static class UserEndpoints
             return Results.Ok(dto);
         });
 
-        adminGroup.MapPost("/", async (UserDto dto, AppDbContext db) =>
+        adminGroup.MapPost("/", async (UserDto dto, AppDbContext db, IPasswordHasher<User> passwordHasher) =>
         {
             if (!ValidationExtensions.TryValidateModel(dto, out var errorResult))
             {
@@ -124,14 +124,20 @@ public static class UserEndpoints
                 CreatedAt = DateTime.UtcNow
             };
 
+            if (!string.IsNullOrWhiteSpace(dto.Password))
+            {
+                user.PasswordHash = passwordHasher.HashPassword(user, dto.Password);
+            }
+
             db.Users.Add(user);
             await db.SaveChangesAsync();
 
             dto.Id = user.Id;
+            dto.Password = null; 
             return Results.Created($"/api/users/{user.Id}", dto);
         });
 
-        adminGroup.MapPut("/{id:int}", async (int id, UserDto updatedDto, AppDbContext db) =>
+        adminGroup.MapPut("/{id:int}", async (int id, UserDto updatedDto, AppDbContext db, IPasswordHasher<User> passwordHasher) =>
         {
             if (!ValidationExtensions.TryValidateModel(updatedDto, out var errorResult))
             {
@@ -144,6 +150,11 @@ public static class UserEndpoints
             user.Name = updatedDto.Name;
             user.Email = updatedDto.Email;
             user.IsAdmin = updatedDto.IsAdmin;
+
+            if (!string.IsNullOrWhiteSpace(updatedDto.Password))
+            {
+                user.PasswordHash = passwordHasher.HashPassword(user, updatedDto.Password);
+            }
 
             await db.SaveChangesAsync();
             return Results.Ok(user);

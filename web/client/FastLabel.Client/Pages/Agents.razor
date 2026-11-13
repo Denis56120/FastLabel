@@ -2,13 +2,14 @@
 @layout MainLayout
 @attribute [Authorize]
 @inherits TranslatableComponent
+@inject ApiClient ApiClient
 
 <CrudTablePage @ref="_crudTable"
                TItem="AgentDto" 
                TKey="int"
                ApiEndpoint="api/agents"
                IdSelector="a => a.Id"
-               CreateNewItem="@(() => new AgentDto())"
+               CreateNewItem="CreateNewAgent"
                Title="@Translation.GetString("agents.title")"
                Description="@Translation.GetString("agents.description")"
                EmptyMessage="@Translation.GetString("agents.no_agents")"
@@ -16,31 +17,37 @@
                EditModalTitle="@Translation.GetString("agents.edit_title")">
 
     <TableHeader>
-        <th>@Translation.GetString("agents.name")</th>
         <th>@Translation.GetString("agents.type")</th>
         <th>@Translation.GetString("agents.api_key")</th>
+        <th>@Translation.GetString("agents.created_at")</th>
         <th>@Translation.GetString("agents.last_seen")</th>
     </TableHeader>
 
     <RowTemplate Context="agent">
-        <td>@agent.Name</td>
         <td>@agent.AgentTypeName</td>
         <td><code>@agent.ApiKey</code></td>
+        <td>@agent.CreatedAt.ToLocalTime().ToString("g")</td>
         <td>@(agent.LastSeenAt?.ToLocalTime().ToString("g") ?? "-")</td>
     </RowTemplate>
 
     <FormFields Context="agent">
         <div class="mb-3">
-            <label class="form-label">@Translation.GetString("agents.name")</label>
-            <InputText class="form-control" @bind-Value="agent.Name" />
-        </div>
-        <div class="mb-3">
             <label class="form-label">@Translation.GetString("agents.type")</label>
-            <InputText class="form-control" @bind-Value="agent.AgentTypeName" />
+            <InputSelect class="form-select" @bind-Value="agent.AgentTypeId">
+                <option value="">@Translation.GetString("agents.select_type")</option>
+                @if (_agentTypes != null)
+                {
+                    @foreach (var type in _agentTypes)
+                    {
+                        <option value="@type.Id">@type.Name</option>
+                    }
+                }
+            </InputSelect>
         </div>
         <div class="mb-3">
             <label class="form-label">@Translation.GetString("agents.api_key")</label>
-            <InputText class="form-control" @bind-Value="agent.ApiKey" />
+            <InputText class="form-control bg-light font-monospace" @bind-Value="agent.ApiKey" readonly />
+            <small class="form-text text-muted">@Translation.GetString("agents.api_key_readonly_help")</small>
         </div>
     </FormFields>
 
@@ -48,10 +55,39 @@
 
 @code {
     private CrudTablePage<AgentDto, int>? _crudTable;
+    private List<AgentTypeDto> _agentTypes = new();
+
+    private AgentDto CreateNewAgent()
+    {
+        return new AgentDto
+        {
+            ApiKey = "fl_" + Guid.NewGuid().ToString("N")
+        };
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await LoadAgentTypesAsync();
+    }
+
+    private async Task LoadAgentTypesAsync()
+    {
+        try
+        {
+            _agentTypes = await ApiClient.GetFromJsonAsync<List<AgentTypeDto>>("api/agenttypes") ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur chargement AgentTypes: {ex.Message}");
+        }
+    }
 
     protected override async Task OnLanguageChangedAsync()
     {
         StateHasChanged();
+
+        await LoadAgentTypesAsync();
 
         if (_crudTable != null)
         {
