@@ -2,9 +2,28 @@ namespace FastLabel.Backend.Extensions;
 
 public static class ServiceExtensions
 {
-    public static IServiceCollection AddAppServices(this IServiceCollection services, IConfiguration configuration, string dbPath)
+    public static IServiceCollection AddEnvironmentConfiguration(this IServiceCollection services)
+    {
+        var projectDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../"));
+        var envPath = Path.Combine(projectDir, ".env");
+
+        if (!File.Exists(envPath))
+        {
+            envPath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
+        }
+
+        if (File.Exists(envPath))
+        {
+            Env.Load(envPath);
+        }
+
+        return services;
+    }
+    public static IServiceCollection AddAppServices(this IServiceCollection services, IConfiguration configuration)
     {
         var clientUrl = configuration["Url:ClientUrl"] ?? "https://fastlabel.com";
+        var connectionString = configuration.GetConnectionString("DefaultConnection")
+                       ?? $"Host=localhost;Port=5432;Database={configuration["DB_NAME"] ?? string.Empty};Username={configuration["DB_USER"] ?? string.Empty};Password={configuration["DB_PASSWORD"]}";
 
         services.AddResponseCompression(options =>
         {
@@ -32,10 +51,10 @@ public static class ServiceExtensions
         services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(options =>
             {
-                options.Cookie.Name = "authentification"; 
+                options.Cookie.Name = "authentification";
                 options.Cookie.HttpOnly = true;
                 options.Cookie.SameSite = SameSiteMode.Lax;
-                options.Cookie.SecurePolicy = Enum.TryParse<CookieSecurePolicy>(configuration["CookieSettings:SecurePolicy"], out var securePolicy) ? securePolicy : CookieSecurePolicy.SameAsRequest; 
+                options.Cookie.SecurePolicy = Enum.TryParse<CookieSecurePolicy>(configuration["CookieSettings:SecurePolicy"], out var securePolicy) ? securePolicy : CookieSecurePolicy.SameAsRequest;
 
                 options.Events.OnRedirectToLogin = context =>
                 {
@@ -55,7 +74,7 @@ public static class ServiceExtensions
         services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
         services.AddDbContext<AppDbContext>(options =>
-            options.UseSqlite($"Data Source={dbPath}"));
+            options.UseNpgsql(connectionString));
 
         return services;
     }

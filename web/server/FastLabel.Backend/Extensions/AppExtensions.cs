@@ -15,8 +15,11 @@ public static class AppExtensions
             
             DbInitializer.InitializeAsync(dbContext, configuration, passwordHasher).GetAwaiter().GetResult();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            var logger = services.GetRequiredService<ILogger<WebApplication>>();
+            logger.LogError(ex, "Erreur critique lors de l'initialisation de la DB.");
+            throw; // On stoppe pour lire l'erreur dans la console
         }
 
         app.UseResponseCompression();
