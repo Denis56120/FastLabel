@@ -10,9 +10,10 @@ public static class AppExtensions
         try
         {
             var dbContext = services.GetRequiredService<AppDbContext>();
+            var configuration = services.GetRequiredService<IConfiguration>();
             var passwordHasher = services.GetRequiredService<IPasswordHasher<User>>();
             
-            DbInitializer.InitializeAsync(dbContext, passwordHasher).GetAwaiter().GetResult();
+            DbInitializer.InitializeAsync(dbContext, configuration, passwordHasher).GetAwaiter().GetResult();
         }
         catch (Exception)
         {

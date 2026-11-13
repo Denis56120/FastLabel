@@ -108,7 +108,7 @@ public static class AuthEndpoints
             user.ResetTokenExpired = DateTime.UtcNow.AddHours(2);
             await db.SaveChangesAsync();
 
-            var clientUrl = configuration["ClientUrl"] ?? "http://localhost:5000";
+            var clientUrl = configuration["Url:ClientUrl"] ?? "https://fastlabel.com";
             var resetLink = $"{clientUrl}/reset-password?token={user.PasswordResetToken}";
 
             var languageCode = httpContext.GetRequestLanguage();
@@ -203,7 +203,7 @@ public static class AuthEndpoints
             db.Users.Add(user);
             await db.SaveChangesAsync();
 
-            var serverUrl = configuration["ServerUrl"] ?? "http://localhost:5001";
+            var serverUrl = configuration["Url:ServerUrl"] ?? "https://fastlabel.com";
             var verificationLink = $"{serverUrl}/api/auth/verify-email?token={user.EmailVerificationToken}";
 
             var languageCode = httpContext.GetRequestLanguage();
@@ -263,7 +263,7 @@ public static class AuthEndpoints
             user.EmailVerificationToken = null;
             await db.SaveChangesAsync();
 
-            var clientUrl = configuration["ClientUrl"] ?? "http://localhost:5000";
+            var clientUrl = configuration["Url:ClientUrl"] ?? "https://fastlabel.com";
             return Results.Redirect($"{clientUrl}/?activated=true");
         });
     }

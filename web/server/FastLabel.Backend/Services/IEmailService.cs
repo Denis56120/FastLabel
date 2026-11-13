@@ -11,17 +11,12 @@ public class EmailService(IConfiguration configuration) : IEmailService
 
     public async Task SendEmailAsync(string toEmail, string subject, string message)
     {
-        var smtpServer = _configuration["SmtpSettings:Server"];
-        var portStr = _configuration["SmtpSettings:Port"];
-        var senderName = _configuration["SmtpSettings:SenderName"] ?? "FastLabel";
-        var senderEmail = _configuration["SmtpSettings:SenderEmail"];
-        var username = _configuration["SmtpSettings:Username"];
-        var password = _configuration["SmtpSettings:Password"] ?? string.Empty;
-
-        if (string.IsNullOrEmpty(smtpServer) || string.IsNullOrEmpty(portStr) || string.IsNullOrEmpty(senderEmail))
-        {
-            throw new InvalidOperationException("Les paramètres SMTP ne sont pas correctement configurés dans appsettings.json.");
-        }
+        var smtpServer = _configuration["SMTP_SERVER"] ?? string.Empty;
+        var portStr = _configuration["SMTP_PORT"] ?? string.Empty;
+        var senderName = _configuration["SMTP_SENDER_NAME"];
+        var senderEmail = _configuration["SMTP_SENDER_EMAIL"] ?? string.Empty;
+        var username = _configuration["SMTP_USER_NAME"];
+        var password = _configuration["SMTP_PASSWORD"] ?? string.Empty;
 
         int port = int.Parse(portStr);
 
@@ -45,7 +40,7 @@ public class EmailService(IConfiguration configuration) : IEmailService
                 await smtp.AuthenticateAsync(username, password);
             }
 
-            await smtp.SendAsync(new SmtpSendRequest(email));
+            await smtp.SendAsync(new SendRequest(email));
         }
         catch (Exception ex)
         {

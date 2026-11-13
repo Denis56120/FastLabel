@@ -2,7 +2,7 @@ namespace FastLabel.Backend.Data;
 
 public static class DbInitializer
 {
-    public static async Task InitializeAsync(AppDbContext context, IPasswordHasher<User>? passwordHasher = null)
+    public static async Task InitializeAsync(AppDbContext context, IConfiguration configuration, IPasswordHasher<User>? passwordHasher = null)
     {
         await context.Database.EnsureCreatedAsync();
 
@@ -57,7 +57,7 @@ public static class DbInitializer
             return textEntity;
         }
 
-        // 1. Création préalable des Textes de description des langues (pour satisfaire la FK)
+        // 1. Création préalable des Textes de description des langues
         var descFr = await CreateTextWithTranslationsAsync("lang.fr.desc", "French language", new() { { "fr", "Langue française" }, { "en", "French language" } });
         var descEn = await CreateTextWithTranslationsAsync("lang.en.desc", "English language", new() { { "fr", "Langue anglaise" }, { "en", "English language" } });
 
@@ -198,25 +198,25 @@ public static class DbInitializer
 
             var adminUser = new User
             {
-                Name = "Denis Clouet",
-                Email = "denis.clouet@gmail.com",
+                Name = configuration["ADMIN_USER_NAME"] ?? string.Empty,
+                Email = configuration["ADMIN_USER_EMAIL"] ?? string.Empty,
                 BasicStatusId = statusId,
                 CreatedAt = DateTime.UtcNow,
                 IsAdmin = true
             };
-            adminUser.PasswordHash = passwordHasher.HashPassword(adminUser, "08071979");
+            adminUser.PasswordHash = passwordHasher.HashPassword(adminUser, configuration["ADMIN_USER_PASSWORD"] ?? string.Empty);
 
-            var georgeUser = new User
+            var regularUser = new User
             {
-                Name = "George Harrison",
-                Email = "georges.harrison4@gmail.com",
+                Name = configuration["TEST_USER_NAME"] ?? string.Empty,
+                Email = configuration["TEST_USER_EMAIL"] ?? string.Empty,
                 BasicStatusId = statusId,
                 CreatedAt = DateTime.UtcNow,
                 IsAdmin = false
             };
-            georgeUser.PasswordHash = passwordHasher.HashPassword(georgeUser, "08071979");
+            regularUser.PasswordHash = passwordHasher.HashPassword(regularUser, configuration["TEST_USER_PASSWORD"] ?? string.Empty);
 
-            context.Users.AddRange(adminUser, georgeUser);
+            context.Users.AddRange(adminUser, regularUser);
             await context.SaveChangesAsync();
         }
 

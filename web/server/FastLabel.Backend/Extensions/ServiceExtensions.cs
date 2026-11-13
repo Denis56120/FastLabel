@@ -4,7 +4,7 @@ public static class ServiceExtensions
 {
     public static IServiceCollection AddAppServices(this IServiceCollection services, IConfiguration configuration, string dbPath)
     {
-        var clientUrl = configuration["ClientUrl"] ?? "http://localhost:5000";
+        var clientUrl = configuration["Url:ClientUrl"] ?? "https://fastlabel.com";
 
         services.AddResponseCompression(options =>
         {
@@ -35,7 +35,7 @@ public static class ServiceExtensions
                 options.Cookie.Name = "authentification"; 
                 options.Cookie.HttpOnly = true;
                 options.Cookie.SameSite = SameSiteMode.Lax;
-                options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; 
+                options.Cookie.SecurePolicy = Enum.TryParse<CookieSecurePolicy>(configuration["CookieSettings:SecurePolicy"], out var securePolicy) ? securePolicy : CookieSecurePolicy.SameAsRequest; 
 
                 options.Events.OnRedirectToLogin = context =>
                 {

@@ -1,5 +1,5 @@
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
-var serverAddress = builder.Configuration["ServerUrl"] ?? "http://localhost:5001";
+var serverAddress = builder.Configuration["Url:ServerUrl"] ?? "https://fastlabel.com";
 
 builder.RootComponents.Add<App>("#app");
 
