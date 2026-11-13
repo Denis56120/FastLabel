@@ -221,7 +221,6 @@ public static class DbInitializer
         }
 
         // 11. Textes UI
-        await CreateTextWithTranslationsAsync("app.loading", "Loading...", new() { { "fr", "Chargement..." }, { "en", "Loading..." } });
         await CreateTextWithTranslationsAsync("app.error.unknown", "Une erreur inattendue s'est produite.", new() { { "fr", "Une erreur inattendue s'est produite." }, { "en", "An unexpected error occurred." } });
         await CreateTextWithTranslationsAsync("app.success.saved", "Saved successfully.", new() { { "fr", "Enregistré avec succès." }, { "en", "Saved successfully." } });
         await CreateTextWithTranslationsAsync("app.success.deleted", "Deleted successfully.", new() { { "fr", "Supprimé avec succès." }, { "en", "Deleted successfully." } });
@@ -420,7 +419,6 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("print.error.timeout", "Timeout: The local agent did not respond", new() { { "fr", "Délai dépassé : L'agent local n'a pas répondu" }, { "en", "Timeout: The local agent did not respond" } });
 
         await CreateTextWithTranslationsAsync("auth.error.account_inactive", "Account is inactive", new() { { "fr", "Votre compte est inactif" }, { "en", "Account is inactive" } });
-        await CreateTextWithTranslationsAsync("auth.error.missing_email", "Email is required", new() { { "fr", "L'adresse e-mail est requise" }, { "en", "Email is required" } });
         await CreateTextWithTranslationsAsync("auth.error.invalid_token", "Invalid token", new() { { "fr", "Jeton invalide" }, { "en", "Invalid token" } });
 
         await CreateTextWithTranslationsAsync("agent.error.not_found", "Agent not found", new() { { "fr", "Agent introuvable" }, { "en", "Agent not found" } });
