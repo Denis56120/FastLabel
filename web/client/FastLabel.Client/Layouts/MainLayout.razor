@@ -14,8 +14,12 @@
 else
 {
     <div class="app-container d-flex flex-column vh-100">
-        <header class="navbar navbar-dark bg-dark px-3 shadow-sm d-flex justify-content-between align-items-center">
+        <header class="navbar navbar-dark bg-dark px-3 shadow-sm d-flex justify-content-between align-items-center" style="z-index: 1050;">
             <div class="d-flex align-items-center gap-3">
+                <!-- Bouton hamburger visible uniquement sur mobile -->
+                <button class="btn btn-outline-secondary btn-sm d-md-none text-white border-secondary" type="button" @onclick="ToggleSidebar">
+                    <i class="bi bi-list fs-5"></i>
+                </button>
                 <NavLink class="navbar-brand fw-bold text-white text-decoration-none" href="/dashboard">
                     FastLabel
                 </NavLink>
@@ -58,33 +62,39 @@ else
             </div>
         </header>
 
-        <div class="d-flex flex-grow-1 overflow-hidden">
-            <nav class="bg-light border-end p-3 d-flex flex-column" style="width: 260px;">
+        <div class="d-flex flex-grow-1 overflow-hidden position-relative">
+            <!-- Overlay sombre sur mobile quand la sidebar est ouverte -->
+            @if (_isSidebarOpen)
+            {
+                <div class="modal-backdrop fade show d-md-none" @onclick="ToggleSidebar" style="z-index: 1039;"></div>
+            }
+
+            <nav class="app-sidebar bg-light border-end p-3 d-flex flex-column @(_isSidebarOpen ? "show" : "")">
                 <ul class="nav nav-pills flex-column gap-1">
                     <li class="nav-item">
-                        <NavLink class="nav-link text-dark" href="/templates" Match="NavLinkMatch.Prefix">
+                        <NavLink class="nav-link text-dark" href="/templates" Match="NavLinkMatch.Prefix" @onclick="CloseSidebarOnMobile">
                             <i class="bi bi-file-earmark-text me-2"></i> @Translation.GetString("nav.templates")
                         </NavLink>
                     </li>
                     <li class="nav-item">
-                        <NavLink class="nav-link text-dark" href="/printers" Match="NavLinkMatch.Prefix">
+                        <NavLink class="nav-link text-dark" href="/printers" Match="NavLinkMatch.Prefix" @onclick="CloseSidebarOnMobile">
                             <i class="bi bi-printer me-2"></i> @Translation.GetString("nav.printers")
                         </NavLink>
                     </li>
                     <li class="nav-item">
-                        <NavLink class="nav-link text-dark" href="/agents" Match="NavLinkMatch.Prefix">
+                        <NavLink class="nav-link text-dark" href="/agents" Match="NavLinkMatch.Prefix" @onclick="CloseSidebarOnMobile">
                             <i class="bi bi-pc-display me-2"></i> @Translation.GetString("nav.agents")
                         </NavLink>
                     </li>
                     <AuthorizeView Roles="Admin">
                         <li class="nav-item">
-                            <NavLink class="nav-link text-dark" href="/users" Match="NavLinkMatch.Prefix">
+                            <NavLink class="nav-link text-dark" href="/users" Match="NavLinkMatch.Prefix" @onclick="CloseSidebarOnMobile">
                                 <i class="bi bi-people me-2"></i> @Translation.GetString("nav.users")
                             </NavLink>
                         </li>
                     </AuthorizeView>
                     <li class="nav-item">
-                        <NavLink class="nav-link text-dark" href="/history" Match="NavLinkMatch.Prefix">
+                        <NavLink class="nav-link text-dark" href="/history" Match="NavLinkMatch.Prefix" @onclick="CloseSidebarOnMobile">
                             <i class="bi bi-clock-history me-2"></i> @Translation.GetString("nav.history")
                         </NavLink>
                     </li>
@@ -103,6 +113,7 @@ else
 @code {
     private bool _isLoaded = false;
     private bool _isDropdownOpen = false;
+    private bool _isSidebarOpen = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -137,6 +148,16 @@ else
     }
 
     private void ToggleDropdown() => _isDropdownOpen = !_isDropdownOpen;
+
+    private void ToggleSidebar() => _isSidebarOpen = !_isSidebarOpen;
+
+    private void CloseSidebarOnMobile()
+    {
+        if (_isSidebarOpen)
+        {
+            _isSidebarOpen = false;
+        }
+    }
 
     private async Task ChangeLanguage(string languageCode)
     {

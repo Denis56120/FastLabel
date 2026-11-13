@@ -9,6 +9,30 @@ main {
     flex: 1;
 }
 
+.app-sidebar {
+    width: 260px;
+    position: fixed;
+    top: 56px;
+    bottom: 0;
+    left: -260px;
+    transition: left 0.3s ease-in-out;
+    z-index: 1040;
+    background-color: #f8f9fa;
+}
+
+.app-sidebar.show {
+    left: 0;
+}
+
+@media (min-width: 768px) {
+    .app-sidebar {
+        position: relative;
+        top: 0;
+        left: 0 !important;
+        z-index: auto;
+    }
+}
+
 #blazor-error-ui {
     color-scheme: light only;
     background: lightyellow;
