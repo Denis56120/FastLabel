@@ -6,8 +6,13 @@
 @inject ToastService ToastService
 @inject NavigationManager Navigation
 
-<div class="container-fluid">
-    <h3 class="mb-3">@Translation.GetString("dashboard.title")</h3>
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2 class="fw-bold">@Translation.GetString("dashboard.title")</h2>
+            <p class="text-muted">@Translation.GetString("dashboard.welcome_subtitle")</p>
+        </div>
+    </div>
 
     @if (isLoading)
     {
@@ -19,18 +24,125 @@
     }
     else
     {
-        //
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="flex-shrink-0 bg-primary bg-opacity-10 p-3 rounded text-primary">
+                                <i class="bi bi-person-badge fs-4"></i>
+                            </div>
+                            <div class="ms-3">
+                                <h6 class="text-muted mb-1">@Translation.GetString("dashboard.profile_status")</h6>
+                                <h5 class="mb-0 fw-semibold">
+                                    @(currentUser?.IsAdmin == true ? Translation.GetString("dashboard.role.admin") : Translation.GetString("dashboard.role.user"))
+                                </h5>
+                            </div>
+                        </div>
+                        <span class="badge bg-success bg-opacity-10 text-success">
+                            @(string.IsNullOrEmpty(currentUser?.BasicStatusName) ? Translation.GetString("dashboard.status.active") : currentUser.BasicStatusName)
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="flex-shrink-0 bg-success bg-opacity-10 p-3 rounded text-success">
+                                <i class="bi bi-credit-card fs-4"></i>
+                            </div>
+                            <div class="ms-3">
+                                <h6 class="text-muted mb-1">@Translation.GetString("dashboard.current_subscription")</h6>
+                                <h5 class="mb-0 fw-semibold">
+                                    @(currentSubscription != null ? Translation.GetString("dashboard.subscription.active") : Translation.GetString("dashboard.subscription.none"))
+                                </h5>
+                            </div>
+                        </div>
+                        @if (currentSubscription != null)
+                        {
+                            <small class="text-muted d-block">
+                                @Translation.GetString("dashboard.subscription.period_prefix") @currentSubscription.SubscriptionPeriod @Translation.GetString("dashboard.subscription.period_suffix")
+                            </small>
+                        }
+                        else
+                        {
+                            <a href="/account" class="btn btn-sm btn-outline-primary mt-2">@Translation.GetString("dashboard.subscription.subscribe")</a>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card shadow-sm border-0 h-100">
+                    <div class="card-body d-flex flex-column justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0 bg-warning bg-opacity-10 p-3 rounded text-warning">
+                                <i class="bi bi-shield-lock fs-4"></i>
+                            </div>
+                            <div class="ms-3">
+                                <h6 class="text-muted mb-1">@Translation.GetString("dashboard.security")</h6>
+                                <h5 class="mb-0 fw-semibold">@Translation.GetString("dashboard.security_title")</h5>
+                            </div>
+                        </div>
+                        <div class="mt-3 text-end">
+                            <button class="btn btn-sm btn-outline-secondary w-100" @onclick="NavigateToAccount">
+                                @Translation.GetString("dashboard.manage_account")
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm border-0">
+                    <div class="card-body">
+                        <h4 class="card-title mb-4">@Translation.GetString("dashboard.account_info")</h4>
+                        @if (currentUser != null)
+                        {
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                    <span class="text-muted">@Translation.GetString("dashboard.field.name")</span>
+                                    <span class="fw-medium">@currentUser.Name</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                    <span class="text-muted">@Translation.GetString("dashboard.field.email")</span>
+                                    <span class="fw-medium">@currentUser.Email</span>
+                                </li>
+                                <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                    <span class="text-muted">@Translation.GetString("dashboard.field.member_since")</span>
+                                    <span class="fw-medium">@currentUser.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</span>
+                                </li>
+                            </ul>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
     }
 </div>
 
 @code {
     private bool isLoading = true;
+    private UserDto? currentUser;
+    private SubscriptionDto? currentSubscription;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
             isLoading = true;
+
+            var userTask = ApiClient.GetFromJsonAsync<UserDto>("api/users/me");
+            var subscriptionTask = ApiClient.GetFromJsonAsync<SubscriptionDto>("api/account/subscriptions/current");
+
+            await Task.WhenAll(userTask, subscriptionTask);
+
+            currentUser = userTask.Result;
+            currentSubscription = subscriptionTask.Result;
         }
         catch (Exception)
         {
@@ -40,5 +152,10 @@
         {
             isLoading = false;
         }
+    }
+
+    private void NavigateToAccount()
+    {
+        Navigation.NavigateTo("/account");
     }
 }

@@ -335,6 +335,24 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("account.subscription.date", "Created At", new() { { "fr", "Créé le" }, { "en", "Created At" } });
 
         await CreateTextWithTranslationsAsync("dashboard.title", "Dashboard", new() { { "fr", "Tableau de bord" }, { "en", "Dashboard" } });
+        await CreateTextWithTranslationsAsync("dashboard.welcome_subtitle", "Welcome to your FastLabel management area.", new() { { "fr", "Bienvenue sur votre espace de gestion FastLabel." }, { "en", "Welcome to your FastLabel management area." } });
+        await CreateTextWithTranslationsAsync("dashboard.profile_status", "Profile Status", new() { { "fr", "Statut du profil" }, { "en", "Profile Status" } });
+        await CreateTextWithTranslationsAsync("dashboard.current_subscription", "Current Subscription", new() { { "fr", "Abonnement actuel" }, { "en", "Current Subscription" } });
+        await CreateTextWithTranslationsAsync("dashboard.security", "Security & Account", new() { { "fr", "Sécurité & Compte" }, { "en", "Security & Account" } });
+        await CreateTextWithTranslationsAsync("dashboard.role.admin", "Administrator", new() { { "fr", "Administrateur" }, { "en", "Administrator" } });
+        await CreateTextWithTranslationsAsync("dashboard.role.user", "User", new() { { "fr", "Utilisateur" }, { "en", "User" } });
+        await CreateTextWithTranslationsAsync("dashboard.status.active", "Active", new() { { "fr", "Actif" }, { "en", "Active" } });
+        await CreateTextWithTranslationsAsync("dashboard.subscription.active", "Active Subscription", new() { { "fr", "Abonnement Actif" }, { "en", "Active Subscription" } });
+        await CreateTextWithTranslationsAsync("dashboard.subscription.none", "No Subscription", new() { { "fr", "Aucun abonnement" }, { "en", "No Subscription" } });
+        await CreateTextWithTranslationsAsync("dashboard.subscription.period_prefix", "Period:", new() { { "fr", "Période :" }, { "en", "Period:" } });
+        await CreateTextWithTranslationsAsync("dashboard.subscription.period_suffix", "months (Stripe Linked)", new() { { "fr", "mois (Lié Stripe)" }, { "en", "months (Stripe Linked)" } });
+        await CreateTextWithTranslationsAsync("dashboard.subscription.subscribe", "Subscribe to a plan", new() { { "fr", "Souscrire à une offre" }, { "en", "Subscribe to a plan" } });
+        await CreateTextWithTranslationsAsync("dashboard.security_title", "Security & Profile", new() { { "fr", "Sécurité & Profil" }, { "en", "Security & Profile" } });
+        await CreateTextWithTranslationsAsync("dashboard.manage_account", "Manage account", new() { { "fr", "Gérer mon compte" }, { "en", "Manage account" } });
+        await CreateTextWithTranslationsAsync("dashboard.account_info", "Account Information", new() { { "fr", "Informations du compte" }, { "en", "Account Information" } });
+        await CreateTextWithTranslationsAsync("dashboard.field.name", "Name", new() { { "fr", "Nom" }, { "en", "Name" } });
+        await CreateTextWithTranslationsAsync("dashboard.field.email", "Email", new() { { "fr", "Email" }, { "en", "Email" } });
+        await CreateTextWithTranslationsAsync("dashboard.field.member_since", "Member since", new() { { "fr", "Membre depuis" }, { "en", "Member since" } });
 
         await CreateTextWithTranslationsAsync("error.not_found_title", "Page not found", new() { { "fr", "Page non trouvée" }, { "en", "Page not found" } });
         await CreateTextWithTranslationsAsync("error.not_found_message", "Sorry, the page you are looking for does not exist.", new() { { "fr", "Désolé, la page que vous recherchez n'existe pas." }, { "en", "Sorry, the page you are looking for does not exist." } });
