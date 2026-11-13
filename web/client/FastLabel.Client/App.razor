@@ -1,1 +1,40 @@
-﻿<Routes />
+﻿@inject NavigationManager Navigation
+@inject TranslationService TranslationService
+
+<HeadOutlet />
+
+<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(Program).Assembly">
+        <Found Context="routeData">
+            <AuthorizeRouteView RouteData="@routeData">
+                <NotAuthorized>
+                    <LayoutView Layout="@typeof(PublicLayout)">
+                        <div class="container mt-5 text-center">
+                            <h3>@TranslationService["auth.error.unauthorized_title"]</h3>
+                            <p>@TranslationService["auth.error.unauthorized_message"]</p>
+                            <button class="btn btn-primary mt-3" @onclick="NavigateToLogin">
+                                @TranslationService["auth.login_title"]
+                            </button>
+                        </div>
+                    </LayoutView>
+                </NotAuthorized>
+            </AuthorizeRouteView>
+        </Found>
+        <NotFound>
+            <PageTitle>@TranslationService["error.not_found_title"]</PageTitle>
+            <LayoutView Layout="@typeof(PublicLayout)">
+                <div class="container mt-5 text-center">
+                    <h3>@TranslationService["error.not_found_title"]</h3>
+                    <p>@TranslationService["error.not_found_message"]</p>
+                </div>
+            </LayoutView>
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>
+
+@code {
+    private void NavigateToLogin()
+    {
+        Navigation.NavigateTo("/");
+    }
+}
