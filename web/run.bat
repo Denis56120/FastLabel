@@ -2,9 +2,9 @@
 title Lancement FastLabel - Serveur & Client
 
 echo Lancement du Serveur...
-start "FastLabel - Serveur" cmd /k "dotnet run --project server/FastLabel.Backend/FastLabel.Backend.csproj"
+start "FastLabel - Serveur" cmd /k "cd /d %~dp0server\FastLabel.Backend && dotnet run --launch-profile http"
 
 echo Lancement du Client...
-start "FastLabel - Client" cmd /k "dotnet watch --project client/FastLabel.Client/FastLabel.Client.csproj"
+start "FastLabel - Client" cmd /k "cd /d %~dp0client\FastLabel.Client && dotnet watch --launch-profile http"
 
 pause

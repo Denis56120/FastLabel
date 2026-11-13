@@ -2,6 +2,7 @@
 @layout PublicLayout
 @inherits TranslatableComponent
 @inject IHttpClientFactory ClientFactory
+@inject ToastService ToastService
 @inject NavigationManager Navigation
 @inject CookieService CookieService
 
@@ -10,13 +11,6 @@
         <div class="card shadow border-0">
             <div class="card-body p-4">
                 <h3 class="card-title text-center mb-4">@Translation.GetString("auth.register_title")</h3>
-
-                @if (!string.IsNullOrEmpty(_errorMessage))
-                {
-                    <div class="alert alert-danger" role="alert">
-                        @_errorMessage
-                    </div>
-                }
 
                 <EditForm Model="_registerModel" OnValidSubmit="HandleRegister">
                     <DataAnnotationsValidator />
@@ -48,8 +42,17 @@
                     </div>
 
                     <div class="d-grid mb-3">
-                        <button type="submit"
-                                class="btn btn-success">@Translation.GetString("auth.register_button")</button>
+                        <button type="submit" class="btn btn-success" disabled="@_isLoading">
+                            @if (_isLoading)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                <span>@Translation.GetString("auth.submitting")</span>
+                            }
+                            else
+                            {
+                                <span>@Translation.GetString("auth.register_button")</span>
+                            }
+                        </button>
                     </div>
 
                     <div class="text-center">
@@ -61,11 +64,11 @@
     </div>
 </div>
 
-
 @code {
     private RegisterDto _registerModel = new();
-    private string? _errorMessage;
+    private bool _isLoading = false;
     private bool _showPassword = false;
+
     private string PasswordInputType => _showPassword ? "text" : "password";
     private string PasswordIconClass => _showPassword ? "bi-eye-slash" : "bi-eye";
 
@@ -76,7 +79,7 @@
 
     private async Task HandleRegister()
     {
-        _errorMessage = null;
+        _isLoading = true;
 
         try
         {
@@ -93,21 +96,24 @@
                 {
                 }
 
+                ToastService.ShowSuccess("auth.success.registered");
                 Navigation.NavigateTo("/");
             }
             else
             {
                 var errorContent = await response.Content.ReadFromJsonAsync<ErrorResponseDto>();
-                string errorKey = !string.IsNullOrEmpty(errorContent?.Message) ? errorContent.Message :
-"auth.error.registration_failed";
-                _errorMessage = Translation.GetString(errorKey);
+                string errorKey = !string.IsNullOrEmpty(errorContent?.Message) ? errorContent.Message : "auth.error.registration_failed";
+                ToastService.ShowError(errorKey);
             }
         }
         catch (Exception)
         {
-            _errorMessage = Translation.GetString("auth.error.server_unreachable");
+            ToastService.ShowError("auth.error.server_unreachable");
         }
-
-        StateHasChanged();
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
     }
 }

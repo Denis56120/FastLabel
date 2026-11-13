@@ -2,7 +2,8 @@
 @layout MainLayout
 @attribute [Authorize]
 @inherits TranslatableComponent
-@inject IHttpClientFactory ClientFactory
+@inject ApiClient ApiClient
+@inject ToastService ToastService
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
 
@@ -57,26 +58,27 @@
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
             var user = authState.User;
 
-            var emailClaim = user.FindFirst(ClaimTypes.Email);
+            var emailClaim = user.FindFirst(ClaimTypes.Email) ?? user.FindFirst("email");
             if (emailClaim != null)
             {
                 userEmail = emailClaim.Value;
             }
 
-            var roleClaim = user.FindFirst(ClaimTypes.Role);
+            var roleClaim = user.FindFirst(ClaimTypes.Role) ?? user.FindFirst("role");
             if (roleClaim != null)
             {
                 userRole = roleClaim.Value;
             }
 
-            var nameClaim = user.FindFirst(ClaimTypes.Name);
+            var nameClaim = user.FindFirst(ClaimTypes.Name) ?? user.FindFirst("name") ?? user.FindFirst(ClaimTypes.GivenName);
             if (nameClaim != null)
             {
                 userName = nameClaim.Value;
             }
         }
-        catch (HttpRequestException ex) when (ex.StatusCode == HttpStatusCode.Unauthorized || ex.StatusCode == HttpStatusCode.Forbidden)
+        catch (Exception)
         {
+            ToastService.ShowError("app.error.unknown");
             Navigation.NavigateTo("/");
         }
         finally

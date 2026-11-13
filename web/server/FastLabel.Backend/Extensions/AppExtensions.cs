@@ -19,7 +19,7 @@ public static class AppExtensions
         {
             var logger = services.GetRequiredService<ILogger<WebApplication>>();
             logger.LogError(ex, "Erreur critique lors de l'initialisation de la DB.");
-            throw; // On stoppe pour lire l'erreur dans la console
+            throw; 
         }
 
         app.UseResponseCompression();

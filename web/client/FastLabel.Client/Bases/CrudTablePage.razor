@@ -1,7 +1,8 @@
 @typeparam TItem where TItem : class, new()
 @typeparam TKey where TKey : notnull
 @inherits TranslatableComponent
-@inject IHttpClientFactory ClientFactory
+@inject ApiClient ApiClient
+@inject ToastService ToastService
 
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -102,6 +103,7 @@
     [Parameter, EditorRequired] public RenderFragment TableHeader { get; set; } = default!;
     [Parameter, EditorRequired] public RenderFragment<TItem> RowTemplate { get; set; } = default!;
     [Parameter, EditorRequired] public RenderFragment<TItem> FormFields { get; set; } = default!;
+    
     private List<TItem> _items = new();
     private HashSet<TKey> _selectedIds = new();
     private bool _isLoading = true;
@@ -120,12 +122,12 @@
         _selectedIds.Clear();
         try
         {
-            var client = ClientFactory.CreateClient("AuthClient");
-            _items = await client.GetFromJsonAsync<List<TItem>>(ApiEndpoint) ?? new();
+            _items = await ApiClient.GetFromJsonAsync<List<TItem>>(ApiEndpoint) ?? new();
         }
         catch
         {
             _items = new();
+            ToastService.ShowError("app.error.unknown");
         }
         finally
         {
@@ -179,27 +181,64 @@
 
     private async Task SaveItemAsync()
     {
-        var client = ClientFactory.CreateClient("AuthClient");
-        HttpResponseMessage response = _isEditMode
-            ? await client.PutAsJsonAsync($"{ApiEndpoint}/{IdSelector(_currentItem)}", _currentItem)
-            : await client.PostAsJsonAsync(ApiEndpoint, _currentItem);
+        if (_editContext != null && !_editContext.Validate())
+        {
+            return;
+        }
 
-        if (response.IsSuccessStatusCode)
+        bool isSuccess;
+        string? errorKey;
+
+        if (_isEditMode)
+        {
+            var id = IdSelector(_currentItem);
+            (isSuccess, errorKey) = await ApiClient.PutAsync($"{ApiEndpoint}/{id}", _currentItem);
+        }
+        else
+        {
+            (isSuccess, errorKey) = await ApiClient.PostAsync(ApiEndpoint, _currentItem);
+        }
+
+        if (isSuccess)
         {
             _isModalOpen = false;
+            ToastService.ShowSuccess("app.success.saved");
             await LoadDataAsync();
+        }
+        else
+        {
+            ToastService.ShowError(errorKey ?? "app.error.unknown");
         }
     }
 
     private async Task DeleteSelectedAsync()
     {
         if (!_selectedIds.Any()) return;
-        var client = ClientFactory.CreateClient("AuthClient");
-        var response = await client.PostAsJsonAsync($"{ApiEndpoint}/delete-batch", _selectedIds.ToList());
 
-        if (response.IsSuccessStatusCode)
+        var endpoint = _selectedIds.Count == 1 
+            ? $"{ApiEndpoint}/{_selectedIds.First()}" 
+            : $"{ApiEndpoint}/delete-batch";
+
+        bool isSuccess;
+        string? errorKey;
+
+        if (_selectedIds.Count == 1)
         {
+            (isSuccess, errorKey) = await ApiClient.DeleteAsync($"{ApiEndpoint}/{_selectedIds.First()}");
+        }
+        else
+        {
+            (isSuccess, errorKey) = await ApiClient.PostAsync($"{ApiEndpoint}/delete-batch", _selectedIds.ToList());
+        }
+
+        if (isSuccess)
+        {
+            ToastService.ShowSuccess("app.success.deleted");
             await LoadDataAsync();
+        }
+        else
+        {
+            ToastService.ShowError(errorKey ?? "app.error.unknown");
         }
     }
 }

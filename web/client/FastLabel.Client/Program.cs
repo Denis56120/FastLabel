@@ -22,6 +22,13 @@ builder.Services.AddSingleton<CookieService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddSingleton<TranslationService>();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
+builder.Services.AddSingleton<ToastService>();
+builder.Services.AddScoped(sp => 
+{
+    var clientFactory = sp.GetRequiredService<IHttpClientFactory>();
+    var httpClient = clientFactory.CreateClient("AuthClient");
+    return new ApiClient(httpClient);
+});
 
 var host = builder.Build();
 

@@ -29,7 +29,7 @@
         <td>@item.Quantity</td>
         <td>
             <span class="badge bg-@(string.IsNullOrEmpty(item.ResponseMessage) ? "success" : "warning")">
-                @(string.IsNullOrEmpty(item.ResponseMessage) ? "Success" : "Error")
+                @(string.IsNullOrEmpty(item.ResponseMessage) ? Translation.GetString("history.status.success") : Translation.GetString("history.status.error"))
             </span>
         </td>
         <td>@(item.ProcessedAt?.ToLocalTime().ToString("g") ?? item.CreatedAt.ToLocalTime().ToString("g"))</td>

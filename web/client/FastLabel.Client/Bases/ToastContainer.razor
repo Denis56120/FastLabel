@@ -1,0 +1,54 @@
+@inject ToastService ToastService
+@inject TranslationService TranslationService
+@implements IDisposable
+
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1100;">
+    @foreach (var toast in toasts)
+    {
+        <div class="toast show @(toast.Type == ToastType.Error ? "bg-danger text-white" : "bg-success text-white") mb-2 shadow" role="alert">
+            <div class="toast-body d-flex justify-content-between align-items-center">
+                <span>@TranslationService.GetString(toast.MessageKey)</span>
+                <button type="button" class="btn-close btn-close-white ms-2" @click="() => RemoveToast(toast)"></button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private readonly List<ToastMessage> toasts = [];
+
+    protected override void OnInitialized()
+    {
+        ToastService.OnShow += ShowToast;
+    }
+
+    private void ShowToast(string messageKey, ToastType type)
+    {
+        var toast = new ToastMessage { MessageKey = messageKey, Type = type };
+        toasts.Add(toast);
+        StateHasChanged();
+
+        _ = Task.Delay(4000).ContinueWith(_ =>
+        {
+            toasts.Remove(toast);
+            InvokeAsync(StateHasChanged);
+        });
+    }
+
+    private void RemoveToast(ToastMessage toast)
+    {
+        toasts.Remove(toast);
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        ToastService.OnShow -= ShowToast;
+    }
+
+    private class ToastMessage
+    {
+        public string MessageKey { get; set; } = string.Empty;
+        public ToastType Type { get; set; }
+    }
+}

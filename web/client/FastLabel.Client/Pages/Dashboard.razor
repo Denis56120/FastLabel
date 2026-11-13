@@ -2,7 +2,8 @@
 @layout MainLayout
 @attribute [Authorize]
 @inherits TranslatableComponent
-@inject IHttpClientFactory ClientFactory
+@inject ApiClient ApiClient
+@inject ToastService ToastService
 @inject NavigationManager Navigation
 
 <div class="container-fluid">
@@ -31,8 +32,9 @@
         {
             isLoading = true;
         }
-        catch(Exception)
+        catch (Exception)
         {
+            ToastService.ShowError("app.error.unknown");
         }
         finally
         {

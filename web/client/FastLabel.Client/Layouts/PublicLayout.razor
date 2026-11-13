@@ -12,7 +12,7 @@
 else
 {
     <PageTitle>FastLabel - @GetSafePageTitle()</PageTitle>
-    <div class="d-flex flex-column min-vh-100 bg-light">
+    <div class="d-flex flex-column min-vh-100 bg-light position-relative">
         <header class="navbar navbar-expand-lg navbar-light bg-white border-bottom px-4 shadow-sm">
             <div class="container-fluid">
                 <a class="navbar-brand fw-bold text-primary" href="/">FastLabel</a>
@@ -50,6 +50,8 @@ else
                 @Body
             </div>
         </div>
+
+        <ToastContainer />
     </div>
 }
 

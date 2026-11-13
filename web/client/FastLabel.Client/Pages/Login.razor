@@ -1,44 +1,16 @@
 @page "/"
 @layout PublicLayout
 @inherits TranslatableComponent
-@inject IHttpClientFactory ClientFactory
 @inject NavigationManager Navigation
 @inject AuthService AuthService
 @inject CookieService CookieService
+@inject ToastService ToastService
 
 <div class="d-flex justify-content-center align-items-center w-100">
     <div style="width: 100%; max-width: 420px;">
         <div class="card shadow border-0">
             <div class="card-body p-4">
                 <h3 class="card-title text-center mb-4">@Translation.GetString("auth.login_title")</h3>
-
-                @if (_isActivated)
-                {
-                    <div class="alert alert-success" role="alert">
-                        @Translation.GetString("auth.success.account_activated")
-                    </div>
-                }
-
-                @if (_isPasswordResetRequested)
-                {
-                    <div class="alert alert-success" role="alert">
-                        @Translation.GetString("auth.forgot_success_message")
-                    </div>
-                }
-
-                @if (_isPasswordUpdated)
-                {
-                    <div class="alert alert-success" role="alert">
-                        @Translation.GetString("auth.success.password_reset")
-                    </div>
-                }
-
-                @if (!string.IsNullOrEmpty(_errorMessage))
-                {
-                    <div class="alert alert-danger" role="alert">
-                        @_errorMessage
-                    </div>
-                }
 
                 <EditForm Model="_loginModel" OnValidSubmit="HandleLogin">
                     <DataAnnotationsValidator />
@@ -62,7 +34,17 @@
                     </div>
 
                     <div class="d-grid mb-3">
-                        <button type="submit" class="btn btn-primary">@Translation.GetString("auth.submit")</button>
+                        <button type="submit" class="btn btn-primary" disabled="@_isLoading">
+                            @if (_isLoading)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                <span>@Translation.GetString("auth.submitting")</span>
+                            }
+                            else
+                            {
+                                <span>@Translation.GetString("auth.submit")</span>
+                            }
+                        </button>
                     </div>
 
                     <div class="d-flex justify-content-between text-center">
@@ -77,11 +59,8 @@
 
 @code {
     private LoginDto _loginModel = new();
-    private string? _errorMessage;
+    private bool _isLoading = false;
     private bool _showPassword = false;
-    private bool _isActivated = false;
-    private bool _isPasswordResetRequested = false;
-    private bool _isPasswordUpdated = false;
 
     [SupplyParameterFromQuery(Name = "activated")]
     public bool? ActivatedParam { get; set; }
@@ -97,9 +76,19 @@
 
     protected override void OnParametersSet()
     {
-        _isActivated = ActivatedParam ?? false;
-        _isPasswordResetRequested = PwResetParam ?? false;
-        _isPasswordUpdated = PwUpdatedParam ?? false;
+        // Déclenchement des toasts de succès en fonction des query strings reçues après redirection
+        if (ActivatedParam == true)
+        {
+            ToastService.ShowSuccess("auth.success.account_activated");
+        }
+        if (PwResetParam == true)
+        {
+            ToastService.ShowSuccess("auth.forgot_success_message");
+        }
+        if (PwUpdatedParam == true)
+        {
+            ToastService.ShowSuccess("auth.success.password_reset");
+        }
     }
 
     private void TogglePasswordVisibility()
@@ -109,14 +98,10 @@
 
     private async Task HandleLogin()
     {
-        _errorMessage = null;
-        _isActivated = false;
-        _isPasswordResetRequested = false;
-        _isPasswordUpdated = false;
+        _isLoading = true;
 
         try
         {
-            // On délègue tout à l'AuthService que tu viens de montrer
             var success = await AuthService.LoginAsync(_loginModel);
 
             if (success)
@@ -130,20 +115,22 @@
                     // Ignorer les erreurs non bloquantes de cookie de langue
                 }
 
-                // Redirection vers le dashboard, le state provider ayant été notifié
+                ToastService.ShowSuccess("auth.success.login");
                 Navigation.NavigateTo("/dashboard");
             }
             else
             {
-                // Si le login échoue (ex: 400 Bad Request ou 401 Unauthorized géré par AuthService)
-                _errorMessage = Translation.GetString("auth.error.invalid_credentials");
+                ToastService.ShowError("auth.error.invalid_credentials");
             }
         }
         catch (Exception)
         {
-            _errorMessage = Translation.GetString("auth.error.server_unreachable");
+            ToastService.ShowError("auth.error.server_unreachable");
         }
-        
-        StateHasChanged();
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
     }
 }
