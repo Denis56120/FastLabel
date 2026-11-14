@@ -21,7 +21,7 @@ public static class DbInitializer
                     DefaultTranslation = defaultEnglishVal
                 };
                 context.Texts.Add(textEntity);
-                await context.SaveChangesAsync(); 
+                await context.SaveChangesAsync();
             }
 
             foreach (var kvp in translations)
@@ -100,7 +100,7 @@ public static class DbInitializer
         {
             var a1 = await CreateTextWithTranslationsAsync("agenttype.windows", "FastLabel Windows Agent", new() { { "fr", "Agent Windows FastLabel" }, { "en", "FastLabel Windows Agent" } });
             var a2 = await CreateTextWithTranslationsAsync("agenttype.linux", "FastLabel Linux Agent", new() { { "fr", "Agent Linux FastLabel" }, { "en", "FastLabel Linux Agent" } });
- 
+
             context.AgentTypes.AddRange(
                 new AgentType { NameTextId = a1.Id },
                 new AgentType { NameTextId = a2.Id }
@@ -158,6 +158,19 @@ public static class DbInitializer
             var planProText = await CreateTextWithTranslationsAsync("plan.pro.name", "Pro Plan", new() { { "fr", "Plan Professionnel" }, { "en", "Pro Plan" } });
             var planEnterpriseText = await CreateTextWithTranslationsAsync("plan.enterprise.name", "Enterprise Plan", new() { { "fr", "Plan Entreprise" }, { "en", "Enterprise Plan" } });
 
+            var freeDescFr = JsonSerializer.Serialize(new { price = 0, currency = "EUR", billing = "monthly", max_printers = 2, features = new[] { "Impression de base", "Jusqu'à 2 imprimantes" } });
+            var freeDescEn = JsonSerializer.Serialize(new { price = 0, currency = "EUR", billing = "monthly", max_printers = 2, features = new[] { "Basic printing", "Up to 2 printers" } });
+
+            var proDescFr = JsonSerializer.Serialize(new { price = 29, currency = "EUR", billing = "monthly", max_printers = 10, features = new[] { "Impression illimitée", "Agents multiples", "Support prioritaire" } });
+            var proDescEn = JsonSerializer.Serialize(new { price = 29, currency = "EUR", billing = "monthly", max_printers = 10, features = new[] { "Unlimited printing", "Multiple agents", "Priority support" } });
+
+            var entDescFr = JsonSerializer.Serialize(new { price = 99, currency = "EUR", billing = "monthly", max_printers = -1, features = new[] { "Imprimantes illimitées", "Multi-site", "API dédiée", "Support 24/7" } });
+            var entDescEn = JsonSerializer.Serialize(new { price = 99, currency = "EUR", billing = "monthly", max_printers = -1, features = new[] { "Unlimited printers", "Multi-site", "Dedicated API", "24/7 support" } });
+
+            var descFree = await CreateTextWithTranslationsAsync("plan.free.description", freeDescEn, new() { { "fr", freeDescFr }, { "en", freeDescEn } });
+            var descPro = await CreateTextWithTranslationsAsync("plan.pro.description", proDescEn, new() { { "fr", proDescFr }, { "en", proDescEn } });
+            var descEnt = await CreateTextWithTranslationsAsync("plan.enterprise.description", entDescEn, new() { { "fr", entDescFr }, { "en", entDescEn } });
+
             var activeStatus = await context.BasicStatuses.OrderBy(s => s.Id).FirstOrDefaultAsync();
             int statusId = activeStatus?.Id ?? 1;
 
@@ -165,19 +178,19 @@ public static class DbInitializer
                 new Plan
                 {
                     NameTextId = planFreeText.Id,
-                    DescriptionJson = "{\"price\": 0, \"currency\": \"EUR\", \"billing\": \"monthly\", \"max_printers\": 2, \"features\": [\"Basic printing\", \"Up to 2 printers\"]}",
+                    DescriptionJsonTextId = descFree.Id,
                     BasicStatusId = statusId
                 },
                 new Plan
                 {
                     NameTextId = planProText.Id,
-                    DescriptionJson = "{\"price\": 29, \"currency\": \"EUR\", \"billing\": \"monthly\", \"max_printers\": 10, \"features\": [\"Unlimited printing\", \"Multiple agents\", \"Priority support\"]}",
+                    DescriptionJsonTextId = descPro.Id,
                     BasicStatusId = statusId
                 },
                 new Plan
                 {
                     NameTextId = planEnterpriseText.Id,
-                    DescriptionJson = "{\"price\": 99, \"currency\": \"EUR\", \"billing\": \"monthly\", \"max_printers\": -1, \"features\": [\"Unlimited printers\", \"Multi-site\", \"Dedicated API\", \"24/7 support\"]}",
+                    DescriptionJsonTextId = descEnt.Id,
                     BasicStatusId = statusId
                 }
             );
@@ -400,8 +413,13 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("email.activation.body", "Hello {0},\n\nPlease click the following link to activate your account:\n{1}", new() { { "fr", "Bonjour {0},\n\nVeuillez cliquer sur le lien suivant pour activer votre compte :\n{1}" }, { "en", "Hello {0},\n\nPlease click the following link to activate your account:\n{1}" } });
         await CreateTextWithTranslationsAsync("email.reset.subject", "Reset your FastLabel password", new() { { "fr", "Réinitialisez votre mot de passe FastLabel" }, { "en", "Reset your FastLabel password" } });
         await CreateTextWithTranslationsAsync("email.reset.body", "Hello {0},\n\nPlease click the following link to reset your password:\n{1}", new() { { "fr", "Bonjour {0},\n\nVeuillez cliquer sur le lien suivant pour réinitialiser votre mot de passe :\n{1}" }, { "en", "Hello {0},\n\nPlease click the following link to reset your password:\n{1}" } });
-    
+
         // DTOs Rectrictions
+        await CreateTextWithTranslationsAsync("stripe.error.plan_required", "Le plan est obligatoire.", new() { { "fr", "Le plan est obligatoire." }, { "en", "The plan is required." } });
+        await CreateTextWithTranslationsAsync("stripe.error.plan_max_length", "Le plan ne peut pas dépasser 50 caractères.", new() { { "fr", "Le plan ne peut pas dépasser 50 caractères." }, { "en", "The plan cannot exceed 50 characters." } });
+        await CreateTextWithTranslationsAsync("stripe.error.interval_required", "L'intervalle de facturation est obligatoire.", new() { { "fr", "L'intervalle de facturation est obligatoire." }, { "en", "The billing interval is required." } });
+        await CreateTextWithTranslationsAsync("stripe.error.interval_max_length", "L'intervalle ne peut pas dépasser 20 caractères.", new() { { "fr", "L'intervalle ne peut pas dépasser 20 caractères." }, { "en", "The interval cannot exceed 20 characters." } });
+
         await CreateTextWithTranslationsAsync("subscription.error.plan_required", "Plan name is required", new() { { "fr", "Le nom du plan est requis" }, { "en", "Plan name is required" } });
         await CreateTextWithTranslationsAsync("subscription.error.type_required", "Subscription type is required", new() { { "fr", "Le type d'abonnement est requis" }, { "en", "Subscription type is required" } });
         await CreateTextWithTranslationsAsync("subscription.error.period_invalid", "Invalid subscription period", new() { { "fr", "Période d'abonnement invalide" }, { "en", "Invalid subscription period" } });
@@ -459,8 +477,12 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("label.error.name_max_length", "Label name cannot exceed 150 characters", new() { { "fr", "Le nom de l'étiquette ne peut pas dépasser 150 caractères" }, { "en", "Label name cannot exceed 150 characters" } });
         await CreateTextWithTranslationsAsync("label.error.content_required", "Label content is required", new() { { "fr", "Le contenu de l'étiquette est requis" }, { "en", "Label content is required" } });
         await CreateTextWithTranslationsAsync("label.error.description_max_length", "Description cannot exceed 500 characters", new() { { "fr", "La description ne peut pas dépasser 500 caractères" }, { "en", "Description cannot exceed 500 characters" } });
-    
+
         // Endpoints
+        await CreateTextWithTranslationsAsync("stripe.error.invalid_interval", "Intervalle de facturation invalide.", new() { { "fr", "Intervalle de facturation invalide." }, { "en", "Invalid billing interval." } });
+        await CreateTextWithTranslationsAsync("stripe.error.plan_not_found", "Le plan demandé est introuvable.", new() { { "fr", "Le plan demandé est introuvable." }, { "en", "The requested plan was not found." } });
+        await CreateTextWithTranslationsAsync("stripe.error.price_not_configured", "Le tarif Stripe n'est pas configuré.", new() { { "fr", "Le tarif Stripe n'est pas configuré." }, { "en", "The Stripe price is not configured." } });
+
         await CreateTextWithTranslationsAsync("subscription.error.unauthorized", "Unauthorized access", new() { { "fr", "Accès non autorisé" }, { "en", "Unauthorized access" } });
 
         await CreateTextWithTranslationsAsync("user.error.email_already_taken", "This email is already in use", new() { { "fr", "Cet e-mail est déjà utilisé" }, { "en", "This email is already in use" } });
@@ -482,7 +504,7 @@ public static class DbInitializer
 
         await CreateTextWithTranslationsAsync("job.error.invalid_limit", "Limit must be greater than zero", new() { { "fr", "La limite doit être supérieure à zéro" }, { "en", "Limit must be greater than zero" } });
         await CreateTextWithTranslationsAsync("job.error.not_found", "Print job not found", new() { { "fr", "Tâche d'impression introuvable" }, { "en", "Print job not found" } });
-        
+
         await CreateTextWithTranslationsAsync("printer.error.invalid_protocol", "Invalid protocol selected", new() { { "fr", "Protocole sélectionné invalide" }, { "en", "Invalid protocol selected" } });
         await CreateTextWithTranslationsAsync("printer.error.invalid_resolution", "Invalid resolution selected", new() { { "fr", "Résolution sélectionnée invalide" }, { "en", "Invalid resolution selected" } });
         await CreateTextWithTranslationsAsync("printer.error.not_found", "Printer not found", new() { { "fr", "Imprimante introuvable" }, { "en", "Printer not found" } });

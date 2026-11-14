@@ -1,6 +1,6 @@
 namespace FastLabel.Backend.Models;
 
-public class Stripe
+public class StripeRecord
 {
     [Key]
     public int Id { get; set; }

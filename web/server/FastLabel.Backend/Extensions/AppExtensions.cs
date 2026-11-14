@@ -44,6 +44,7 @@ public static class AppExtensions
         app.MapProtocolEndpoints();
         app.MapResolutionDpiEndpoints();
         app.MapSubscriptionEndpoints();
+        app.MapStripeEndpoints();
 
         return app;
     }

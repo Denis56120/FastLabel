@@ -26,7 +26,7 @@ public class Subscription
     public int StripeId { get; set; }
 
     [ForeignKey(nameof(StripeId))]
-    public Stripe Stripe { get; set; } = null!;
+    public StripeRecord Stripe { get; set; } = null!;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

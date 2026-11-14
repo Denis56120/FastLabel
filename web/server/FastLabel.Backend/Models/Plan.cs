@@ -10,7 +10,10 @@ public class Plan
     [ForeignKey(nameof(NameTextId))]
     public Text Name { get; set; } = null!;
 
-    public string DescriptionJson { get; set; } = string.Empty;
+    public int DescriptionJsonTextId { get; set; }
+
+    [ForeignKey(nameof(DescriptionJsonTextId))]
+    public Text DescriptionJson { get; set; } = null!;
 
     public int BasicStatusId { get; set; }
 

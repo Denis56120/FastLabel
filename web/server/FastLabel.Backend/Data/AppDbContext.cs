@@ -12,7 +12,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<SubscriptionType> SubscriptionTypes => Set<SubscriptionType>();
     public DbSet<AgentType> AgentTypes => Set<AgentType>();
     public DbSet<Plan> Plans => Set<Plan>();
-    public DbSet<Stripe> Stripes => Set<Stripe>();
+    public DbSet<StripeRecord> Stripes => Set<StripeRecord>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
     public DbSet<LabelTemplate> LabelTemplates => Set<LabelTemplate>();
