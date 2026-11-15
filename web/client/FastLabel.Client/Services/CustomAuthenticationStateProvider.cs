@@ -14,24 +14,30 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
     {
         try
         {
-            var userInfo = await _httpClient.GetFromJsonAsync<UserDto>("api/auth/me");
+            // Appel vers le backend pour récupérer l'utilisateur connecté via le cookie HttpOnly
+            var response = await _httpClient.GetAsync("api/auth/me");
 
-            if (userInfo != null && !string.IsNullOrEmpty(userInfo.Email))
+            if (response.IsSuccessStatusCode)
             {
-                var claims = new List<Claim>
-                {
-                    new(ClaimTypes.Name, userInfo.Name),
-                    new(ClaimTypes.Email, userInfo.Email),
-                    new(ClaimTypes.Role, userInfo.IsAdmin ? "Admin" : "User")
-                };
+                var userInfo = await response.Content.ReadFromJsonAsync<UserDto>();
 
-                var identity = new ClaimsIdentity(claims, "cookieAuth");
-                return new AuthenticationState(new ClaimsPrincipal(identity));
+                if (userInfo != null && !string.IsNullOrEmpty(userInfo.Email))
+                {
+                    var claims = new List<Claim>
+                    {
+                        new(ClaimTypes.Name, userInfo.Name ?? string.Empty),
+                        new(ClaimTypes.Email, userInfo.Email ?? string.Empty),
+                        new(ClaimTypes.Role, userInfo.IsAdmin ? "Admin" : "User")
+                    };
+
+                    var identity = new ClaimsIdentity(claims, "cookieAuth");
+                    return new AuthenticationState(new ClaimsPrincipal(identity));
+                }
             }
         }
         catch
         {
-            
+            // Ignorer l'erreur réseau ou 401 si non connecté
         }
 
         return new AuthenticationState(_anonymous);

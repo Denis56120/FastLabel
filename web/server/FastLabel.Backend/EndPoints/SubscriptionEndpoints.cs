@@ -87,7 +87,7 @@ public static class SubscriptionEndpoints
                 .FirstOrDefault(s => s.CreatedAt.AddMonths(s.SubscriptionPeriod) > now);
 
             if (currentSub == null)
-                return Results.NotFound();
+                return Results.Ok(new SubscriptionDto());
 
             var subscriptionDto = new SubscriptionDto
             {

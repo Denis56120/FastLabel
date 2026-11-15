@@ -3,8 +3,8 @@
 @inherits TranslatableComponent
 @inject NavigationManager Navigation
 @inject AuthService AuthService
-@inject CookieService CookieService
 @inject ToastService ToastService
+@inject AuthenticationStateProvider AuthStateProvider
 
 <div class="d-flex justify-content-center align-items-center w-100">
     <div style="width: 100%; max-width: 420px;">
@@ -105,17 +105,13 @@
 
             if (success)
             {
-                try
+                if (AuthStateProvider is CustomAuthenticationStateProvider customAuthProvider)
                 {
-                    await CookieService.SetCookieAsync("language", Translation.CurrentLanguage, days: 365);
-                }
-                catch
-                {
-                    // Ignorer les erreurs non bloquantes de cookie de langue
+                    customAuthProvider.NotifyUserAuthentication();
                 }
 
                 ToastService.ShowSuccess(Translation.GetString("auth.success.login"));
-                Navigation.NavigateTo("/dashboard");
+                Navigation.NavigateTo("/dashboard", forceLoad: true);
             }
             else
             {

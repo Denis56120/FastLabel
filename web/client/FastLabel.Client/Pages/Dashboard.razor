@@ -56,14 +56,14 @@
                             <div class="ms-3">
                                 <h6 class="text-muted mb-1">@Translation.GetString("dashboard.current_subscription")</h6>
                                 <h5 class="mb-0 fw-semibold">
-                                    @(currentSubscription != null ? Translation.GetString("dashboard.subscription.active") : Translation.GetString("dashboard.subscription.none"))
+                                    @(HasActiveSubscription ? Translation.GetString("dashboard.subscription.active") : Translation.GetString("dashboard.subscription.none"))
                                 </h5>
                             </div>
                         </div>
-                        @if (currentSubscription != null)
+                        @if (HasActiveSubscription)
                         {
                             <small class="text-muted d-block">
-                                @Translation.GetString("dashboard.subscription.period_prefix") @currentSubscription.SubscriptionPeriod @Translation.GetString("dashboard.subscription.period_suffix")
+                                @Translation.GetString("dashboard.subscription.period_prefix") @currentSubscription!.SubscriptionPeriod @Translation.GetString("dashboard.subscription.period_suffix")
                             </small>
                         }
                         else
@@ -129,6 +129,8 @@
     private bool isLoading = true;
     private UserDto? currentUser;
     private SubscriptionDto? currentSubscription;
+
+    private bool HasActiveSubscription => currentSubscription != null && currentSubscription.SubscriptionPeriod > 0;
 
     protected override async Task OnInitializedAsync()
     {
