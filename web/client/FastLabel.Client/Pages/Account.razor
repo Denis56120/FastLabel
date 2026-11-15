@@ -6,7 +6,6 @@
 @inject ToastService ToastService
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
-@inject CookieService CookieService
 
 <div class="container mt-4 mb-5">
     <h2>@Translation.GetString("account.title")</h2>
@@ -212,7 +211,7 @@
                     var selectedLang = _languages.FirstOrDefault(l => l.Id == _userModel.LanguageId);
                     if (selectedLang != null && !string.IsNullOrEmpty(selectedLang.Code))
                     {
-                        await CookieService.SetCookieAsync("language", selectedLang.Code, days: 365);
+                        await Translation.SetLanguageAsync(selectedLang.Code);
                         await Translation.InitializeAsync();
                     }
                 }

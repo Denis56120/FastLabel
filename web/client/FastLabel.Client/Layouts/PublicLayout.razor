@@ -1,6 +1,5 @@
 @inherits TranslatableComponent
 @inject NavigationManager Navigation
-@inject CookieService CookieService
 
 @if (!_isLoaded)
 {
@@ -115,7 +114,7 @@ else
     {
         _isDropdownOpen = false;
 
-        await CookieService.SetCookieAsync("language", language, days: 365);
+        await Translation.SetLanguageAsync(language);
         await Translation.InitializeAsync();
         StateHasChanged();
     }

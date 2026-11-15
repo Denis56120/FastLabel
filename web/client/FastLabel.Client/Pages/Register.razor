@@ -4,7 +4,6 @@
 @inject IHttpClientFactory ClientFactory
 @inject ToastService ToastService
 @inject NavigationManager Navigation
-@inject CookieService CookieService
 
 <div class="d-flex justify-content-center align-items-center w-100">
     <div style="width: 100%; max-width: 420px;">
@@ -90,7 +89,7 @@
             {
                 try
                 {
-                    await CookieService.SetCookieAsync("language", Translation.CurrentLanguage, days: 365);
+                    await Translation.SetLanguageAsync(Translation.CurrentLanguage);
                 }
                 catch
                 {

@@ -112,7 +112,7 @@ public class TranslationService(IHttpClientFactory httpClientFactory, CookieServ
     {
         if (string.IsNullOrEmpty(language)) return;
 
-        await _cookieService.SetCookieAsync("language", language);
+        await _cookieService.SetCookieAsync("language", language, days: 365);
 
         await InitializeAsync(language);
     }

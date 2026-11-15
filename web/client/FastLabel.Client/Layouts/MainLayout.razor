@@ -2,7 +2,6 @@
 @inject AuthService AuthService
 @inject ApiClient ApiClient
 @inject NavigationManager Navigation
-@inject CookieService CookieService
 
 <PageTitle>FastLabel - @GetCurrentPageTitle()</PageTitle>
 
@@ -99,7 +98,7 @@ else
 
                 if (userLang != null && !string.IsNullOrEmpty(userLang.Code))
                 {
-                    await CookieService.SetCookieAsync("language", userLang.Code, days: 365);   
+                    await Translation.SetLanguageAsync(userLang.Code);   
                 }
             }
             await Translation.InitializeAsync();
