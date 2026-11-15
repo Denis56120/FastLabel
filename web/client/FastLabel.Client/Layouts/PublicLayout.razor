@@ -115,7 +115,15 @@ else
         _isDropdownOpen = false;
 
         await Translation.SetLanguageAsync(language);
-        await Translation.InitializeAsync();
+        
+        try
+        {
+            await Translation.InitializeAsync();
+        }
+        catch
+        {
+        }
+        
         StateHasChanged();
     }
 }

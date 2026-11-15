@@ -101,6 +101,13 @@ else
                     await Translation.SetLanguageAsync(userLang.Code);   
                 }
             }
+        }
+        catch
+        {
+        }
+
+        try
+        {
             await Translation.InitializeAsync();
         }
         catch
