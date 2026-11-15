@@ -199,13 +199,6 @@
             var (isSuccess, errorKey) = await ApiClient.PutAsync("api/users/me", _userModel);
             if (isSuccess)
             {
-                ToastService.ShowSuccess(Translation.GetString("account.success.updated"));
-                
-                if (emailChanged)
-                {
-                    ToastService.ShowWarning(Translation.GetString("account.warning.email_changed_inactive"));
-                }
-
                 if (languageChanged && _languages != null)
                 {
                     var selectedLang = _languages.FirstOrDefault(l => l.Id == _userModel.LanguageId);
@@ -214,6 +207,13 @@
                         await Translation.SetLanguageAsync(selectedLang.Code);
                         await Translation.InitializeAsync();
                     }
+                }
+                
+                ToastService.ShowSuccess(Translation.GetString("account.success.updated"));
+                
+                if (emailChanged)
+                {
+                    ToastService.ShowWarning(Translation.GetString("account.warning.email_changed_inactive"));
                 }
 
                 _userModel.Password = null; 
