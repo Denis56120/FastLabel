@@ -22,7 +22,6 @@
     {
         <div class="row justify-content-center">
             <div class="col-md-8 col-lg-6">
-                <!-- Cadre Profil & Modification -->
                 <div class="card shadow-sm mb-4">
                     <div class="card-body">
                         <h4 class="card-title mb-3">@Translation.GetString("account.profile_section")</h4>
@@ -41,6 +40,20 @@
                                 <InputText class="form-control" @bind-Value="_userModel.Email" />
                                 <ValidationMessage For="@(() => _userModel.Email)" class="text-danger small" />
                                 <div class="form-text text-warning small">@Translation.GetString("account.email_change_warning")</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label text-muted">@Translation.GetString("account.language_label")</label>
+                                <InputSelect class="form-select" @bind-Value="_userModel.LanguageId">
+                                    @if (_languages != null)
+                                    {
+                                        @foreach (var lang in _languages)
+                                        {
+                                            <option value="@lang.Id">@lang.Description</option>
+                                        }
+                                    }
+                                </InputSelect>
+                                <ValidationMessage For="@(() => _userModel.LanguageId)" class="text-danger small" />
                             </div>
 
                             <div class="mb-3">
@@ -73,7 +86,6 @@
                     </div>
                 </div>
 
-                <!-- Cadre Souscriptions -->
                 <div class="card shadow-sm">
                     <div class="card-body">
                         <h4 class="card-title mb-3">@Translation.GetString("account.subscriptions_title")</h4>
@@ -127,7 +139,9 @@
     private bool isLoading = true;
     private bool _isSaving = false;
     private UserDto _userModel = new();
+    private string _originalEmail = string.Empty;
     private List<SubscriptionDto>? _subscriptions;
+    private List<LanguageDto>? _languages;
 
     private string DisplayUserRole => _userModel.IsAdmin 
         ? Translation.GetString("users.role_admin") 
@@ -135,7 +149,20 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadLanguagesAsync();
         await LoadUserDataAsync();
+    }
+
+    private async Task LoadLanguagesAsync()
+    {
+        try
+        {
+            _languages = await ApiClient.GetFromJsonAsync<List<LanguageDto>>("api/languages") ?? new();
+        }
+        catch (Exception)
+        {
+            _languages = new();
+        }
     }
 
     private async Task LoadUserDataAsync()
@@ -145,6 +172,7 @@
             isLoading = true;
 
             _userModel = await ApiClient.GetFromJsonAsync<UserDto>("api/users/me") ?? new();
+            _originalEmail = _userModel.Email; 
             _subscriptions = await ApiClient.GetFromJsonAsync<List<SubscriptionDto>>("api/account/subscriptions") ?? new();
         }
         catch (Exception)
@@ -163,12 +191,17 @@
         _isSaving = true;
         try
         {
+            bool emailChanged = !string.Equals(_originalEmail, _userModel.Email, StringComparison.OrdinalIgnoreCase);
+
             var (isSuccess, errorKey) = await ApiClient.PutAsync("api/users/me", _userModel);
             if (isSuccess)
             {
                 ToastService.ShowSuccess(Translation.GetString("account.success.updated"));
                 
-                ToastService.ShowWarning(Translation.GetString("account.warning.email_changed_inactive"));
+                if (emailChanged)
+                {
+                    ToastService.ShowWarning(Translation.GetString("account.warning.email_changed_inactive"));
+                }
 
                 _userModel.Password = null; 
                 await LoadUserDataAsync(); 
@@ -191,11 +224,7 @@
     protected override async Task OnLanguageChangedAsync()
     {
         StateHasChanged();
+        await LoadLanguagesAsync();
         await LoadUserDataAsync();
-    }
-
-    private class AccountUpdateResponseDto
-    {
-        public bool EmailChanged { get; set; }
     }
 }

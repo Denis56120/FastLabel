@@ -30,6 +30,7 @@ public static class AppExtensions
         app.UseAuthentication();
         app.UseAuthorization();
 
+        app.MapAuthEndpoints();
         app.MapPrinterEndpoints();
         app.MapTemplateEndpoints();
         app.MapAgentEndpoints();

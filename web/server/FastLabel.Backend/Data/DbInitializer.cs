@@ -336,6 +336,7 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("nav.my_account", "My Account", new() { { "fr", "Mon Compte" }, { "en", "My Account" } });
         await CreateTextWithTranslationsAsync("nav.logout", "Logout", new() { { "fr", "Déconnexion" }, { "en", "Logout" } });
 
+        await CreateTextWithTranslationsAsync("account.language_label", "Langue", new() { { "fr", "Langue" }, { "en", "Language" } });
         await CreateTextWithTranslationsAsync("account.email_change_warning", "Changing your email will require you to reactivate your account.", new() { { "fr", "Modifier votre e-mail nécessitera une réactivation de votre compte via le lien reçu." }, { "en", "Changing your email will require you to reactivate your account." } });
         await CreateTextWithTranslationsAsync("account.password_section", "Change Password", new() { { "fr", "Modifier le mot de passe" }, { "en", "Change Password" } });
         await CreateTextWithTranslationsAsync("account.new_password_label", "New Password", new() { { "fr", "Nouveau mot de passe" }, { "en", "New Password" } });
@@ -423,8 +424,8 @@ public static class DbInitializer
 
         // DTOs Rectrictions
         await CreateTextWithTranslationsAsync("language.error.code_required", "Le code de la langue est requis", new() { { "fr", "Le code de la langue est requis" }, { "en", "Language code is required" } });
-        await CreateTextWithTranslationsAsync("language.error.code_max_length", "Le code de la langue est trop long", new() { { "fr", "Le code de la langue est trop long" }, { "en", "Language code is too long" } });
-        await CreateTextWithTranslationsAsync("language.error.name_required", "Le nom de la langue est requis", new() { { "fr", "Le nom de la langue est requis" }, { "en", "Language name is required" } });
+        await CreateTextWithTranslationsAsync("language.error.code_max_length", "Le code de la langue ne peut pas dépasser 10 caractères", new() { { "fr", "Le code de la langue ne peut pas dépasser 10 caractères" }, { "en", "Language code cannot exceed 10 characters" } });
+        await CreateTextWithTranslationsAsync("language.error.description_required", "La description de la langue est requise", new() { { "fr", "La description de la langue est requise" }, { "en", "Language description is required" } });
 
         await CreateTextWithTranslationsAsync("stripe.error.plan_required", "Le plan est obligatoire.", new() { { "fr", "Le plan est obligatoire." }, { "en", "The plan is required." } });
         await CreateTextWithTranslationsAsync("stripe.error.plan_max_length", "Le plan ne peut pas dépasser 50 caractères.", new() { { "fr", "Le plan ne peut pas dépasser 50 caractères." }, { "en", "The plan cannot exceed 50 characters." } });
