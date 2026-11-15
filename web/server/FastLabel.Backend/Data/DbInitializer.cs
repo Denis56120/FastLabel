@@ -415,6 +415,10 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("email.reset.body", "Hello {0},\n\nPlease click the following link to reset your password:\n{1}", new() { { "fr", "Bonjour {0},\n\nVeuillez cliquer sur le lien suivant pour réinitialiser votre mot de passe :\n{1}" }, { "en", "Hello {0},\n\nPlease click the following link to reset your password:\n{1}" } });
 
         // DTOs Rectrictions
+        await CreateTextWithTranslationsAsync("language.error.code_required", "Le code de la langue est requis", new() { { "fr", "Le code de la langue est requis" }, { "en", "Language code is required" } });
+        await CreateTextWithTranslationsAsync("language.error.code_max_length", "Le code de la langue est trop long", new() { { "fr", "Le code de la langue est trop long" }, { "en", "Language code is too long" } });
+        await CreateTextWithTranslationsAsync("language.error.name_required", "Le nom de la langue est requis", new() { { "fr", "Le nom de la langue est requis" }, { "en", "Language name is required" } });
+
         await CreateTextWithTranslationsAsync("stripe.error.plan_required", "Le plan est obligatoire.", new() { { "fr", "Le plan est obligatoire." }, { "en", "The plan is required." } });
         await CreateTextWithTranslationsAsync("stripe.error.plan_max_length", "Le plan ne peut pas dépasser 50 caractères.", new() { { "fr", "Le plan ne peut pas dépasser 50 caractères." }, { "en", "The plan cannot exceed 50 characters." } });
         await CreateTextWithTranslationsAsync("stripe.error.interval_required", "L'intervalle de facturation est obligatoire.", new() { { "fr", "L'intervalle de facturation est obligatoire." }, { "en", "The billing interval is required." } });
