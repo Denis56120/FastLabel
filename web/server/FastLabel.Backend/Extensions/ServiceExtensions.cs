@@ -15,6 +15,8 @@ public static class ServiceExtensions
     }
     public static IServiceCollection AddAppServices(this IServiceCollection services, IConfiguration configuration)
     {
+        Stripe.StripeConfiguration.ApiKey = configuration["STRIPE_SECRET_KEY"];
+
         var clientUrl = configuration["Url:ClientUrl"] ?? "https://fastlabel.com";
         var connectionString = configuration.GetConnectionString("DefaultConnection")
                        ?? $"Host=localhost;Port=5432;Database={configuration["DB_NAME"] ?? string.Empty};Username={configuration["DB_USER"] ?? string.Empty};Password={configuration["DB_PASSWORD"]}";
