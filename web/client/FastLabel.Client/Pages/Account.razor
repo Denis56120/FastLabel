@@ -6,6 +6,7 @@
 @inject ToastService ToastService
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
+@inject CookieService CookieService
 
 <div class="container mt-4 mb-5">
     <h2>@Translation.GetString("account.title")</h2>
@@ -140,6 +141,7 @@
     private bool _isSaving = false;
     private UserDto _userModel = new();
     private string _originalEmail = string.Empty;
+    private int _originalLanguageId;
     private List<SubscriptionDto>? _subscriptions;
     private List<LanguageDto>? _languages;
 
@@ -173,6 +175,7 @@
 
             _userModel = await ApiClient.GetFromJsonAsync<UserDto>("api/users/me") ?? new();
             _originalEmail = _userModel.Email; 
+            _originalLanguageId = _userModel.LanguageId;
             _subscriptions = await ApiClient.GetFromJsonAsync<List<SubscriptionDto>>("api/account/subscriptions") ?? new();
         }
         catch (Exception)
@@ -192,6 +195,7 @@
         try
         {
             bool emailChanged = !string.Equals(_originalEmail, _userModel.Email, StringComparison.OrdinalIgnoreCase);
+            bool languageChanged = _originalLanguageId != _userModel.LanguageId;
 
             var (isSuccess, errorKey) = await ApiClient.PutAsync("api/users/me", _userModel);
             if (isSuccess)
@@ -201,6 +205,16 @@
                 if (emailChanged)
                 {
                     ToastService.ShowWarning(Translation.GetString("account.warning.email_changed_inactive"));
+                }
+
+                if (languageChanged && _languages != null)
+                {
+                    var selectedLang = _languages.FirstOrDefault(l => l.Id == _userModel.LanguageId);
+                    if (selectedLang != null && !string.IsNullOrEmpty(selectedLang.Code))
+                    {
+                        await CookieService.SetCookieAsync("language", selectedLang.Code, days: 365);
+                        await Translation.InitializeAsync(selectedLang.Code);
+                    }
                 }
 
                 _userModel.Password = null; 

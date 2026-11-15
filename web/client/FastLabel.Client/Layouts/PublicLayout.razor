@@ -121,12 +121,12 @@ else
         _isDropdownOpen = !_isDropdownOpen;
     }
 
-    private async Task ChangeLanguage(string languageCode)
+    private async Task ChangeLanguage(string language)
     {
         _isDropdownOpen = false;
 
-        await CookieService.SetCookieAsync("language", languageCode, days: 365);
-        await Translation.InitializeAsync(languageCode);
+        await CookieService.SetCookieAsync("language", language, days: 365);
+        await Translation.InitializeAsync(language);
         StateHasChanged();
     }
 }

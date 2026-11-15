@@ -87,7 +87,7 @@ public static class AuthEndpoints
             var clientUrl = configuration["Url:ClientUrl"] ?? "https://fastlabel.com";
             var resetLink = $"{clientUrl}/reset-password?token={user.PasswordResetToken}";
 
-            var languageCode = httpContext.GetRequestLanguage();
+            var language = httpContext.GetRequestLanguage();
 
             var emailTexts = await db.Texts
                 .Where(t => t.Tag == "email.reset.subject" || t.Tag == "email.reset.body")
@@ -95,7 +95,7 @@ public static class AuthEndpoints
                 {
                     t.Tag,
                     Value = t.Translations
-                        .Where(tr => tr.Language.Code == languageCode)
+                        .Where(tr => tr.Language.Code == language)
                         .Select(tr => tr.TranslatedValue)
                         .FirstOrDefault() ?? t.DefaultTranslation
                 })
@@ -191,7 +191,7 @@ public static class AuthEndpoints
             var serverUrl = configuration["Url:ServerUrl"] ?? "https://fastlabel.com";
             var verificationLink = $"{serverUrl}/api/auth/verify-email?token={user.EmailVerificationToken}";
 
-            var languageCode = httpContext.GetRequestLanguage();
+            var language = httpContext.GetRequestLanguage();
 
             var emailTexts = await db.Texts
                 .Where(t => t.Tag == "email.activation.subject" || t.Tag == "email.activation.body")
@@ -199,7 +199,7 @@ public static class AuthEndpoints
                 {
                     t.Tag,
                     Value = t.Translations
-                        .Where(tr => tr.Language.Code == languageCode)
+                        .Where(tr => tr.Language.Code == language)
                         .Select(tr => tr.TranslatedValue)
                         .FirstOrDefault() ?? t.DefaultTranslation
                 })

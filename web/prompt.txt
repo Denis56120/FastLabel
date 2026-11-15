@@ -5,3 +5,4 @@ Règles strictes pour ce projet (FastLabel) :
    await CreateTextWithTranslationsAsync("cle", "Default", new() { { "fr", "..." }, { "en", "..." } });
 4. Ne mets jamais les using en en-tête du code car je les gère dans un globalusings, signale moi si je dois en ajouter dans le globalusings
 5. Ne rajoute pas des commentaires partout dans le code
+6. Ne jamais utiliser de forceload dans les NavigateTo

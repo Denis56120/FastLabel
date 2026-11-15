@@ -103,7 +103,7 @@ public static class UserEndpoints
                 var serverUrl = configuration["Url:ServerUrl"] ?? "https://fastlabel.com";
                 var verificationLink = $"{serverUrl}/api/auth/verify-email?token={user.EmailVerificationToken}";
 
-                var languageCode = httpContext.GetRequestLanguage();
+                var language = httpContext.GetRequestLanguage();
 
                 var emailTexts = await db.Texts
                     .Where(t => t.Tag == "email.activation.subject" || t.Tag == "email.activation.body")
@@ -111,7 +111,7 @@ public static class UserEndpoints
                     {
                         t.Tag,
                         Value = t.Translations
-                            .Where(tr => tr.Language.Code == languageCode)
+                            .Where(tr => tr.Language.Code == language)
                             .Select(tr => tr.TranslatedValue)
                             .FirstOrDefault() ?? t.DefaultTranslation
                     })
