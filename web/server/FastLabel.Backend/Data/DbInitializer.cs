@@ -58,8 +58,8 @@ public static class DbInitializer
         }
 
         // 1. Création préalable des Textes de description des langues
-        var descFr = await CreateTextWithTranslationsAsync("lang.fr.desc", "French language", new() { { "fr", "Langue française" }, { "en", "French language" } });
-        var descEn = await CreateTextWithTranslationsAsync("lang.en.desc", "English language", new() { { "fr", "Langue anglaise" }, { "en", "English language" } });
+        var descFr = await CreateTextWithTranslationsAsync("lang.fr.desc", "French", new() { { "fr", "Français" }, { "en", "French" } });
+        var descEn = await CreateTextWithTranslationsAsync("lang.en.desc", "English", new() { { "fr", "Anglais" }, { "en", "English" } });
 
         // 2. Langues insérées APRÈS leurs textes de description
         if (!await context.Languages.AnyAsync())
@@ -205,6 +205,11 @@ public static class DbInitializer
                 .FirstOrDefaultAsync();
             int statusId = activeStatus?.Id ?? 1;
 
+            // Récupérer l'ID de la langue française par défaut (ou fallback sur le premier ID disponible)
+            var frenchLanguage = await context.Languages
+                .FirstOrDefaultAsync(l => l.Code == "fr");
+            int frenchLanguageId = frenchLanguage?.Id ?? await context.Languages.Select(l => l.Id).FirstOrDefaultAsync();
+
             passwordHasher ??= new PasswordHasher<User>();
 
             var adminUser = new User
@@ -212,6 +217,7 @@ public static class DbInitializer
                 Name = configuration["ADMIN_USER_NAME"] ?? string.Empty,
                 Email = configuration["ADMIN_USER_EMAIL"] ?? string.Empty,
                 BasicStatusId = statusId,
+                LanguageId = frenchLanguageId,
                 CreatedAt = DateTime.UtcNow,
                 IsAdmin = true
             };
@@ -222,6 +228,7 @@ public static class DbInitializer
                 Name = configuration["TEST_USER_NAME"] ?? string.Empty,
                 Email = configuration["TEST_USER_EMAIL"] ?? string.Empty,
                 BasicStatusId = statusId,
+                LanguageId = frenchLanguageId,
                 CreatedAt = DateTime.UtcNow,
                 IsAdmin = false
             };
@@ -460,8 +467,9 @@ public static class DbInitializer
         await CreateTextWithTranslationsAsync("translation.error.key_required", "Translation key is required", new() { { "fr", "La clé de traduction est requise" }, { "en", "Translation key is required" } });
         await CreateTextWithTranslationsAsync("translation.error.value_required", "Translation value is required", new() { { "fr", "La valeur de traduction est requise" }, { "en", "Translation value is required" } });
 
-        await CreateTextWithTranslationsAsync("user.error.name_required", "User name is required", new() { { "fr", "Le nom d'utilisateur est requis" }, { "en", "User name is required" } });
-        await CreateTextWithTranslationsAsync("user.error.name_max_length", "User name cannot exceed 100 characters", new() { { "fr", "Le nom d'utilisateur ne peut pas dépasser 100 caractères" }, { "en", "User name cannot exceed 100 characters" } });
+        await CreateTextWithTranslationsAsync("user.error.name_required", "Le nom est requis", new() { { "fr", "Le nom est requis" }, { "en", "Name is required" } });
+        await CreateTextWithTranslationsAsync("user.error.name_max_length", "Le nom ne peut pas dépasser 100 caractères", new() { { "fr", "Le nom ne peut pas dépasser 100 caractères" }, { "en", "Name cannot exceed 100 characters" } });
+        await CreateTextWithTranslationsAsync("user.error.language_required", "La langue est requise", new() { { "fr", "La langue est requise" }, { "en", "Language is required" } });
 
         await CreateTextWithTranslationsAsync("auth.error.name_required", "Name is required", new() { { "fr", "Le nom est requis" }, { "en", "Name is required" } });
         await CreateTextWithTranslationsAsync("auth.error.email_required", "Email is required", new() { { "fr", "L'adresse email est requise" }, { "en", "Email is required" } });

@@ -34,7 +34,6 @@ public static class AppExtensions
         app.MapTemplateEndpoints();
         app.MapAgentEndpoints();
         app.MapPrintJobEndpoints();
-        app.MapAuthEndpoints();
         app.MapAgentWebSocketEndpoints();
         app.MapPrintEndpoints();
         app.MapUserEndpoints();

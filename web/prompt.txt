@@ -1,0 +1,6 @@
+Règles strictes pour ce projet (FastLabel) :
+1. Toujours fournir les fichiers de code complets (jamais de bouts de code ni d'extraits tronqués).
+2. Interdiction absolue de mettre du texte en dur dans le front, les DTOs ou les endpoints : utiliser exclusivement des clés de traduction (ex: "templates.title").
+3. Chaque ajout de clé de traduction dans un code doit être systématiquement accompagné de sa ligne de seed correspondante au format :
+   await CreateTextWithTranslationsAsync("cle", "Default", new() { { "fr", "..." }, { "en", "..." } });
+4. Ne mets jamais les using en en-tête du code car je les gère dans un globalusings, signale moi si je dois en ajouter dans le globalusings

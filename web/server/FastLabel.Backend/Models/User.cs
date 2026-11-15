@@ -1,3 +1,7 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore;
+
 namespace FastLabel.Backend.Models;
 
 [Index(nameof(Email), IsUnique = true)]
@@ -29,4 +33,9 @@ public class User
 
     [ForeignKey(nameof(BasicStatusId))]
     public BasicStatus BasicStatus { get; set; } = null!;
+
+    public int LanguageId { get; set; }
+
+    [ForeignKey(nameof(LanguageId))]
+    public Language Language { get; set; } = null!;
 }

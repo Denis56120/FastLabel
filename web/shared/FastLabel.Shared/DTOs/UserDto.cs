@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace FastLabel.Shared.DTOs;
 
 public class UserDto
@@ -11,9 +13,15 @@ public class UserDto
     [Required(ErrorMessage = "user.error.email_required")]
     [EmailAddress(ErrorMessage = "user.error.email_invalid")]
     public string Email { get; set; } = string.Empty;
+
     public string? Password { get; set; }
 
     public bool IsAdmin { get; set; }
+
     public string BasicStatusName { get; set; } = string.Empty; 
+
+    [Required(ErrorMessage = "user.error.language_required")]
+    public int LanguageId { get; set; }
+
     public DateTime CreatedAt { get; set; }
 }
