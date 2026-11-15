@@ -213,7 +213,7 @@
                     if (selectedLang != null && !string.IsNullOrEmpty(selectedLang.Code))
                     {
                         await CookieService.SetCookieAsync("language", selectedLang.Code, days: 365);
-                        await Translation.InitializeAsync(selectedLang.Code);
+                        await Translation.InitializeAsync();
                     }
                 }
 

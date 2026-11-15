@@ -42,7 +42,7 @@ public class TranslationService(IHttpClientFactory httpClientFactory, CookieServ
         await InitializeAsync(language);
     }
 
-    public async Task InitializeAsync(string language)
+    private async Task InitializeAsync(string language)
     {
         var targetLanguage = string.IsNullOrEmpty(language) ? _currentLanguage : language;
 

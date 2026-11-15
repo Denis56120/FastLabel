@@ -99,40 +99,17 @@ else
 
                 if (userLang != null && !string.IsNullOrEmpty(userLang.Code))
                 {
-                    await Translation.InitializeAsync(userLang.Code);
-                    await CookieService.SetCookieAsync("language", userLang.Code, days: 365);
-                }
-                else
-                {
-                    await FallbackToCookieOrdefaultAsync();
+                    await CookieService.SetCookieAsync("language", userLang.Code, days: 365);   
                 }
             }
-            else
-            {
-                await FallbackToCookieOrdefaultAsync();
-            }
+            await Translation.InitializeAsync();
         }
         catch
         {
-            await FallbackToCookieOrdefaultAsync();
         }
         
         _isLoaded = true;
         StateHasChanged();
-    }
-
-    private async Task FallbackToCookieOrdefaultAsync()
-    {
-        var cookieLang = await CookieService.GetCookieAsync("language");
-            
-        if (!string.IsNullOrEmpty(cookieLang))
-        {
-            await Translation.InitializeAsync(cookieLang);
-        }
-        else
-        {
-            await Translation.InitializeAsync();
-        }
     }
 
     private string GetCurrentPageTitle()
@@ -162,8 +139,6 @@ else
 
     private async Task HandleLogout()
     {
-        var currentLang = Translation.CurrentLanguage;
-
         await AuthService.LogoutAsync();
 
         Navigation.NavigateTo("/");

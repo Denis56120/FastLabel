@@ -67,20 +67,10 @@ else
 
         try
         {
-            var cookieLang = await CookieService.GetCookieAsync("language");
-
-            if (!string.IsNullOrEmpty(cookieLang))
-            {
-                await Translation.InitializeAsync(cookieLang);
-            }
-            else
-            {
-                await Translation.InitializeAsync();
-            }
+            await Translation.InitializeAsync();
         }
         catch
         {
-            await Translation.InitializeAsync();
         }
 
         _isLoaded = true;
@@ -126,7 +116,7 @@ else
         _isDropdownOpen = false;
 
         await CookieService.SetCookieAsync("language", language, days: 365);
-        await Translation.InitializeAsync(language);
+        await Translation.InitializeAsync();
         StateHasChanged();
     }
 }
