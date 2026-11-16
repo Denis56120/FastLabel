@@ -10,3 +10,5 @@ var app = builder.Build();
 await app.ConfigurePipelineAsync();
 
 app.Run();
+
+public partial class Program { }

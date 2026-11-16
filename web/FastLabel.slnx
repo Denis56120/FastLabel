@@ -3,6 +3,7 @@
     <Project Path="client/FastLabel.Client/FastLabel.Client.csproj" />
   </Folder>
   <Folder Name="/server/">
+    <Project Path="server/FastLabel.Backend.Tests/FastLabel.Backend.Tests.csproj" />
     <Project Path="server/FastLabel.Backend/FastLabel.Backend.csproj" />
   </Folder>
   <Folder Name="/shared/">
