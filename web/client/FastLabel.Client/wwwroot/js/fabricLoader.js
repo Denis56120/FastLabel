@@ -1,5 +1,5 @@
 export async function initEditor(dotNetHelper, canvasId, initialJson, width, height) {
-    // 0. Charger les polices Google Fonts dynamiquement si absentes
+    // 0. Charger les polices Google Fonts dynamiquement si absentes (avec tous les styles et italiques)
     if (!document.getElementById('google-fonts-fastlabel')) {
         const preconnect1 = document.createElement('link');
         preconnect1.rel = 'preconnect';
@@ -15,7 +15,7 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
         const fontLink = document.createElement('link');
         fontLink.id = 'google-fonts-fastlabel';
         fontLink.rel = 'stylesheet';
-        fontLink.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&family=Lora:ital,wght@0,400;0,700;1,400&family=Share+Tech+Mono&display=swap';
+        fontLink.href = 'https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,700;1,400;1,700&family=JetBrains+Mono:ital,wght@0,400;0,700;1,400;1,700&family=Lora:ital,wght@0,400;0,700;1,400;1,700&family=Share+Tech+Mono&display=swap';
         document.head.appendChild(fontLink);
     }
 
@@ -61,7 +61,13 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
     if (initialJson) {
         try {
             const parsed = typeof initialJson === 'string' ? JSON.parse(initialJson) : initialJson;
-            canvas.loadFromJSON(parsed, () => canvas.renderAll());
+            canvas.loadFromJSON(parsed, () => {
+                canvas.getObjects().forEach(obj => {
+                    obj.set('lockRotation', true);
+                    obj.setControlVisible('mtr', false);
+                });
+                canvas.renderAll();
+            });
         } catch (e) {
             console.error("Erreur parsing JSON", e);
         }
@@ -69,12 +75,11 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
 
     function notifySelection(obj) {
         if (!obj) {
-            dotNetRef.invokeMethodAsync('OnObjectSelected', null);
+            dotNetHelper.invokeMethodAsync('OnObjectSelected', null);
             return;
         }
 
         let type = obj.type;
-        // Si c'est un groupe, on peut affiner (ex: distinguer un texte avec cadre d'un autre groupe)
         if (type === 'group') {
             const items = obj.getObjects();
             if (items.some(item => item.isType('i-text') || item.isType('text'))) {
@@ -82,7 +87,7 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
             }
         }
 
-        dotNetRef.invokeMethodAsync('OnObjectSelected', type);
+        dotNetHelper.invokeMethodAsync('OnObjectSelected', type);
     }
 
     const notify = () => {
@@ -90,8 +95,53 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
         dotNetHelper.invokeMethodAsync('UpdateJsonData', json);
     };
 
-    canvas.on('object:modified', notify);
-    canvas.on('object:added', notify);
+    // Paliers de tailles autorisés pour correspondre exactement aux .ttf du backend
+    const ALLOWED_SIZES = [12, 14, 16, 18, 24, 28, 32, 40, 48];
+    function getClosestAllowedSize(rawSize) {
+        return ALLOWED_SIZES.reduce((prev, curr) =>
+            Math.abs(curr - rawSize) < Math.abs(prev - rawSize) ? curr : prev
+        );
+    }
+
+    canvas.on('object:modified', (e) => {
+        const obj = e.target;
+
+        // Verrouillage / Snap de la taille de police pour aligner le front et le back (.NET)
+        if (obj && (obj.isType('i-text') || obj.isType('text'))) {
+            const effectiveSize = obj.fontSize * obj.scaleX;
+            const snappedSize = getClosestAllowedSize(effectiveSize);
+
+            obj.set({
+                fontSize: snappedSize,
+                scaleX: 1,
+                scaleY: 1
+            });
+            obj.setCoords();
+
+            if (obj.boundRect) {
+                const padding = 4;
+                obj.boundRect.set({
+                    left: obj.left - padding,
+                    top: obj.top - padding,
+                    width: obj.width + padding * 2,
+                    height: obj.height + padding * 2
+                });
+            }
+            canvas.renderAll();
+        }
+
+        notify();
+    });
+
+    canvas.on('object:added', (e) => {
+        const obj = e.target;
+        if (obj) {
+            obj.set('lockRotation', true);
+            obj.setControlVisible('mtr', false);
+        }
+        notify();
+    });
+
     canvas.on('object:removed', notify);
 
     canvas.on('selection:created', (e) => notifySelection(e.selected[0]));
@@ -100,13 +150,14 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
 
     return {
         addText: (text, fontFamily = 'Inter') => {
-            const textObj = new fabric.IText(text, { 
-                left: 20, 
-                top: 20, 
-                fontSize: 16, 
+            const textObj = new fabric.IText(text, {
+                left: 20,
+                top: 20,
+                fontSize: 18, // Calé sur une taille de base autorisée
                 fill: '#000000',
-                fontFamily: fontFamily 
+                fontFamily: fontFamily
             });
+            textObj.setControlVisible('mtr', false);
             canvas.add(textObj);
             canvas.setActiveObject(textObj);
             notify();
@@ -115,8 +166,9 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
             const rect = new fabric.Rect({
                 left: 20, top: 20, width: 100, height: 50,
                 fill: 'transparent', stroke: '#000000', strokeWidth: 1,
-                rx: 6, ry: 6 // Coins arrondis par défaut
+                rx: 6, ry: 6
             });
+            rect.setControlVisible('mtr', false);
             canvas.add(rect);
             canvas.setActiveObject(rect);
             notify();
@@ -135,6 +187,7 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
                 const imgUrl = tempCanvas.toDataURL("image/png");
                 fabric.Image.fromURL(imgUrl, (img) => {
                     img.set({ left: 20, top: 20, scaleX: 0.8, scaleY: 0.8 });
+                    canvas.setControlVisible('mtr', false);
                     canvas.add(img);
                     canvas.setActiveObject(img);
                     canvas.renderAll();
@@ -152,6 +205,7 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
                     scaleX: 0.5,
                     scaleY: 0.5
                 });
+                canvas.setControlVisible('mtr', false);
                 canvas.add(img);
                 canvas.setActiveObject(img);
                 canvas.renderAll();
@@ -196,6 +250,7 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
                         scaleX: 1,
                         scaleY: 1
                     });
+                    canvas.setControlVisible('mtr', false);
                     canvas.add(img);
                     canvas.setActiveObject(img);
                     canvas.renderAll();
@@ -282,26 +337,22 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
             const activeObject = canvas.getActiveObject();
             if (!activeObject || (!activeObject.isType('i-text') && !activeObject.isType('text'))) return;
 
-            // Vérifier si le texte a déjà un rectangle de contour associé
             if (activeObject.boundRect) {
                 canvas.remove(activeObject.boundRect);
                 activeObject.boundRect = null;
                 canvas.renderAll();
                 notify();
             } else {
-                // Déterminer l'état actuel (lumière normale vs inversée)
                 const isInverse = (activeObject.fill === '#ffffff' || activeObject.backgroundColor === '#000000');
-                
+
                 const fillColor = isInverse ? '#000000' : '#ffffff';
                 const strokeColor = isInverse ? '#ffffff' : '#000000';
 
-                // Appliquer les couleurs raccord au texte
                 activeObject.set({
                     fill: isInverse ? '#ffffff' : '#000000',
                     backgroundColor: 'transparent'
                 });
 
-                // Utiliser exactement les dimensions réelles du texte avec un padding uniforme
                 const padding = 4;
                 const width = activeObject.width * activeObject.scaleX + padding * 2;
                 const height = activeObject.height * activeObject.scaleY + padding * 2;
@@ -338,14 +389,11 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
             const activeObject = canvas.getActiveObject();
             if (!activeObject) return;
 
-            // 1. Si c'est un rectangle simple
             if (activeObject.isType('rect')) {
                 activeObject.set({ rx: radius, ry: radius });
                 canvas.renderAll();
                 notify();
-            } 
-            // 2. Si c'est un groupe de texte avec cadre
-            else if (activeObject.isType('group')) {
+            } else if (activeObject.isType('group')) {
                 const items = activeObject.getObjects();
                 const rectObj = items.find(obj => obj.isType('rect'));
                 if (rectObj) {
@@ -359,7 +407,6 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
             const activeObject = canvas.getActiveObject();
             if (!activeObject) return;
 
-            // 1. Si c'est une image (Code-barres ou QR code)
             if (activeObject.isType('image') || activeObject.cacheKey) {
                 const filters = activeObject.filters || [];
                 const invertIndex = filters.findIndex(f => f && f.type === 'Invert');
@@ -371,11 +418,9 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
                 activeObject.applyFilters();
                 canvas.renderAll();
                 notify();
-            } 
-            // 2. Si c'est un texte
-            else if (activeObject.isType('i-text') || activeObject.isType('text')) {
+            } else if (activeObject.isType('i-text') || activeObject.isType('text')) {
                 const currentFill = activeObject.fill;
-                
+
                 if (currentFill === '#ffffff') {
                     activeObject.set({
                         fill: '#000000',
@@ -389,9 +434,7 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
                 }
                 canvas.renderAll();
                 notify();
-            } 
-            // 3. Si c'est un rectangle ou une forme
-            else if (activeObject.isType('rect')) {
+            } else if (activeObject.isType('rect')) {
                 const currentFill = activeObject.fill;
 
                 if (currentFill === '#000000') {
