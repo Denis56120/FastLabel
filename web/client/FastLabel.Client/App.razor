@@ -7,6 +7,8 @@
     <Router AppAssembly="@typeof(Program).Assembly">
         <Found Context="routeData">
             <AuthorizeRouteView RouteData="@routeData">
+                <Authorizing>
+                </Authorizing>
                 <NotAuthorized>
                     <PageTitle>FastLabel - @TranslationService.GetString("auth.error.unauthorized_title")</PageTitle>
                     <LayoutView Layout="@typeof(PublicLayout)">
