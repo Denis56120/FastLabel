@@ -4,7 +4,7 @@ public static class ServiceExtensions
 {
     public static IServiceCollection AddEnvironmentConfiguration(this IServiceCollection services)
     {
-        var envPath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
+        var envPath = Path.Combine(Directory.GetCurrentDirectory(), ".env.dev");
 
         if (File.Exists(envPath))
         {

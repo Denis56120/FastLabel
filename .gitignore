@@ -22,7 +22,7 @@ publish/
 ## Sensitive or local configuration files
 appsettings.Development.json
 appsettings.local.json
-.env
+.env*
 
 ## FodyWeavers
 FodyWeavers.xsd
