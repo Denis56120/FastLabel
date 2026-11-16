@@ -1,14 +1,9 @@
 namespace FastLabel.Client.Services;
 
-public class CustomAuthenticationStateProvider : AuthenticationStateProvider
+public class CustomAuthenticationStateProvider(IHttpClientFactory clientFactory) : AuthenticationStateProvider
 {
-    private readonly HttpClient _httpClient;
+    private readonly HttpClient _httpClient = clientFactory.CreateClient("AuthClient");
     private readonly ClaimsPrincipal _anonymous = new(new ClaimsIdentity());
-
-    public CustomAuthenticationStateProvider(IHttpClientFactory clientFactory)
-    {
-        _httpClient = clientFactory.CreateClient("AuthClient");
-    }
 
     public override async Task<AuthenticationState> GetAuthenticationStateAsync()
     {

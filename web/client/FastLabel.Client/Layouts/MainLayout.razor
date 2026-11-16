@@ -90,12 +90,7 @@ else
     {
         try
         {
-            var user = await ApiClient.GetFromJsonAsync<UserDto>("api/users/me");
-            if (user != null)
-            {
-                var languages = await ApiClient.GetFromJsonAsync<List<LanguageDto>>("api/languages");
-                var userLang = languages?.FirstOrDefault(l => l.Id == user.LanguageId);
-            }
+            await ApiClient.GetFromJsonAsync<UserDto>("api/users/me");
         }
         catch
         {

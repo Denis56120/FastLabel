@@ -1,15 +1,9 @@
 namespace FastLabel.Client.Services;
 
-public class AuthService
+public class AuthService(IHttpClientFactory clientFactory, AuthenticationStateProvider authProvider)
 {
-    private readonly HttpClient _http;
-    private readonly AuthenticationStateProvider _authProvider;
-
-    public AuthService(IHttpClientFactory clientFactory, AuthenticationStateProvider authProvider)
-    {
-        _http = clientFactory.CreateClient("AuthClient");
-        _authProvider = authProvider;
-    }
+    private readonly HttpClient _http = clientFactory.CreateClient("AuthClient");
+    private readonly AuthenticationStateProvider _authProvider = authProvider;
 
     public async Task<bool> LoginAsync(LoginDto model)
     {

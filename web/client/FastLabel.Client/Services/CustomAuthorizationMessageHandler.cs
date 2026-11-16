@@ -1,21 +1,12 @@
 namespace FastLabel.Client.Services;
 
-public class CustomAuthorizationMessageHandler : DelegatingHandler
+public class CustomAuthorizationMessageHandler(TranslationService translationService) : DelegatingHandler
 {
-    private readonly TranslationService _translationService;
-
-    public CustomAuthorizationMessageHandler(TranslationService translationService)
-    {
-        _translationService = translationService;
-    }
+    private readonly TranslationService _translationService = translationService;
 
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
     {
         request.SetBrowserRequestCredentials(BrowserRequestCredentials.Include);
-
-        var currentLang = _translationService?.CurrentLanguage ?? "en";
-        request.Headers.Remove("X-Language");
-        request.Headers.Add("X-Language", currentLang);
 
         return base.SendAsync(request, cancellationToken);
     }
