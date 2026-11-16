@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace FastLabel.Shared.DTOs;
 
 public class AgentDto
@@ -8,6 +10,8 @@ public class AgentDto
     public int AgentTypeId { get; set; }
 
     public string? AgentTypeName { get; set; }
+
+    public string UserName { get; set; } = string.Empty;
 
     public string ApiKey { get; set; } = string.Empty;
 

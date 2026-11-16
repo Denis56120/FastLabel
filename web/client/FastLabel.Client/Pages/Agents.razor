@@ -3,6 +3,8 @@
 @attribute [Authorize]
 @inject TranslationService Translation
 @inject ApiClient ApiClient
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
 
 <CrudTablePage @ref="_crudTable"
                TItem="AgentDto" 
@@ -17,6 +19,10 @@
                EditModalTitle="@Translation.GetString("agents.edit_title")">
 
     <TableHeader>
+        @if (_isAdmin)
+        {
+            <th>@Translation.GetString("agents.user")</th>
+        }
         <th>@Translation.GetString("agents.type")</th>
         <th>@Translation.GetString("agents.api_key")</th>
         <th>@Translation.GetString("agents.created_at")</th>
@@ -24,6 +30,10 @@
     </TableHeader>
 
     <RowTemplate Context="agent">
+        @if (_isAdmin)
+        {
+            <td>@agent.UserName</td>
+        }
         <td>@agent.AgentTypeName</td>
         <td><code>@agent.ApiKey</code></td>
         <td>@agent.CreatedAt.ToLocalTime().ToString("g")</td>
@@ -56,6 +66,10 @@
 @code {
     private CrudTablePage<AgentDto, int>? _crudTable;
     private List<AgentTypeDto> _agentTypes = new();
+    private bool _isAdmin;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthStateTask { get; set; } = null!;
 
     private AgentDto CreateNewAgent()
     {
@@ -68,6 +82,11 @@
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
+
+        var authState = await AuthStateTask;
+        var user = authState.User;
+        _isAdmin = user.IsInRole("Admin");
+
         await LoadAgentTypesAsync();
     }
 

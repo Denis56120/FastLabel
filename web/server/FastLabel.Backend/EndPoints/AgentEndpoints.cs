@@ -46,6 +46,7 @@ public static class AgentEndpoints
                     .ThenInclude(at => at.Name)
                         .ThenInclude(n => n.Translations)
                             .ThenInclude(tr => tr.Language)
+                .Include(a => a.User) // <--- Ajouté pour récupérer le nom de l'utilisateur
                 .AsQueryable();
 
             if (!isAdmin)
@@ -72,6 +73,7 @@ public static class AgentEndpoints
                             .FirstOrDefault()
                            ?? a.AgentType.Name.DefaultTranslation)
                         : string.Empty,
+                    UserName = a.User != null ? a.User.Name : string.Empty, // <--- Assignation du UserName
                     ApiKey = a.ApiKey ?? string.Empty,
                     CreatedAt = a.CreatedAt,
                     LastSeenAt = a.LastSeenAt

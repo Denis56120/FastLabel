@@ -1,3 +1,10 @@
+using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
+using FastLabel.Backend.Data;
+using FastLabel.Backend.Models;
+using FastLabel.Shared.DTOs;
+using FastLabel.Backend.Services;
+
 namespace FastLabel.Backend.Endpoints;
 
 public static class TemplateEndpoints
@@ -34,11 +41,12 @@ public static class TemplateEndpoints
                 .Select(u => u.Language != null ? u.Language.Code : HttpContextExtensions.DefaultLanguage)
                 .FirstOrDefaultAsync() ?? HttpContextExtensions.DefaultLanguage;
 
-            var query = db.LabelTemplates
+            var query = db.Templates
                 .Include(t => t.BasicStatus)
                     .ThenInclude(s => s.Name)
                         .ThenInclude(t => t.Translations)
                             .ThenInclude(tr => tr.Language)
+                .Include(t => t.User) // Inclus pour récupérer le nom de l'utilisateur
                 .AsQueryable();
 
             if (!isAdmin)
@@ -65,6 +73,7 @@ public static class TemplateEndpoints
                             .FirstOrDefault() 
                            ?? t.BasicStatus.Name.DefaultTranslation) 
                         : string.Empty,
+                    UserName = t.User != null ? t.User.Name : string.Empty, // Alimentation du UserName
                     JsonData = t.JsonData ?? string.Empty,
                     CreatedAt = t.CreatedAt,
                     UpdatedAt = t.UpdatedAt
@@ -94,11 +103,12 @@ public static class TemplateEndpoints
                 .Select(u => u.Language != null ? u.Language.Code : HttpContextExtensions.DefaultLanguage)
                 .FirstOrDefaultAsync() ?? HttpContextExtensions.DefaultLanguage;
 
-            var query = db.LabelTemplates
+            var query = db.Templates
                 .Include(t => t.BasicStatus)
                     .ThenInclude(s => s.Name)
                         .ThenInclude(t => t.Translations)
                             .ThenInclude(tr => tr.Language)
+                .Include(t => t.User) // Inclus pour récupérer le nom de l'utilisateur
                 .Where(t => t.Id == id)
                 .AsQueryable();
 
@@ -119,6 +129,7 @@ public static class TemplateEndpoints
                             .FirstOrDefault() 
                            ?? t.BasicStatus.Name.DefaultTranslation) 
                         : string.Empty,
+                    UserName = t.User != null ? t.User.Name : string.Empty, // Alimentation du UserName
                     JsonData = t.JsonData ?? string.Empty,
                     CreatedAt = t.CreatedAt,
                     UpdatedAt = t.UpdatedAt
@@ -141,7 +152,7 @@ public static class TemplateEndpoints
             if (userId == 0) return Results.Unauthorized();
 
             var now = DateTime.UtcNow;
-            var template = new LabelTemplate
+            var template = new Template
             {
                 UserId = userId,
                 Name = dto.Name,
@@ -151,7 +162,7 @@ public static class TemplateEndpoints
                 UpdatedAt = now
             };
 
-            db.LabelTemplates.Add(template);
+            db.Templates.Add(template);
             await db.SaveChangesAsync();
 
             dto.Id = template.Id;
@@ -170,7 +181,7 @@ public static class TemplateEndpoints
             var (userId, isAdmin) = GetUserInfo(claimsUser);
             if (userId == 0) return Results.Unauthorized();
 
-            var template = await db.LabelTemplates.FindAsync(id);
+            var template = await db.Templates.FindAsync(id);
             if (template is null) return Results.NotFound(new ErrorResponseDto { Message = "template.error.not_found" });
 
             if (!isAdmin && template.UserId != userId)
@@ -194,7 +205,7 @@ public static class TemplateEndpoints
             var (userId, isAdmin) = GetUserInfo(claimsUser);
             if (userId == 0) return Results.Unauthorized();
 
-            var template = await db.LabelTemplates.FindAsync(id);
+            var template = await db.Templates.FindAsync(id);
             if (template is null) return Results.NotFound(new ErrorResponseDto { Message = "template.error.not_found" });
 
             if (!isAdmin && template.UserId != userId)
@@ -202,7 +213,7 @@ public static class TemplateEndpoints
                 return Results.Forbid();
             }
 
-            db.LabelTemplates.Remove(template);
+            db.Templates.Remove(template);
             await db.SaveChangesAsync();
             return Results.NoContent();
         });

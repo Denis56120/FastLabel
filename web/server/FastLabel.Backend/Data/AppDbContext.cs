@@ -15,7 +15,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<StripeRecord> Stripes => Set<StripeRecord>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
-    public DbSet<LabelTemplate> LabelTemplates => Set<LabelTemplate>();
+    public DbSet<Template> Templates => Set<Template>();
     public DbSet<Printer> Printers => Set<Printer>();
     public DbSet<PrintJob> PrintJobs => Set<PrintJob>();
     public DbSet<Agent> Agents => Set<Agent>();

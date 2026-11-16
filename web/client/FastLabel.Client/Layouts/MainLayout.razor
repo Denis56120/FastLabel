@@ -66,8 +66,8 @@ else
                         </li>
                     </AuthorizeView>
                     <li class="nav-item">
-                        <NavLink class="nav-link text-dark" href="/history" Match="NavLinkMatch.Prefix" @onclick="CloseSidebarOnMobile">
-                            <i class="bi bi-clock-history me-2"></i> @Translation.GetString("nav.history")
+                        <NavLink class="nav-link text-dark" href="/printjobs" Match="NavLinkMatch.Prefix" @onclick="CloseSidebarOnMobile">
+                            <i class="bi bi-clock-history me-2"></i> @Translation.GetString("nav.printjobs")
                         </NavLink>
                     </li>
                 </ul>
@@ -118,7 +118,7 @@ else
         if (uri.Contains("/printers")) return Translation.GetString("nav.printers");
         if (uri.Contains("/agents")) return Translation.GetString("nav.agents");
         if (uri.Contains("/users")) return Translation.GetString("nav.users");
-        if (uri.Contains("/history")) return Translation.GetString("nav.history");
+        if (uri.Contains("/printjobs")) return Translation.GetString("nav.printjobs");
 
         return Translation.GetString("nav.home");
     }

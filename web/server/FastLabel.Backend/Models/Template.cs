@@ -1,6 +1,6 @@
 namespace FastLabel.Backend.Models;
 
-public class LabelTemplate
+public class Template
 {
     [Key]
     public int Id { get; set; }

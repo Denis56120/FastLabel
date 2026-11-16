@@ -1,0 +1,63 @@
+@page "/printjobs"
+@layout MainLayout
+@attribute [Authorize]
+@inject TranslationService Translation
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+
+<CrudTablePage @ref="_crudTable"
+               TItem="PrintJobsDto" 
+               TKey="int"
+               ApiEndpoint="api/printjobs"
+               IdSelector="h => h.Id"
+               IsReadOnly="true"
+               Title="@Translation.GetString("printjobs.title")"
+               Description="@Translation.GetString("printjobs.description")"
+               EmptyMessage="@Translation.GetString("printjobs.no_printjobs")">
+
+    <TableHeader>
+        @if (_isAdmin)
+        {
+            <th>@Translation.GetString("printjobs.user")</th>
+        }
+        <th>@Translation.GetString("printjobs.printer")</th>
+        <th>@Translation.GetString("printjobs.template")</th>
+        <th>@Translation.GetString("printjobs.quantity")</th>
+        <th>@Translation.GetString("printjobs.status")</th>
+        <th>@Translation.GetString("printjobs.date")</th>
+    </TableHeader>
+
+    <RowTemplate Context="item">
+        @if (_isAdmin)
+        {
+            <td>@item.UserName</td>
+        }
+        <td>@item.PrinterName</td>
+        <td>@item.TemplateName</td>
+        <td>@item.Quantity</td>
+        <td>
+            <span class="badge bg-@(string.IsNullOrEmpty(item.ResponseMessage) ? "success" : "warning")">
+                @(string.IsNullOrEmpty(item.ResponseMessage) ? Translation.GetString("printjobs.status.success") : Translation.GetString("printjobs.status.error"))
+            </span>
+        </td>
+        <td>@(item.ProcessedAt?.ToLocalTime().ToString("g") ?? item.CreatedAt.ToLocalTime().ToString("g"))</td>
+    </RowTemplate>
+
+</CrudTablePage>
+
+@code {
+    private CrudTablePage<PrintJobsDto, int>? _crudTable;
+    private bool _isAdmin;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthStateTask { get; set; } = null!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        var authState = await AuthStateTask;
+        var user = authState.User;
+        _isAdmin = user.IsInRole("Admin");
+    }
+}

@@ -30,7 +30,7 @@ public static class PrintEndpoints
             string zplData = request.RawData ?? string.Empty;
             if (request.TemplateId.HasValue)
             {
-                var template = await db.LabelTemplates.FindAsync(request.TemplateId.Value);
+                var template = await db.Templates.FindAsync(request.TemplateId.Value);
                 if (template == null) 
                 {
                     return Results.BadRequest(new ErrorResponseDto { Message = "print.error.template_not_found" });

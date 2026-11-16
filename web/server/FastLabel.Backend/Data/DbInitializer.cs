@@ -16,55 +16,55 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
     }
 
     private async Task<Text> CreateTextWithTranslationsAsync(string tag, string defaultEnglishVal, Dictionary<string, string> translations)
+    {
+        var textEntity = await _context.Texts
+            .Include(t => t.Translations)
+            .OrderBy(t => t.Id)
+            .FirstOrDefaultAsync(t => t.Tag == tag);
+
+        if (textEntity == null)
         {
-            var textEntity = await _context.Texts
-                .Include(t => t.Translations)
-                .OrderBy(t => t.Id)
-                .FirstOrDefaultAsync(t => t.Tag == tag);
-
-            if (textEntity == null)
+            textEntity = new Text
             {
-                textEntity = new Text
-                {
-                    Tag = tag,
-                    DefaultTranslation = defaultEnglishVal
-                };
-                _context.Texts.Add(textEntity);
-                await _context.SaveChangesAsync();
-            }
+                Tag = tag,
+                DefaultTranslation = defaultEnglishVal
+            };
+            _context.Texts.Add(textEntity);
+            await _context.SaveChangesAsync();
+        }
 
-            foreach (var kvp in translations)
+        foreach (var kvp in translations)
+        {
+            var langCode = kvp.Key;
+            var translatedValue = kvp.Value;
+
+            var lang = await _context.Languages
+                .OrderBy(l => l.Id)
+                .FirstOrDefaultAsync(l => l.Code == langCode);
+            if (lang != null)
             {
-                var langCode = kvp.Key;
-                var translatedValue = kvp.Value;
+                var existingTranslation = textEntity.Translations
+                    .FirstOrDefault(tr => tr.LanguageId == lang.Id);
 
-                var lang = await _context.Languages
-                    .OrderBy(l => l.Id)
-                    .FirstOrDefaultAsync(l => l.Code == langCode);
-                if (lang != null)
+                if (existingTranslation == null)
                 {
-                    var existingTranslation = textEntity.Translations
-                        .FirstOrDefault(tr => tr.LanguageId == lang.Id);
-
-                    if (existingTranslation == null)
+                    _context.Translations.Add(new Translation
                     {
-                        _context.Translations.Add(new Translation
-                        {
-                            TextId = textEntity.Id,
-                            LanguageId = lang.Id,
-                            TranslatedValue = translatedValue
-                        });
-                    }
-                    else if (existingTranslation.TranslatedValue != translatedValue)
-                    {
-                        existingTranslation.TranslatedValue = translatedValue;
-                    }
+                        TextId = textEntity.Id,
+                        LanguageId = lang.Id,
+                        TranslatedValue = translatedValue
+                    });
+                }
+                else if (existingTranslation.TranslatedValue != translatedValue)
+                {
+                    existingTranslation.TranslatedValue = translatedValue;
                 }
             }
-
-            await _context.SaveChangesAsync();
-            return textEntity;
         }
+
+        await _context.SaveChangesAsync();
+        return textEntity;
+    }
 
     private async Task CreateDatabaseObjectsAsync()
     {
@@ -109,8 +109,8 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         // 5. Types d'agents (AgentType)
         if (!await _context.AgentTypes.AnyAsync())
         {
-            var a1 = await CreateTextWithTranslationsAsync("agenttype.windows", "FastLabel Windows Agent", new() { { "fr", "Agent Windows FastLabel" }, { "en", "FastLabel Windows Agent" } });
-            var a2 = await CreateTextWithTranslationsAsync("agenttype.linux", "FastLabel Linux Agent", new() { { "fr", "Agent Linux FastLabel" }, { "en", "FastLabel Linux Agent" } });
+            var a1 = await CreateTextWithTranslationsAsync("agenttype.windows", "Windows Agent", new() { { "fr", "Agent Windows" }, { "en", "Windows Agent" } });
+            var a2 = await CreateTextWithTranslationsAsync("agenttype.linux", "Linux Agent", new() { { "fr", "Agent Linux" }, { "en", "Linux Agent" } });
 
             _context.AgentTypes.AddRange(
                 new AgentType { NameTextId = a1.Id },
@@ -248,11 +248,114 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             _context.Users.AddRange(adminUser, regularUser);
             await _context.SaveChangesAsync();
         }
+
+        // 11. Agent Windows par défaut pour chaque utilisateur
+        if (!await _context.Agents.AnyAsync())
+        {
+            var textId = await _context.Texts
+            .Where(t => t.Tag == "agenttype.windows")
+            .Select(t => (int?)t.Id)
+            .FirstOrDefaultAsync();
+
+            var windowsAgentType = await _context.AgentTypes
+                .FirstOrDefaultAsync(at => at.NameTextId == textId);
+
+            int agentTypeId = windowsAgentType?.Id ?? 1;
+
+            var users = await _context.Users.ToListAsync();
+            foreach (var user in users)
+            {
+                _context.Agents.Add(new Agent
+                {
+                    UserId = user.Id,
+                    AgentTypeId = agentTypeId,
+                    ApiKey = Guid.NewGuid().ToString("N"),
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+            await _context.SaveChangesAsync();
+        }
+
+        // 12. Imprimante par défaut ("Test Printer") pour chaque utilisateur
+        if (!await _context.Printers.AnyAsync())
+        {
+            // A. Récupérer le protocole "Rasterized ZPL" via son tag
+            var protoTextId = await _context.Texts
+                .Where(t => t.Tag == "protocol.rasterized_zpl")
+                .Select(t => (int?)t.Id)
+                .FirstOrDefaultAsync();
+
+            var protocol = await _context.Protocols
+                .FirstOrDefaultAsync(p => p.NameTextId == protoTextId);
+            int protocolId = protocol?.Id ?? 1;
+
+            // B. Récupérer la résolution 300 DPI
+            var resolution = await _context.ResolutionDpis
+                .FirstOrDefaultAsync(r => r.Value == 300);
+            int resolutionId = resolution?.Id ?? 1;
+
+            // C. Récupérer le statut "Actif" via son tag "status.active"
+            var statusTextId = await _context.Texts
+                .Where(t => t.Tag == "status.active")
+                .Select(t => (int?)t.Id)
+                .FirstOrDefaultAsync();
+
+            var activeStatus = await _context.BasicStatuses
+                .FirstOrDefaultAsync(s => s.NameTextId == statusTextId);
+            int statusId = activeStatus?.Id ?? 1;
+
+            // D. Assurer l'association pour chaque utilisateur
+            var users = await _context.Users.ToListAsync();
+            foreach (var user in users)
+            {
+                _context.Printers.Add(new Printer
+                {
+                    UserId = user.Id,
+                    Name = "Test Printer",
+                    Location = "Room 1",
+                    IP = "192.168.1.25",
+                    Port = 9100,
+                    ProtocolId = protocolId,
+                    ResolutionDpiId = resolutionId,
+                    BasicStatusId = statusId,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+            await _context.SaveChangesAsync();
+        }
+
+        // 13. Modèle d'étiquette par défaut ("Label Test") pour chaque utilisateur
+        if (!await _context.Templates.AnyAsync())
+        {
+            var statusTextId = await _context.Texts
+                .Where(t => t.Tag == "status.active")
+                .Select(t => (int?)t.Id)
+                .FirstOrDefaultAsync();
+
+            var activeStatus = await _context.BasicStatuses
+                .FirstOrDefaultAsync(s => s.NameTextId == statusTextId);
+            int statusId = activeStatus?.Id ?? 1;
+
+            var users = await _context.Users.ToListAsync();
+            foreach (var user in users)
+            {
+                _context.Templates.Add(new Template
+                {
+                    UserId = user.Id,
+                    Name = "Label Test",
+                    BasicStatusId = statusId,
+                    JsonData = "{}",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                });
+            }
+            await _context.SaveChangesAsync();
+        }
     }
 
     private async Task CreateUITranslationsAsync()
     {
-        // 11. Textes UI
+        // 1. Textes UI
         await CreateTextWithTranslationsAsync("app.error.unknown", "Une erreur inattendue s'est produite.", new() { { "fr", "Une erreur inattendue s'est produite." }, { "en", "An unexpected error occurred." } });
         await CreateTextWithTranslationsAsync("app.success.saved", "Saved successfully.", new() { { "fr", "Enregistré avec succès." }, { "en", "Saved successfully." } });
         await CreateTextWithTranslationsAsync("app.success.deleted", "Deleted successfully.", new() { { "fr", "Supprimé avec succès." }, { "en", "Deleted successfully." } });
@@ -268,19 +371,20 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         await CreateTextWithTranslationsAsync("common.cancel", "Cancel", new() { { "fr", "Annuler" }, { "en", "Cancel" } });
         await CreateTextWithTranslationsAsync("common.loading", "Loading...", new() { { "fr", "Chargement en cours..." }, { "en", "Loading..." } });
 
-        await CreateTextWithTranslationsAsync("history.status.success", "Success", new() { { "fr", "Succès" }, { "en", "Success" } });
-        await CreateTextWithTranslationsAsync("history.status.error", "Error", new() { { "fr", "Erreur" }, { "en", "Error" } });
-        await CreateTextWithTranslationsAsync("history.title", "Print History", new() { { "fr", "Historique d'impression" }, { "en", "Print History" } });
-        await CreateTextWithTranslationsAsync("history.description", "View and manage print job logs.", new() { { "fr", "Consultez et gérez l'historique des impressions." }, { "en", "View and manage print job logs." } });
-        await CreateTextWithTranslationsAsync("history.no_history", "No print history available.", new() { { "fr", "Aucun historique d'impression disponible." }, { "en", "No print history available." } });
-        await CreateTextWithTranslationsAsync("history.printer", "Printer", new() { { "fr", "Imprimante" }, { "en", "Printer" } });
-        await CreateTextWithTranslationsAsync("history.template", "Template", new() { { "fr", "Modèle" }, { "en", "Template" } });
-        await CreateTextWithTranslationsAsync("history.quantity", "Quantity", new() { { "fr", "Quantité" }, { "en", "Quantity" } });
-        await CreateTextWithTranslationsAsync("history.status", "Status", new() { { "fr", "Statut" }, { "en", "Status" } });
-        await CreateTextWithTranslationsAsync("history.date", "Date", new() { { "fr", "Date" }, { "en", "Date" } });
-        await CreateTextWithTranslationsAsync("history.response_message", "Response Message", new() { { "fr", "Message de réponse" }, { "en", "Response Message" } });
-        await CreateTextWithTranslationsAsync("history.add_title", "Add History Entry", new() { { "fr", "Ajouter une entrée" }, { "en", "Add History Entry" } });
-        await CreateTextWithTranslationsAsync("history.edit_title", "Edit History Entry", new() { { "fr", "Modifier l'entrée" }, { "en", "Edit History Entry" } });
+        await CreateTextWithTranslationsAsync("printjobs.user", "User", new() { { "fr", "Utilisateur" }, { "en", "User" } });
+        await CreateTextWithTranslationsAsync("printjobs.status.success", "Success", new() { { "fr", "Succès" }, { "en", "Success" } });
+        await CreateTextWithTranslationsAsync("printjobs.status.error", "Error", new() { { "fr", "Erreur" }, { "en", "Error" } });
+        await CreateTextWithTranslationsAsync("printjobs.title", "Print Jobs", new() { { "fr", "Travaux d'impression" }, { "en", "Print Jobs" } });
+        await CreateTextWithTranslationsAsync("printjobs.description", "View and manage print jobs.", new() { { "fr", "Consultez et gérez les travaux d'impression." }, { "en", "View and manage print jobs." } });
+        await CreateTextWithTranslationsAsync("printjobs.no_printjobs", "No print jobs available.", new() { { "fr", "Aucun travail d'impression disponible." }, { "en", "No print jobs available." } });
+        await CreateTextWithTranslationsAsync("printjobs.printer", "Printer", new() { { "fr", "Imprimante" }, { "en", "Printer" } });
+        await CreateTextWithTranslationsAsync("printjobs.template", "Template", new() { { "fr", "Modèle" }, { "en", "Template" } });
+        await CreateTextWithTranslationsAsync("printjobs.quantity", "Quantity", new() { { "fr", "Quantité" }, { "en", "Quantity" } });
+        await CreateTextWithTranslationsAsync("printjobs.status", "Status", new() { { "fr", "Statut" }, { "en", "Status" } });
+        await CreateTextWithTranslationsAsync("printjobs.date", "Date", new() { { "fr", "Date" }, { "en", "Date" } });
+        await CreateTextWithTranslationsAsync("printjobs.response_message", "Response Message", new() { { "fr", "Message de réponse" }, { "en", "Response Message" } });
+        await CreateTextWithTranslationsAsync("printjobs.add_title", "Add Print Job", new() { { "fr", "Ajouter un travail d'impression" }, { "en", "Add Print Job" } });
+        await CreateTextWithTranslationsAsync("printjobs.edit_title", "Edit Print Job", new() { { "fr", "Modifier le travail d'impression" }, { "en", "Edit Print Job" } });
 
         await CreateTextWithTranslationsAsync("users.role_admin", "Admin", new() { { "fr", "Admin" }, { "en", "Admin" } });
         await CreateTextWithTranslationsAsync("users.role_user", "User", new() { { "fr", "Utilisateur" }, { "en", "User" } });
@@ -298,6 +402,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         await CreateTextWithTranslationsAsync("users.add_title", "Add User", new() { { "fr", "Ajouter un utilisateur" }, { "en", "Add User" } });
         await CreateTextWithTranslationsAsync("users.edit_title", "Edit User", new() { { "fr", "Modifier l'utilisateur" }, { "en", "Edit User" } });
 
+        await CreateTextWithTranslationsAsync("agents.user", "User", new() { { "fr", "Utilisateur" }, { "en", "User" } });
         await CreateTextWithTranslationsAsync("agents.created_at", "Created At", new() { { "fr", "Créé le" }, { "en", "Created At" } });
         await CreateTextWithTranslationsAsync("agents.error.type_required", "Please select an agent type", new() { { "fr", "Veuillez sélectionner un type d'agent" }, { "en", "Please select an agent type" } });
         await CreateTextWithTranslationsAsync("agents.api_key_readonly_help", "This key is automatically generated and cannot be modified.", new() { { "fr", "Cette clé est générée automatiquement et ne peut pas être modifiée." }, { "en", "This key is automatically generated and cannot be modified." } });
@@ -312,6 +417,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         await CreateTextWithTranslationsAsync("agents.add_title", "Add Agent", new() { { "fr", "Ajouter un agent" }, { "en", "Add Agent" } });
         await CreateTextWithTranslationsAsync("agents.edit_title", "Edit Agent", new() { { "fr", "Modifier l'agent" }, { "en", "Edit Agent" } });
 
+        await CreateTextWithTranslationsAsync("printers.user", "User", new() { { "fr", "Utilisateur" }, { "en", "User" } });
         await CreateTextWithTranslationsAsync("printers.select_protocol", "Select a protocol...", new() { { "fr", "Sélectionner un protocole..." }, { "en", "Select a protocol..." } });
         await CreateTextWithTranslationsAsync("printers.select_resolution", "Select a resolution...", new() { { "fr", "Sélectionner une résolution..." }, { "en", "Select a resolution..." } });
         await CreateTextWithTranslationsAsync("printers.protocol", "Protocol", new() { { "fr", "Protocole" }, { "en", "Protocol" } });
@@ -329,6 +435,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         await CreateTextWithTranslationsAsync("printers.port", "Port", new() { { "fr", "Port" }, { "en", "Port" } });
         await CreateTextWithTranslationsAsync("printers.status", "Status", new() { { "fr", "Statut" }, { "en", "Status" } });
 
+        await CreateTextWithTranslationsAsync("templates.user", "User", new() { { "fr", "Utilisateur" }, { "en", "User" } });
         await CreateTextWithTranslationsAsync("templates.render.title", "Label Renderer Editor", new() { { "fr", "Éditeur de rendu d'étiquette" }, { "en", "Label Renderer Editor" } });
         await CreateTextWithTranslationsAsync("templates.render.preview", "Preview", new() { { "fr", "Prévisualisation" }, { "en", "Preview" } });
         await CreateTextWithTranslationsAsync("templates.edit_renderer", "Edit Label Renderer", new() { { "fr", "Éditer le rendu de l'étiquette" }, { "en", "Edit Label Renderer" } });
@@ -346,7 +453,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         await CreateTextWithTranslationsAsync("nav.printers", "Printers", new() { { "fr", "Imprimantes" }, { "en", "Printers" } });
         await CreateTextWithTranslationsAsync("nav.agents", "Agents", new() { { "fr", "Agents" }, { "en", "Agents" } });
         await CreateTextWithTranslationsAsync("nav.users", "Users", new() { { "fr", "Utilisateurs" }, { "en", "Users" } });
-        await CreateTextWithTranslationsAsync("nav.history", "History", new() { { "fr", "Historique" }, { "en", "History" } });
+        await CreateTextWithTranslationsAsync("nav.printjobs", "Print Jobs", new() { { "fr", "Tâches d'impression" }, { "en", "Print Jobs" } });
         await CreateTextWithTranslationsAsync("nav.my_account", "My Account", new() { { "fr", "Mon Compte" }, { "en", "My Account" } });
         await CreateTextWithTranslationsAsync("nav.logout", "Logout", new() { { "fr", "Déconnexion" }, { "en", "Logout" } });
 
@@ -430,13 +537,13 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         await CreateTextWithTranslationsAsync("auth.back_to_login", "Back to login", new() { { "fr", "Retour à la connexion" }, { "en", "Back to login" } });
         await CreateTextWithTranslationsAsync("auth.email_placeholder_alt", "votre@email.com", new() { { "fr", "votre@email.com" }, { "en", "your@email.com" } });
 
-        // 12. Emails
+        // 2. Emails
         await CreateTextWithTranslationsAsync("email.activation.subject", "Activate your FastLabel account", new() { { "fr", "Activez votre compte FastLabel" }, { "en", "Activate your FastLabel account" } });
         await CreateTextWithTranslationsAsync("email.activation.body", "Hello {0},\n\nPlease click the following link to activate your account:\n{1}", new() { { "fr", "Bonjour {0},\n\nVeuillez cliquer sur le lien suivant pour activer votre compte :\n{1}" }, { "en", "Hello {0},\n\nPlease click the following link to activate your account:\n{1}" } });
         await CreateTextWithTranslationsAsync("email.reset.subject", "Reset your FastLabel password", new() { { "fr", "Réinitialisez votre mot de passe FastLabel" }, { "en", "Reset your FastLabel password" } });
         await CreateTextWithTranslationsAsync("email.reset.body", "Hello {0},\n\nPlease click the following link to reset your password:\n{1}", new() { { "fr", "Bonjour {0},\n\nVeuillez cliquer sur le lien suivant pour réinitialiser votre mot de passe :\n{1}" }, { "en", "Hello {0},\n\nPlease click the following link to reset your password:\n{1}" } });
 
-        // DTOs Rectrictions
+        // 3. DTOs Restrictions
         await CreateTextWithTranslationsAsync("language.error.code_required", "Le code de la langue est requis", new() { { "fr", "Le code de la langue est requis" }, { "en", "Language code is required" } });
         await CreateTextWithTranslationsAsync("language.error.code_max_length", "Le code de la langue ne peut pas dépasser 10 caractères", new() { { "fr", "Le code de la langue ne peut pas dépasser 10 caractères" }, { "en", "Language code cannot exceed 10 characters" } });
         await CreateTextWithTranslationsAsync("language.error.description_required", "La description de la langue est requise", new() { { "fr", "La description de la langue est requise" }, { "en", "Language description is required" } });
@@ -460,10 +567,10 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         await CreateTextWithTranslationsAsync("agent.error.type_required", "Agent type is required", new() { { "fr", "Le type d'agent est requis" }, { "en", "Agent type is required" } });
         await CreateTextWithTranslationsAsync("agent.error.apikey_required", "API key is required", new() { { "fr", "La clé d'API est requise" }, { "en", "API key is required" } });
 
-        await CreateTextWithTranslationsAsync("printhistory.error.printer_name_required", "Printer name is required", new() { { "fr", "Le nom de l'imprimante est requis" }, { "en", "Printer name is required" } });
-        await CreateTextWithTranslationsAsync("printhistory.error.template_name_required", "Template name is required", new() { { "fr", "Le nom du modèle est requis" }, { "en", "Template name is required" } });
-        await CreateTextWithTranslationsAsync("printhistory.error.input_data_required", "Input data JSON is required", new() { { "fr", "Les données d'entrée JSON sont requises" }, { "en", "Input data JSON is required" } });
-        await CreateTextWithTranslationsAsync("printhistory.error.quantity_range", "Quantity must be between 1 and 10000", new() { { "fr", "La quantité doit être comprise entre 1 et 10000" }, { "en", "Quantity must be between 1 and 10000" } });
+        await CreateTextWithTranslationsAsync("printjobs.error.printer_name_required", "Printer name is required", new() { { "fr", "Le nom de l'imprimante est requis" }, { "en", "Printer name is required" } });
+        await CreateTextWithTranslationsAsync("printjobs.error.template_name_required", "Template name is required", new() { { "fr", "Le nom du modèle est requis" }, { "en", "Template name is required" } });
+        await CreateTextWithTranslationsAsync("printjobs.error.input_data_required", "Input data JSON is required", new() { { "fr", "Les données d'entrée JSON sont requises" }, { "en", "Input data JSON is required" } });
+        await CreateTextWithTranslationsAsync("printjobs.error.quantity_range", "Quantity must be between 1 and 10000", new() { { "fr", "La quantité doit être comprise entre 1 et 10000" }, { "en", "Quantity must be between 1 and 10000" } });
 
         await CreateTextWithTranslationsAsync("print.error.apikey_required", "API key is required", new() { { "fr", "La clé d'API est requise" }, { "en", "API key is required" } });
         await CreateTextWithTranslationsAsync("print.error.printer_id_required", "Printer ID is required", new() { { "fr", "L'identifiant de l'imprimante est requis" }, { "en", "Printer ID is required" } });
@@ -505,7 +612,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         await CreateTextWithTranslationsAsync("label.error.content_required", "Label content is required", new() { { "fr", "Le contenu de l'étiquette est requis" }, { "en", "Label content is required" } });
         await CreateTextWithTranslationsAsync("label.error.description_max_length", "Description cannot exceed 500 characters", new() { { "fr", "La description ne peut pas dépasser 500 caractères" }, { "en", "Description cannot exceed 500 characters" } });
 
-        // Endpoints
+        // 4. Endpoints
         await CreateTextWithTranslationsAsync("stripe.error.invalid_interval", "Intervalle de facturation invalide.", new() { { "fr", "Intervalle de facturation invalide." }, { "en", "Invalid billing interval." } });
         await CreateTextWithTranslationsAsync("stripe.error.plan_not_found", "Le plan demandé est introuvable.", new() { { "fr", "Le plan demandé est introuvable." }, { "en", "The requested plan was not found." } });
         await CreateTextWithTranslationsAsync("stripe.error.price_not_configured", "Le tarif Stripe n'est pas configuré.", new() { { "fr", "Le tarif Stripe n'est pas configuré." }, { "en", "The Stripe price is not configured." } });

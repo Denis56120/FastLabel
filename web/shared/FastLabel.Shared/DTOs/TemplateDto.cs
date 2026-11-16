@@ -12,6 +12,8 @@ public class TemplateDto
 
     public string BasicStatusName { get; set; } = string.Empty;
 
+    public string UserName { get; set; } = string.Empty;
+
     [Required(ErrorMessage = "template.error.json_data_required")]
     public string JsonData { get; set; } = string.Empty;
 

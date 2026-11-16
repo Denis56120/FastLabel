@@ -1,3 +1,10 @@
+using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
+using FastLabel.Backend.Data;
+using FastLabel.Backend.Models;
+using FastLabel.Shared.DTOs;
+using FastLabel.Backend.Services;
+
 namespace FastLabel.Backend.Endpoints;
 
 public static class PrinterEndpoints
@@ -43,6 +50,7 @@ public static class PrinterEndpoints
                     .ThenInclude(s => s.Name)
                         .ThenInclude(t => t.Translations)
                             .ThenInclude(tr => tr.Language)
+                .Include(p => p.User) // <--- Inclusion de l'utilisateur pour le mode admin
                 .AsQueryable();
 
             if (!isAdmin)
@@ -83,6 +91,7 @@ public static class PrinterEndpoints
                             .FirstOrDefault() 
                            ?? p.BasicStatus.Name.DefaultTranslation) 
                         : string.Empty,
+                    UserName = p.User != null ? p.User.Name : string.Empty, // <--- Assignation du nom d'utilisateur
                     CreatedAt = p.CreatedAt
                 })
                 .ToListAsync();
@@ -120,6 +129,7 @@ public static class PrinterEndpoints
                     .ThenInclude(s => s.Name)
                         .ThenInclude(t => t.Translations)
                             .ThenInclude(tr => tr.Language)
+                .Include(p => p.User) // <--- Inclusion de l'utilisateur
                 .Where(p => p.Id == id)
                 .AsQueryable();
 
@@ -154,6 +164,7 @@ public static class PrinterEndpoints
                             .FirstOrDefault() 
                            ?? p.BasicStatus.Name.DefaultTranslation) 
                         : string.Empty,
+                    UserName = p.User != null ? p.User.Name : string.Empty, // <--- Assignation du nom d'utilisateur
                     CreatedAt = p.CreatedAt
                 })
                 .FirstOrDefaultAsync();

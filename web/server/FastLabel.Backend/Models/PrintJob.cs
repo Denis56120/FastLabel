@@ -15,7 +15,7 @@ public class PrintJob
     public int LabelTemplateId { get; set; }
 
     [ForeignKey(nameof(LabelTemplateId))]
-    public LabelTemplate LabelTemplate { get; set; } = null!;
+    public Template LabelTemplate { get; set; } = null!;
 
     [Required]
     public int Quantity { get; set; }

@@ -3,6 +3,8 @@
 @attribute [Authorize]
 @inject TranslationService Translation
 @inject ApiClient ApiClient
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
 
 <CrudTablePage @ref="_crudTable"
                TItem="PrinterDto" 
@@ -17,6 +19,10 @@
                EditModalTitle="@Translation.GetString("printers.edit_title")">
 
     <TableHeader>
+        @if (_isAdmin)
+        {
+            <th>@Translation.GetString("printers.user")</th>
+        }
         <th>@Translation.GetString("printers.name")</th>
         <th>@Translation.GetString("printers.location")</th>
         <th>@Translation.GetString("printers.ip_port")</th>
@@ -27,6 +33,10 @@
     </TableHeader>
 
     <RowTemplate Context="printer">
+        @if (_isAdmin)
+        {
+            <td>@printer.UserName</td>
+        }
         <td>@printer.Name</td>
         <td>@printer.Location</td>
         <td>@printer.IP:@printer.Port</td>
@@ -91,10 +101,19 @@
     private CrudTablePage<PrinterDto, int>? _crudTable;
     private List<ProtocolDto> _protocols = new();
     private List<ResolutionDpiDto> _resolutions = new();
+    private bool _isAdmin;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthStateTask { get; set; } = null!;
 
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
+
+        var authState = await AuthStateTask;
+        var user = authState.User;
+        _isAdmin = user.IsInRole("Admin");
+
         await LoadDropdownDataAsync();
     }
 

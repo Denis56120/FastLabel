@@ -1,10 +1,17 @@
+using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
+using FastLabel.Backend.Data;
+using FastLabel.Backend.Models;
+using FastLabel.Shared.DTOs;
+using FastLabel.Backend.Services;
+
 namespace FastLabel.Backend.Endpoints;
 
 public static class PrintJobEndpoints
 {
     public static void MapPrintJobEndpoints(this IEndpointRouteBuilder routes)
     {
-        var group = routes.MapGroup("/api/jobs").RequireAuthorization();
+        var group = routes.MapGroup("/api/printjobs").RequireAuthorization();
 
         static (int userId, bool isAdmin) GetUserInfo(ClaimsPrincipal user)
         {
@@ -30,6 +37,7 @@ public static class PrintJobEndpoints
 
             var query = db.PrintJobs
                 .Include(j => j.Printer)
+                    .ThenInclude(p => p.User) // <--- Inclusion de l'utilisateur via la relation Printer -> User
                 .Include(j => j.LabelTemplate)
                 .OrderByDescending(j => j.CreatedAt)
                 .AsQueryable();
@@ -46,7 +54,7 @@ public static class PrintJobEndpoints
             var jobs = await query
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
-                .Select(j => new PrintHistoryDto
+                .Select(j => new PrintJobsDto
                 {
                     Id = j.Id,
                     PrinterName = j.Printer != null ? j.Printer.Name : string.Empty,
@@ -55,13 +63,14 @@ public static class PrintJobEndpoints
                     InputDataJson = j.InputDataJson ?? string.Empty,
                     GeneratedPayload = j.GeneratedPayload,
                     ResponseMessage = j.ResponseMessage,
+                    UserName = j.Printer != null && j.Printer.User != null ? j.Printer.User.Name : string.Empty, 
                     CreatedAt = j.CreatedAt,
                     ProcessedAt = j.ProcessedAt
                 })
                 .ToListAsync();
 
             // 3. Encapsulation dans le PagedResultDto
-            var result = new PagedResultDto<PrintHistoryDto>
+            var result = new PagedResultDto<PrintJobsDto>
             {
                 Items = jobs,
                 TotalCount = totalCount,
@@ -79,6 +88,7 @@ public static class PrintJobEndpoints
 
             var query = db.PrintJobs
                 .Include(j => j.Printer)
+                    .ThenInclude(p => p.User) 
                 .Include(j => j.LabelTemplate)
                 .Where(j => j.Id == id)
                 .AsQueryable();
@@ -89,7 +99,7 @@ public static class PrintJobEndpoints
             }
 
             var jobDto = await query
-                .Select(j => new PrintHistoryDto
+                .Select(j => new PrintJobsDto
                 {
                     Id = j.Id,
                     PrinterName = j.Printer != null ? j.Printer.Name : string.Empty,
@@ -98,6 +108,7 @@ public static class PrintJobEndpoints
                     InputDataJson = j.InputDataJson ?? string.Empty,
                     GeneratedPayload = j.GeneratedPayload,
                     ResponseMessage = j.ResponseMessage,
+                    UserName = j.Printer != null && j.Printer.User != null ? j.Printer.User.Name : string.Empty, // <--- Assignation du UserName
                     CreatedAt = j.CreatedAt,
                     ProcessedAt = j.ProcessedAt
                 })

@@ -3,6 +3,8 @@
 @attribute [Authorize]
 @inject TranslationService Translation
 @inject NavigationManager Navigation
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
 
 <CrudTablePage @ref="_crudTable"
                TItem="TemplateDto" 
@@ -23,6 +25,10 @@
     </CustomToolbarActions>
 
     <TableHeader>
+        @if (_isAdmin)
+        {
+            <th>@Translation.GetString("templates.user")</th>
+        }
         <th>@Translation.GetString("templates.name")</th>
         <th>@Translation.GetString("templates.status")</th>
         <th>@Translation.GetString("templates.created_at")</th>
@@ -30,6 +36,10 @@
     </TableHeader>
 
     <RowTemplate Context="template">
+        @if (_isAdmin)
+        {
+            <td>@template.UserName</td>
+        }
         <td>@template.Name</td>
         <td>@template.BasicStatusName</td>
         <td>@template.CreatedAt.ToLocalTime().ToString("g")</td>
@@ -51,10 +61,18 @@
 
 @code {
     private CrudTablePage<TemplateDto, int>? _crudTable;
+    private bool _isAdmin;
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthStateTask { get; set; } = null!;
 
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
+
+        var authState = await AuthStateTask;
+        var user = authState.User;
+        _isAdmin = user.IsInRole("Admin");
     }
 
     private void EditRenderer(int id)
