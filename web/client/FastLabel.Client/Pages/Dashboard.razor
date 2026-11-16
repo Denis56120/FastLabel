@@ -136,8 +136,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        HandleStripeRedirect();
-
         try
         {
             isLoading = true;
@@ -160,6 +158,14 @@
         }
     }
 
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            HandleStripeRedirect();
+        }
+    }
+
     private void HandleStripeRedirect()
     {
         var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
@@ -168,13 +174,11 @@
         if (path.EndsWith("/dashboard/subscription/success", StringComparison.OrdinalIgnoreCase))
         {
             ToastService.ShowSuccess(Translation.GetString("dashboard.subscription.checkout_success"));
-            // Nettoie l'URL dans la barre d'adresse sans recharger la page
             Navigation.NavigateTo("/dashboard", replace: true);
         }
         else if (path.EndsWith("/dashboard/subscription/cancel", StringComparison.OrdinalIgnoreCase))
         {
             ToastService.ShowWarning(Translation.GetString("dashboard.subscription.checkout_cancel"));
-            // Nettoie l'URL dans la barre d'adresse sans recharger la page
             Navigation.NavigateTo("/dashboard", replace: true);
         }
     }
