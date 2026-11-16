@@ -1,5 +1,6 @@
 @inherits TranslatableComponent
 @inject NavigationManager Navigation
+@inject ApiClient ApiClient
 
 @if (!_isLoaded)
 {
@@ -20,26 +21,38 @@ else
 
                 <div class="d-flex align-items-center">
                     <div class="dropdown @(_isDropdownOpen ? "show" : "")">
-                        <button class="btn btn-outline-secondary dropdown-toggle btn-sm d-flex align-items-center"
+                        <button class="btn btn-outline-secondary dropdown-toggle btn-sm d-flex align-items-center gap-1"
                                 type="button" @onclick="ToggleDropdown">
-                            <i class="bi bi-globe me-1"></i>
-                            <span>@(Translation.CurrentLanguage.StartsWith("fr", StringComparison.OrdinalIgnoreCase) ? "Français" : "English")</span>
+                            @if (!string.IsNullOrEmpty(CurrentLanguageFlag))
+                            {
+                                <span>@CurrentLanguageFlag</span>
+                            }
+                            else
+                            {
+                                <i class="bi bi-globe"></i>
+                            }
+                            <span>@CurrentLanguageDescription</span>
                         </button>
 
                         <ul class="dropdown-menu dropdown-menu-end shadow-sm @(_isDropdownOpen ? "show" : "")"
                             style="position: absolute; right: 0; left: auto;">
-                            <li>
-                                <button class="dropdown-item @(Translation.CurrentLanguage.Equals("fr", StringComparison.OrdinalIgnoreCase) ? "active" : "")" type="button"
-                                        @onclick='() => ChangeLanguage("fr")'>
-                                    🇫🇷 Français (FR)
-                                </button>
-                            </li>
-                            <li>
-                                <button class="dropdown-item @(Translation.CurrentLanguage.Equals("en", StringComparison.OrdinalIgnoreCase) ? "active" : "")" type="button"
-                                        @onclick='() => ChangeLanguage("en")'>
-                                    🇬🇧 English (EN)
-                                </button>
-                            </li>
+                            @if (_languages != null)
+                            {
+                                @foreach (var lang in _languages)
+                                {
+                                    var isCurrent = Translation.CurrentLanguage.Equals(lang.Code, StringComparison.OrdinalIgnoreCase);
+                                    <li>
+                                        <button class="dropdown-item d-flex align-items-center gap-2 @(isCurrent ? "active" : "")" type="button"
+                                                @onclick='() => ChangeLanguage(lang.Code)'>
+                                            @if (!string.IsNullOrEmpty(lang.Flag))
+                                            {
+                                                <span>@lang.Flag</span>
+                                            }
+                                            <span>@lang.Description</span>
+                                        </button>
+                                    </li>
+                                }
+                            }
                         </ul>
                     </div>
                 </div>
@@ -59,6 +72,13 @@ else
 @code {
     private bool _isDropdownOpen = false;
     private bool _isLoaded = false;
+    private List<LanguageDto>? _languages;
+
+    private LanguageDto? CurrentLanguageObj =>
+        _languages?.FirstOrDefault(l => l.Code.Equals(Translation.CurrentLanguage, StringComparison.OrdinalIgnoreCase));
+
+    private string CurrentLanguageDescription => CurrentLanguageObj?.Description ?? "Language";
+    private string? CurrentLanguageFlag => CurrentLanguageObj?.Flag;
 
     protected override async Task OnInitializedAsync()
     {
@@ -67,6 +87,7 @@ else
         try
         {
             await Translation.InitializeAsync();
+            await LoadLanguagesAsync();
         }
         catch
         {
@@ -74,6 +95,18 @@ else
 
         _isLoaded = true;
         StateHasChanged();
+    }
+
+    private async Task LoadLanguagesAsync()
+    {
+        try
+        {
+            _languages = await ApiClient.GetFromJsonAsync<List<LanguageDto>>("api/languages") ?? new();
+        }
+        catch
+        {
+            _languages = new();
+        }
     }
 
     private string GetSafePageTitle()
@@ -110,20 +143,28 @@ else
         _isDropdownOpen = !_isDropdownOpen;
     }
 
-    private async Task ChangeLanguage(string language)
+    private async Task ChangeLanguage(string languageCode)
     {
         _isDropdownOpen = false;
 
-        await Translation.SetLanguageAsync(language);
+        await Translation.SetLanguageAsync(languageCode);
+        await Translation.ChangeLanguagePageAsync();
         
         try
         {
             await Translation.InitializeAsync();
+            await LoadLanguagesAsync();
         }
         catch
         {
         }
         
         StateHasChanged();
+    }
+
+    protected override async Task OnLanguageChangedAsync()
+    {
+        StateHasChanged();
+        await LoadLanguagesAsync();
     }
 }

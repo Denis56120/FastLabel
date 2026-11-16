@@ -13,5 +13,5 @@ public class LanguageDto
     [Required(ErrorMessage = "language.error.description_required")]
     public string Description { get; set; } = string.Empty;
 
-    public string? FlagBase64 { get; set; }
+    public string? Flag { get; set; }
 }

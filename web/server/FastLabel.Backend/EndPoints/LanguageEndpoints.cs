@@ -26,9 +26,8 @@ public static class LanguageEndpoints
                     lang = userLang;
                 }
             }
-
-            // 2. Sinon (ou si non trouvé), on se replie sur le cookie du navigateur
-            if (lang == "en" && httpContext.Request.Cookies.TryGetValue("language", out var cookieLang) && !string.IsNullOrEmpty(cookieLang))
+            // 2. Sinon, on se replie directement sur le cookie du navigateur
+            else if (httpContext.Request.Cookies.TryGetValue("language", out var cookieLang) && !string.IsNullOrEmpty(cookieLang))
             {
                 lang = cookieLang;
             }
@@ -46,12 +45,13 @@ public static class LanguageEndpoints
                             .Where(tr => tr.Language.Code == lang)
                             .Select(tr => tr.TranslatedValue)
                             .FirstOrDefault()
-                           ?? l.Description.DefaultTranslation)
-                        : string.Empty
+                        ?? l.Description.DefaultTranslation)
+                        : string.Empty,
+                    Flag = l.Flag
                 })
                 .ToListAsync();
 
-                return Results.Ok(languages);
+            return Results.Ok(languages);
         });
 
         group.MapGet("/set", (string language, HttpResponse response) =>

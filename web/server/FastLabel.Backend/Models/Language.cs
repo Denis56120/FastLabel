@@ -20,7 +20,7 @@ public class Language
     [ForeignKey(nameof(DescriptionTextId))]
     public Text Description { get; set; } = null!;
 
-    public byte[]? Flag { get; set; }
+    public string Flag { get; set; } = string.Empty;
 
     public ICollection<Translation> Translations { get; set; } = [];
 

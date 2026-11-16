@@ -209,6 +209,7 @@
                     {
                         try
                         {
+                            await Translation.ChangeLanguagePageAsync();
                             await Translation.InitializeAsync();
                         }
                         catch

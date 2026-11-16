@@ -14,5 +14,9 @@ window.appInterop = {
             expires = "; expires=" + date.toUTCString();
         }
         document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Lax";
+    },
+
+    setDocumentLanguage: function (lang) {
+        document.documentElement.lang = lang;
     }
 };

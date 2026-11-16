@@ -1,13 +1,17 @@
 namespace FastLabel.Client.Services;
 
-public class TranslationService(IHttpClientFactory httpClientFactory, CookieService cookieService)
+public class TranslationService(IHttpClientFactory httpClientFactory, CookieService cookieService, IServiceProvider serviceProvider)
 {
     private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
+    private readonly IServiceProvider _serviceProvider = serviceProvider;
     private readonly CookieService _cookieService = cookieService;
     private Dictionary<string, string> _translations = new(StringComparer.OrdinalIgnoreCase);
     private string _currentLanguage = "en";
     private string? _loadedLanguage;
     private Task? _loadingTask;
+    private IJSRuntime? _jsRuntime;
+    private IJSRuntime JsRuntime => 
+        _jsRuntime ??= _serviceProvider.GetRequiredService<IJSRuntime>();
 
     public event Action? OnChange;
 
@@ -106,6 +110,16 @@ public class TranslationService(IHttpClientFactory httpClientFactory, CookieServ
         }
 
         OnChange?.Invoke();
+    }
+
+    public async Task ChangeLanguagePageAsync()
+    {
+        try
+        {
+            var language =await _cookieService.GetCookieAsync("language");
+            await JsRuntime.InvokeVoidAsync("appInterop.setDocumentLanguage", language);
+        }
+        catch { }
     }
 
     public async Task SetLanguageAsync(string language)

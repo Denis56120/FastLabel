@@ -65,8 +65,8 @@ public static class DbInitializer
         if (!await context.Languages.AnyAsync())
         {
             context.Languages.AddRange(
-                new Language { Code = "fr", DescriptionTextId = descFr.Id, Flag = null },
-                new Language { Code = "en", DescriptionTextId = descEn.Id, Flag = null }
+                new Language { Code = "fr", DescriptionTextId = descFr.Id, Flag = "🇫🇷" },
+                new Language { Code = "en", DescriptionTextId = descEn.Id, Flag = "🇬🇧" }
             );
             await context.SaveChangesAsync();
         }

@@ -156,8 +156,8 @@ public static class AuthEndpoints
                 return Results.BadRequest(new ErrorResponseDto { Message = "auth.error.email_already_taken" });
             }
 
-            var frenchLanguage = await db.Languages.FirstOrDefaultAsync(l => l.Code == "fr");
-            int defaultLanguageId = frenchLanguage?.Id ?? await db.Languages.Select(l => l.Id).FirstOrDefaultAsync();
+            var englishLanguage = await db.Languages.FirstOrDefaultAsync(l => l.Code == "en");
+            int defaultLanguageId = englishLanguage?.Id ?? await db.Languages.Select(l => l.Id).FirstOrDefaultAsync();
 
             var user = new User
             {
