@@ -1,6 +1,11 @@
 namespace FastLabel.Backend.Services;
 
-public class EmailService(IConfiguration configuration)
+public interface IEmailService
+{
+    Task SendEmailAsync(string toEmail, string subject, string body);
+}
+
+public class EmailService(IConfiguration configuration): IEmailService
 {
     private readonly IConfiguration _configuration = configuration;
 

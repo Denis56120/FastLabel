@@ -53,7 +53,7 @@ public static class ResellerEndpoints
         });
 
         // 2. Ajouter un client final (Incrémente Stripe + Crée le compte inactif + Envoie l'e-mail d'activation multilingue)
-        resellerGroup.MapPost("/clients", async (UserDto clientDto, AppDbContext db, EmailService emailService, IConfiguration configuration, StripeService stripeService, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
+        resellerGroup.MapPost("/clients", async (UserDto clientDto, AppDbContext db, IEmailService emailService, IConfiguration configuration, IStripeService stripeService, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
         {
             var resellerIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier)
                                 ?? claimsUser.FindFirstValue("nameid");
@@ -157,7 +157,7 @@ public static class ResellerEndpoints
         });
 
         // 3. Supprimer un client final (Décrémente Stripe + Supprime le User)
-        resellerGroup.MapDelete("/clients/{id:int}", async (int id, AppDbContext db, StripeService stripeService, ClaimsPrincipal claimsUser) =>
+        resellerGroup.MapDelete("/clients/{id:int}", async (int id, AppDbContext db, IStripeService stripeService, ClaimsPrincipal claimsUser) =>
         {
             var resellerIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier)
                                 ?? claimsUser.FindFirstValue("nameid");

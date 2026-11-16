@@ -65,7 +65,7 @@ public static class AuthEndpoints
             return Results.Ok(new { message = "auth.success.logout" });
         }).RequireAuthorization();
 
-        authGroup.MapPost("/forgot-password", async (ForgotPasswordDto dto, HttpContext httpContext, AppDbContext db, EmailService emailService, IConfiguration configuration) =>
+        authGroup.MapPost("/forgot-password", async (ForgotPasswordDto dto, HttpContext httpContext, AppDbContext db, IEmailService emailService, IConfiguration configuration) =>
         {
             if (!ValidationExtensions.TryValidateModel(dto, out var errorResult))
             {
@@ -145,7 +145,7 @@ public static class AuthEndpoints
             return Results.Ok(new { message = "auth.success.password_reset" });
         });
 
-        authGroup.MapPost("/register", async (RegisterDto dto, HttpContext httpContext, AppDbContext db, IPasswordHasher<User> passwordHasher, EmailService emailService, IConfiguration configuration) =>
+        authGroup.MapPost("/register", async (RegisterDto dto, HttpContext httpContext, AppDbContext db, IPasswordHasher<User> passwordHasher, IEmailService emailService, IConfiguration configuration) =>
         {
             if (!ValidationExtensions.TryValidateModel(dto, out var errorResult))
             {

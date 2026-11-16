@@ -4,23 +4,26 @@ public static class AppExtensions
 {
     public static async Task<WebApplication> ConfigurePipelineAsync(this WebApplication app)
     {
-        using var scope = app.Services.CreateScope();
-        var services = scope.ServiceProvider;
-        
-        try
+        if (!app.Environment.IsEnvironment("Testing"))
         {
-            var dbContext = services.GetRequiredService<AppDbContext>();
-            var configuration = services.GetRequiredService<IConfiguration>();
-            var passwordHasher = services.GetRequiredService<IPasswordHasher<User>>();
-            
-            var initializer = new DbInitializer(dbContext, configuration, passwordHasher);
-            await initializer.InitializeAsync();
-        }
-        catch (Exception ex)
-        {
-            var logger = services.GetRequiredService<ILogger<WebApplication>>();
-            logger.LogError(ex, "Erreur critique lors de l'initialisation de la DB.");
-            throw; 
+            using var scope = app.Services.CreateScope();
+            var services = scope.ServiceProvider;
+
+            try
+            {
+                var dbContext = services.GetRequiredService<AppDbContext>();
+                var configuration = services.GetRequiredService<IConfiguration>();
+                var passwordHasher = services.GetRequiredService<IPasswordHasher<User>>();
+
+                var initializer = new DbInitializer(dbContext, configuration, passwordHasher);
+                await initializer.InitializeAsync();
+            }
+            catch (Exception ex)
+            {
+                var logger = services.GetRequiredService<ILogger<WebApplication>>();
+                logger.LogError(ex, "Erreur critique lors de l'initialisation de la DB.");
+                throw;
+            }
         }
 
         app.UseResponseCompression();

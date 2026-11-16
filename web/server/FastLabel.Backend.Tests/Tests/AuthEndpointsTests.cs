@@ -1,6 +1,4 @@
-
-
-namespace FastLabel.Backend.Tests;
+namespace FastLabel.Backend.Tests.Tests;
 
 public class AuthEndpointsTests : IClassFixture<CustomWebApplicationFactory>
 {

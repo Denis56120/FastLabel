@@ -56,7 +56,7 @@ public static class UserEndpoints
             return Results.Ok(userDto);
         }).RequireAuthorization();
 
-        routes.MapPut("/api/users/me", async (UserDto updatedDto, AppDbContext db, IPasswordHasher<User> passwordHasher, EmailService emailService, IConfiguration configuration, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
+        routes.MapPut("/api/users/me", async (UserDto updatedDto, AppDbContext db, IPasswordHasher<User> passwordHasher, IEmailService emailService, IConfiguration configuration, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
         {
             if (!ValidationExtensions.TryValidateModel(updatedDto, out var errorResult))
             {
