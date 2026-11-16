@@ -209,6 +209,8 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
 
     canvas.on('object:moving', (e) => {
         const obj = e.target;
+        if (obj === alignVerticalLine || obj === alignHorizontalLine) return;
+
         const canvasWidth = canvas.width;
         const canvasHeight = canvas.height;
 
@@ -232,6 +234,7 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
             snappedV = true;
         }
 
+        // Met à jour le rectangle de fond lié s'il existe
         if (obj.boundRect) {
             const padding = 4;
             obj.boundRect.set({
@@ -240,6 +243,9 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
             });
             obj.boundRect.setCoords();
         }
+
+        // TRÈS IMPORTANT : Force Fabric à recalculer les coordonnées du cadre actif pour éviter le double cadre
+        obj.setCoords();
 
         if (!snappedH && alignVerticalLine) alignVerticalLine.set('visible', false);
         if (!snappedV && alignHorizontalLine) alignHorizontalLine.set('visible', false);
@@ -434,6 +440,23 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
             } catch (e) {
                 console.error("Erreur génération QR Code", e);
             }
+        },
+        getActiveObjectProperties: () => {
+            const obj = canvas.getActiveObject();
+            if (!obj) return null;
+
+            return {
+                type: obj.type,
+                text: obj.text || '',
+                fontSize: obj.fontSize || 18,
+                fontFamily: obj.fontFamily || 'Inter',
+                fontWeight: obj.fontWeight === 'bold',
+                fontStyle: obj.fontStyle === 'italic',
+                underline: obj.underline || false,
+                linethrough: obj.linethrough || false,
+                rx: obj.rx || 0,
+                hasBoundRect: !!obj.boundRect
+            };
         },
         resizeCanvas: (newWidth, newHeight) => {
             canvas.setWidth(newWidth);
