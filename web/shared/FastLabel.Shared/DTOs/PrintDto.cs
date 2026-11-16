@@ -1,6 +1,6 @@
 namespace FastLabel.Shared.DTOs;
 
-public class PrintRequest
+public class PrintDto
 {
     [Required(ErrorMessage = "print.error.apikey_required")]
     public string ApiKey { get; set; } = string.Empty;

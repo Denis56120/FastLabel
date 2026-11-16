@@ -4,7 +4,7 @@ public static class PrintEndpoints
 {
     public static void MapPrintEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapPost("/api/print", async (PrintRequest request, AppDbContext db, PrintBrokerService broker) =>
+        app.MapPost("/api/print", async (PrintDto request, AppDbContext db, PrintBrokerService broker) =>
         {
             if (!ValidationExtensions.TryValidateModel(request, out var errorResult))
             {

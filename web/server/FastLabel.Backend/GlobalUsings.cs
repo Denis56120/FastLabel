@@ -16,6 +16,7 @@ global using Microsoft.AspNetCore.Identity;
 global using Microsoft.AspNetCore.Mvc;
 global using Microsoft.AspNetCore.ResponseCompression;
 global using Microsoft.EntityFrameworkCore;
+global using SkiaSharp;
 global using System.Collections.Concurrent;
 global using System.ComponentModel.DataAnnotations;
 global using System.ComponentModel.DataAnnotations.Schema;

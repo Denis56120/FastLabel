@@ -1,12 +1,15 @@
 @page "/templates/render/{Id:int}"
 @layout MainLayout
 @attribute [Authorize]
+@implements IAsyncDisposable
 @inject TranslationService Translation
 @inject ApiClient ApiClient
 @inject NavigationManager Navigation
 @inject ToastService ToastService
+@inject IJSRuntime JS
 
 <div class="container-fluid px-4">
+    <!-- En-tête principal de la page -->
     <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
         <div>
             <h2>@Translation.GetString("templates.render.title")</h2>
@@ -38,36 +41,111 @@
     }
     else
     {
-        <div class="row">
-            <div class="col-md-6 mb-4">
-                <div class="card h-100 shadow-sm">
-                    <div class="card-header bg-light">
-                        <strong>@Translation.GetString("templates.json_data")</strong>
-                    </div>
-                    <div class="card-body d-flex flex-column">
-                        <textarea class="form-control font-monospace flex-grow-1" 
-                                  style="min-height: 400px;" 
-                                  @bind="_template.JsonData" 
-                                  @bind:event="oninput">
-                        </textarea>
-                    </div>
-                </div>
+        <!-- Carte principale de l'éditeur -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-light">
+                <strong>@Translation.GetString("templates.render.preview")</strong>
             </div>
 
-            <div class="col-md-6 mb-4">
-                <div class="card h-100 shadow-sm">
-                    <div class="card-header bg-light">
-                        <strong>@Translation.GetString("templates.render.preview")</strong>
-                    </div>
-                    <div class="card-body d-flex justify-content-center align-items-center bg-white border rounded m-3" style="min-height: 400px;">
-                        <div class="border p-3 text-center bg-light w-75 shadow-sm" style="aspect-ratio: 2/1;">
-                            <span class="text-muted fst-italic">[Prévisualisation de l'étiquette]</span>
-                            <div class="mt-2 text-start small font-monospace text-break">
-                                @_template.JsonData
-                            </div>
-                        </div>
+            <!-- Barre d'outils avec icônes placée entre le header et le canvas -->
+            <div class="bg-white border-bottom px-3 py-2 d-flex gap-2 align-items-center flex-wrap">
+                <button class="btn btn-outline-secondary btn-sm" @onclick="AddTextElement" title="Ajouter du texte">
+                    <i class="bi bi-type fs-5"></i>
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="AddRectangleElement" title="Ajouter un rectangle">
+                    <i class="bi bi-square fs-5"></i>
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="AddBarcodeElement" title="Ajouter un code-barres">
+                    <i class="bi bi-upc fs-5"></i>
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="AddQrCodeElement" title="Ajouter un QR code">
+                    <i class="bi bi-qr-code fs-5"></i>
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="TriggerImageUpload" title="Ajouter une image">
+                    <i class="bi bi-file-image fs-5"></i>
+                </button>
+                <InputFile id="imageFileInput" OnChange="HandleImageSelected" hidden accept="image/*" />
+                
+                <div class="vr mx-1"></div>
+
+                <!-- Sélecteur de Police -->
+                <select class="form-select form-select-sm w-auto" @onchange="ChangeFontFamily" title="Police de caractères">
+                    <option value="Inter, sans-serif">Inter (Moderne)</option>
+                    <option value="Lora, serif">Lora (Élégant)</option>
+                    <option value="JetBrains Mono, monospace">JetBrains Mono (Technique)</option>
+                    <option value="Share Tech Mono, monospace">Share Tech Mono (ZPL)</option>
+                </select>
+
+                <!-- Boutons de style de texte -->
+                <button class="btn btn-outline-secondary btn-sm" @onclick="ToggleBold" title="Gras">
+                    <i class="bi bi-type-bold fs-5"></i>
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="ToggleItalic" title="Italique">
+                    <i class="bi bi-type-italic fs-5"></i>
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="ToggleUnderline" title="Souligné">
+                    <i class="bi bi-type-underline fs-5"></i>
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="ToggleLinethrough" title="Barré">
+                    <i class="bi bi-type-strikethrough fs-5"></i>
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="ToggleTextRectangle" title="Ajouter / Retirer le rectangle autour du texte">
+                    <i class="bi bi-square-fill fs-5"></i>
+                </button>
+
+                <div class="vr mx-1"></div>
+
+                <!-- Contrôle des coins arrondis par boutons -->
+                <div class="d-flex align-items-center gap-1" title="Rayon des coins arrondis">
+                    <i class="bi bi-bounding-box fs-5 me-1"></i>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="() => ChangeCornerRadiusValue(0)">0</button>
+                        <button type="button" class="btn btn-outline-secondary" @onclick="() => ChangeCornerRadiusValue(4)">4</button>
+                        <button type="button" class="btn btn-outline-secondary" @onclick="() => ChangeCornerRadiusValue(8)">8</button>
+                        <button type="button" class="btn btn-outline-secondary" @onclick="() => ChangeCornerRadiusValue(16)">16</button>
                     </div>
                 </div>
+
+                <div class="vr mx-1"></div>
+
+                <!-- Bouton Lumière Inversée / Négatif -->
+                <button class="btn btn-outline-secondary btn-sm" @onclick="InvertSelectedElement" title="Inverser les couleurs / Lumière inversée">
+                    <i class="bi bi-circle-half fs-5"></i>
+                </button>
+
+                <!-- Boutons de gestion des calques (Superposition) -->
+                <button class="btn btn-outline-secondary btn-sm" @onclick="BringForwardElement" title="Passer au-dessus">
+                    <i class="bi bi-layers fs-5"></i>
+                </button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="SendBackwardsElement" title="Passer en dessous">
+                    <i class="bi bi-layers-half fs-5"></i>
+                </button>
+
+                <div class="vr mx-1"></div>
+
+                <!-- Contrôle de la taille du Canvas / Étiquette -->
+                <div class="d-flex align-items-center gap-2">
+                    <span class="text-muted small">Taille:</span>
+                    <div class="input-group input-group-sm" style="width: 110px;" title="Largeur (px)">
+                        <span class="input-group-text">L</span>
+                        <input type="number" class="form-control" @bind="_canvasWidth" @bind:event="oninput" @onchange="UpdateCanvasSize" min="50" max="2000" />
+                    </div>
+                    <div class="input-group input-group-sm" style="width: 110px;" title="Hauteur (px)">
+                        <span class="input-group-text">H</span>
+                        <input type="number" class="form-control" @bind="_canvasHeight" @bind:event="oninput" @onchange="UpdateCanvasSize" min="50" max="2000" />
+                    </div>
+                </div>
+
+                <div class="vr mx-1"></div>
+
+                <button class="btn btn-outline-danger btn-sm" @onclick="DeleteSelectedElement" title="Supprimer l'élément sélectionné">
+                    <i class="bi bi-trash fs-5"></i>
+                </button>
+            </div>
+
+            <!-- Zone du Canvas -->
+            <div class="card-body d-flex justify-content-center align-items-center bg-white p-4 overflow-auto">
+                <canvas id="label-canvas" class="border shadow-sm"></canvas>
             </div>
         </div>
     }
@@ -79,11 +157,42 @@
     private TemplateDto? _template;
     private bool _isLoading = true;
     private bool _isSaving = false;
+    private DotNetObjectReference<TemplateRender>? _dotNetRef;
+    private IJSObjectReference? _module;
+    private IJSObjectReference? _editorInstance;
+    private bool _isEditorInitialized = false;
+
+    private int _canvasWidth = 500;
+    private int _canvasHeight = 300;
+    private string? _selectedObjectType;
 
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
         await LoadTemplateAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_template != null && !_isEditorInitialized)
+        {
+            _isEditorInitialized = true;
+            _dotNetRef = DotNetObjectReference.Create(this);
+
+            try
+            {
+                // Import dynamique du module JS de l'éditeur
+                _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/fabricLoader.js");
+
+                // Initialisation du canvas et chargement du JSON initial
+                _editorInstance = await _module.InvokeAsync<IJSObjectReference>(
+                    "initEditor", _dotNetRef, "label-canvas", _template.JsonData, _canvasWidth, _canvasHeight);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erreur initialisation éditeur JS: {ex.Message}");
+            }
+        }
     }
 
     private async Task LoadTemplateAsync()
@@ -92,7 +201,32 @@
         try
         {
             _template = await ApiClient.GetFromJsonAsync<TemplateDto>($"api/templates/{Id}");
-            if (_template == null)
+            if (_template != null)
+            {
+                // Si la taille est stockée dans le JSON de Fabric.js
+                if (!string.IsNullOrEmpty(_template.JsonData))
+                {
+                    try
+                    {
+                        using var doc = System.Text.Json.JsonDocument.Parse(_template.JsonData);
+                        var root = doc.RootElement;
+
+                        if (root.TryGetProperty("canvasWidth", out var wEl) && wEl.TryGetInt32(out int w))
+                        {
+                            _canvasWidth = w;
+                        }
+                        if (root.TryGetProperty("canvasHeight", out var hEl) && hEl.TryGetInt32(out int h))
+                        {
+                            _canvasHeight = h;
+                        }
+                    }
+                    catch
+                    {
+                        // Si le JSON ne contient pas encore ces propriétés, on garde les valeurs par défaut (500x300)
+                    }
+                }
+            }
+            else
             {
                 ToastService.ShowError(Translation.GetString("template.error.not_found"));
             }
@@ -108,14 +242,209 @@
         }
     }
 
+    [JSInvokable]
+    public void OnObjectSelected(string? type)
+    {
+        _selectedObjectType = type;
+        StateHasChanged(); 
+    }
+
+    [JSInvokable]
+    public void UpdateJsonData(string json)
+    {
+        if (_template != null)
+        {
+            _template.JsonData = json;
+        }
+    }
+
+    private async Task AddTextElement()
+    {
+        if (_editorInstance != null)
+        {
+            await _editorInstance.InvokeVoidAsync("addText", "Nouveau texte");
+        }
+    }
+
+    private async Task AddRectangleElement()
+    {
+        if (_editorInstance != null)
+        {
+            await _editorInstance.InvokeVoidAsync("addRectangle");
+        }
+    }
+
+    private async Task AddBarcodeElement()
+    {
+        if (_editorInstance != null)
+        {
+            await _editorInstance.InvokeVoidAsync("addBarcode", "12345678");
+        }
+    }
+
+    private async Task AddQrCodeElement()
+    {
+        if (_editorInstance != null)
+        {
+            await _editorInstance.InvokeVoidAsync("addQrCode", "https://fastlabel");
+        }
+    }
+
+    private async Task TriggerImageUpload()
+    {
+        await JS.InvokeVoidAsync("eval", "document.getElementById('imageFileInput').click();");
+    }
+
+    private async Task HandleImageSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file != null)
+        {
+            try
+            {
+                var resizedFile = await file.RequestImageFileAsync(file.ContentType, 800, 800);
+                using var stream = resizedFile.OpenReadStream(maxAllowedSize: 2048 * 2048);
+                using var ms = new MemoryStream();
+                await stream.CopyToAsync(ms);
+
+                var base64Data = Convert.ToBase64String(ms.ToArray());
+                var dataUrl = $"data:{file.ContentType};base64,{base64Data}";
+
+                if (_editorInstance != null)
+                {
+                    await _editorInstance.InvokeVoidAsync("addImage", dataUrl);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erreur chargement image: {ex.Message}");
+                ToastService.ShowError(Translation.GetString("app.error.unknown"));
+            }
+        }
+    }
+
+    private async Task ChangeFontFamily(ChangeEventArgs e)
+    {
+        if (_editorInstance != null && e.Value != null)
+        {
+            await _editorInstance.InvokeVoidAsync("setFontFamily", e.Value.ToString());
+        }
+    }
+
+    private async Task ToggleBold()
+    {
+        if (_editorInstance != null)
+        {
+            await _editorInstance.InvokeVoidAsync("toggleBold");
+        }
+    }
+
+    private async Task ToggleItalic()
+    {
+        if (_editorInstance != null)
+        {
+            await _editorInstance.InvokeVoidAsync("toggleItalic");
+        }
+    }
+
+    private async Task ToggleUnderline()
+    {
+        if (_editorInstance != null)
+        {
+            await _editorInstance.InvokeVoidAsync("toggleUnderline");
+        }
+    }
+
+    private async Task ToggleLinethrough()
+    {
+        if (_editorInstance != null)
+        {
+            await _editorInstance.InvokeVoidAsync("toggleLinethrough");
+        }
+    }
+
+    private async Task ToggleTextRectangle()
+    {
+        if (_editorInstance != null)
+        {
+            await _editorInstance.InvokeVoidAsync("toggleTextRectangle");
+        }
+    }
+
+    private async Task ChangeCornerRadiusValue(int radius)
+    {
+        if (_editorInstance != null)
+        {
+            await _editorInstance.InvokeVoidAsync("setRectangleCornerRadius", radius);
+        }
+    }
+
+    private async Task InvertSelectedElement()
+    {
+        if (_editorInstance != null)
+        {
+            await _editorInstance.InvokeVoidAsync("invertSelected");
+        }
+    }
+
+    private async Task BringForwardElement()
+    {
+        if (_editorInstance != null)
+        {
+            await _editorInstance.InvokeVoidAsync("bringForward");
+        }
+    }
+
+    private async Task SendBackwardsElement()
+    {
+        if (_editorInstance != null)
+        {
+            await _editorInstance.InvokeVoidAsync("sendBackwards");
+        }
+    }
+
+    private async Task UpdateCanvasSize()
+    {
+        if (_editorInstance != null)
+        {
+            await _editorInstance.InvokeVoidAsync("resizeCanvas", _canvasWidth, _canvasHeight);
+        }
+    }
+
+    private async Task DeleteSelectedElement()
+    {
+        if (_editorInstance != null)
+        {
+            await _editorInstance.InvokeVoidAsync("deleteSelected");
+        }
+    }
+
     private async Task SaveTemplateAsync()
     {
         if (_template == null) return;
 
+        if (_editorInstance != null)
+        {
+            var json = await _editorInstance.InvokeAsync<string>("save");
+            if (!string.IsNullOrEmpty(json))
+            {
+                _template.JsonData = json;
+                
+                // Optionnel : Si ton TemplateDto possède des propriétés Width et Height, 
+                // tu peux les mettre à jour ici à partir de tes variables d'état :
+                // _template.Width = _canvasWidth;
+                // _template.Height = _canvasHeight;
+            }
+        }
+
         _isSaving = true;
         try
         {
-            var (isSuccess, errorKey) = await ApiClient.PutAsync($"api/templates/{Id}", _template);
+            var response = await ApiClient.PutAsync($"api/templates/{Id}", _template);
+            
+            bool isSuccess = response.Item1;
+            string? errorKey = response.Item2;
+
             if (isSuccess)
             {
                 ToastService.ShowSuccess(Translation.GetString("app.success.saved"));
@@ -139,5 +468,29 @@
     private void GoBack()
     {
         Navigation.NavigateTo("/templates");
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _dotNetRef?.Dispose();
+
+        if (_editorInstance != null)
+        {
+            try
+            {
+                await _editorInstance.InvokeVoidAsync("dispose");
+                await _editorInstance.DisposeAsync();
+            }
+            catch { /* Ignorer si déjà détruit */ }
+        }
+
+        if (_module != null)
+        {
+            try
+            {
+                await _module.DisposeAsync();
+            }
+            catch { /* Ignorer si déjà détruit */ }
+        }
     }
 }
