@@ -58,14 +58,28 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
         backgroundColor: '#ffffff'
     });
 
+    // Fonction centralisée pour verrouiller la rotation et les poignées d'étirement texte
+    function configureObjectControls(obj) {
+        if (!obj) return;
+        obj.set('lockRotation', true);
+        obj.setControlVisible('mtr', false);
+
+        if (obj.isType('i-text') || obj.isType('text')) {
+            obj.setControlsVisibility({
+                mtr: false,
+                ml: false,
+                mr: false,
+                mt: false,
+                mb: false
+            });
+        }
+    }
+
     if (initialJson) {
         try {
             const parsed = typeof initialJson === 'string' ? JSON.parse(initialJson) : initialJson;
             canvas.loadFromJSON(parsed, () => {
-                canvas.getObjects().forEach(obj => {
-                    obj.set('lockRotation', true);
-                    obj.setControlVisible('mtr', false);
-                });
+                canvas.getObjects().forEach(obj => configureObjectControls(obj));
                 canvas.renderAll();
             });
         } catch (e) {
@@ -96,7 +110,7 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
     };
 
     // Paliers de tailles autorisés pour correspondre exactement aux .ttf du backend
-    const ALLOWED_SIZES = [12, 14, 16, 18, 24, 28, 32, 40, 48];
+    const ALLOWED_SIZES = [12, 14, 16, 18, 24, 28, 32, 40, 48, 56, 64, 72, 96];
     function getClosestAllowedSize(rawSize) {
         return ALLOWED_SIZES.reduce((prev, curr) =>
             Math.abs(curr - rawSize) < Math.abs(prev - rawSize) ? curr : prev
@@ -108,7 +122,8 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
 
         // Verrouillage / Snap de la taille de police pour aligner le front et le back (.NET)
         if (obj && (obj.isType('i-text') || obj.isType('text'))) {
-            const effectiveSize = obj.fontSize * obj.scaleX;
+            const scale = Math.max(obj.scaleX, obj.scaleY);
+            const effectiveSize = obj.fontSize * scale;
             const snappedSize = getClosestAllowedSize(effectiveSize);
 
             obj.set({
@@ -116,6 +131,9 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
                 scaleX: 1,
                 scaleY: 1
             });
+
+            // Force Fabric.js à recalculer la boîte de sélection bleue
+            obj.initDimensions();
             obj.setCoords();
 
             if (obj.boundRect) {
@@ -126,6 +144,7 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
                     width: obj.width + padding * 2,
                     height: obj.height + padding * 2
                 });
+                obj.boundRect.setCoords();
             }
             canvas.renderAll();
         }
@@ -134,11 +153,7 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
     });
 
     canvas.on('object:added', (e) => {
-        const obj = e.target;
-        if (obj) {
-            obj.set('lockRotation', true);
-            obj.setControlVisible('mtr', false);
-        }
+        configureObjectControls(e.target);
         notify();
     });
 
@@ -148,16 +163,176 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
     canvas.on('selection:updated', (e) => notifySelection(e.selected[0]));
     canvas.on('selection:cleared', () => notifySelection(null));
 
+    // --- MAGNÉTISME ET GUIDES D'ALIGNEMENT (SNAPPING) ---
+    const snappingDistance = 5;
+    let alignVerticalLine = null;
+    let alignHorizontalLine = null;
+
+    function showVerticalGuide(x) {
+        if (!alignVerticalLine) {
+            alignVerticalLine = new fabric.Line([x, 0, x, canvas.height], {
+                stroke: 'rgba(255, 0, 0, 0.6)',
+                strokeWidth: 1,
+                selectable: false,
+                evented: false,
+                excludeFromExport: true
+            });
+            canvas.add(alignVerticalLine);
+        } else {
+            alignVerticalLine.set({ x1: x, x2: x, y2: canvas.height });
+            canvas.bringToFront(alignVerticalLine);
+            alignVerticalLine.set('visible', true);
+        }
+    }
+
+    function showHorizontalGuide(y) {
+        if (!alignHorizontalLine) {
+            alignHorizontalLine = new fabric.Line([0, y, canvas.width, y], {
+                stroke: 'rgba(255, 0, 0, 0.6)',
+                strokeWidth: 1,
+                selectable: false,
+                evented: false,
+                excludeFromExport: true
+            });
+            canvas.add(alignHorizontalLine);
+        } else {
+            alignHorizontalLine.set({ y1: y, y2: y, x2: canvas.width });
+            canvas.bringToFront(alignHorizontalLine);
+            alignHorizontalLine.set('visible', true);
+        }
+    }
+
+    function hideGuides() {
+        if (alignVerticalLine) alignVerticalLine.set('visible', false);
+        if (alignHorizontalLine) alignHorizontalLine.set('visible', false);
+    }
+
+    canvas.on('object:moving', (e) => {
+        const obj = e.target;
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+
+        const objCenterX = obj.left + (obj.width * obj.scaleX) / 2;
+        const objCenterY = obj.top + (obj.height * obj.scaleY) / 2;
+
+        let snappedH = false;
+        let snappedV = false;
+
+        hideGuides();
+
+        if (Math.abs(objCenterX - canvasWidth / 2) < snappingDistance) {
+            obj.set({ left: canvasWidth / 2 - (obj.width * obj.scaleX) / 2 });
+            showVerticalGuide(canvasWidth / 2);
+            snappedH = true;
+        }
+
+        if (Math.abs(objCenterY - canvasHeight / 2) < snappingDistance) {
+            obj.set({ top: canvasHeight / 2 - (obj.height * obj.scaleY) / 2 });
+            showHorizontalGuide(canvasHeight / 2);
+            snappedV = true;
+        }
+
+        if (obj.boundRect) {
+            const padding = 4;
+            obj.boundRect.set({
+                left: obj.left - padding,
+                top: obj.top - padding
+            });
+            obj.boundRect.setCoords();
+        }
+
+        if (!snappedH && alignVerticalLine) alignVerticalLine.set('visible', false);
+        if (!snappedV && alignHorizontalLine) alignHorizontalLine.set('visible', false);
+
+        canvas.renderAll();
+    });
+
+    canvas.on('mouse:up', () => {
+        hideGuides();
+        canvas.renderAll();
+    });
+
+    // --- GESTION DES RACCOURCIS CLAVIER ---
+    let _clipboard = null;
+
+    const handleKeyDown = (e) => {
+        const activeObj = canvas.getActiveObject();
+
+        if (
+            e.target.tagName === 'INPUT' ||
+            e.target.tagName === 'TEXTAREA' ||
+            e.target.tagName === 'SELECT' ||
+            (activeObj && activeObj.isEditing)
+        ) {
+            return;
+        }
+
+        if ((e.key === 'Delete' || e.key === 'Backspace') && activeObj) {
+            e.preventDefault();
+            const activeObjects = canvas.getActiveObjects();
+            if (activeObjects.length) {
+                activeObjects.forEach(obj => {
+                    if (obj.boundRect) canvas.remove(obj.boundRect);
+                });
+                canvas.remove(...activeObjects);
+                canvas.discardActiveObject();
+                canvas.renderAll();
+                notify();
+            }
+        }
+
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c' && activeObj) {
+            e.preventDefault();
+            activeObj.clone((cloned) => {
+                _clipboard = cloned;
+            });
+        }
+
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v' && _clipboard) {
+            e.preventDefault();
+            _clipboard.clone((clonedObj) => {
+                canvas.discardActiveObject();
+
+                clonedObj.set({
+                    left: clonedObj.left + 15,
+                    top: clonedObj.top + 15,
+                    evented: true,
+                });
+
+                if (clonedObj.type === 'activeSelection') {
+                    clonedObj.canvas = canvas;
+                    clonedObj.forEachObject((obj) => {
+                        configureObjectControls(obj);
+                        canvas.add(obj);
+                    });
+                    clonedObj.setCoords();
+                } else {
+                    configureObjectControls(clonedObj);
+                    canvas.add(clonedObj);
+                }
+
+                _clipboard.top += 15;
+                _clipboard.left += 15;
+
+                canvas.setActiveObject(clonedObj);
+                canvas.requestRenderAll();
+                notify();
+            });
+        }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
     return {
         addText: (text, fontFamily = 'Inter') => {
             const textObj = new fabric.IText(text, {
                 left: 20,
                 top: 20,
-                fontSize: 18, // Calé sur une taille de base autorisée
+                fontSize: 18,
                 fill: '#000000',
                 fontFamily: fontFamily
             });
-            textObj.setControlVisible('mtr', false);
+            configureObjectControls(textObj);
             canvas.add(textObj);
             canvas.setActiveObject(textObj);
             notify();
@@ -168,7 +343,7 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
                 fill: 'transparent', stroke: '#000000', strokeWidth: 1,
                 rx: 6, ry: 6
             });
-            rect.setControlVisible('mtr', false);
+            configureObjectControls(rect);
             canvas.add(rect);
             canvas.setActiveObject(rect);
             notify();
@@ -187,7 +362,7 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
                 const imgUrl = tempCanvas.toDataURL("image/png");
                 fabric.Image.fromURL(imgUrl, (img) => {
                     img.set({ left: 20, top: 20, scaleX: 0.8, scaleY: 0.8 });
-                    canvas.setControlVisible('mtr', false);
+                    configureObjectControls(img);
                     canvas.add(img);
                     canvas.setActiveObject(img);
                     canvas.renderAll();
@@ -205,7 +380,7 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
                     scaleX: 0.5,
                     scaleY: 0.5
                 });
-                canvas.setControlVisible('mtr', false);
+                configureObjectControls(img);
                 canvas.add(img);
                 canvas.setActiveObject(img);
                 canvas.renderAll();
@@ -250,7 +425,7 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
                         scaleX: 1,
                         scaleY: 1
                     });
-                    canvas.setControlVisible('mtr', false);
+                    configureObjectControls(img);
                     canvas.add(img);
                     canvas.setActiveObject(img);
                     canvas.renderAll();
@@ -269,6 +444,9 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
         deleteSelected: () => {
             const activeObjects = canvas.getActiveObjects();
             if (activeObjects.length) {
+                activeObjects.forEach(obj => {
+                    if (obj.boundRect) canvas.remove(obj.boundRect);
+                });
                 canvas.remove(...activeObjects);
                 canvas.discardActiveObject();
                 canvas.renderAll();
@@ -295,6 +473,8 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
             const activeObject = canvas.getActiveObject();
             if (activeObject && (activeObject.isType('i-text') || activeObject.isType('text'))) {
                 activeObject.set('fontFamily', fontFamily);
+                activeObject.initDimensions();
+                activeObject.setCoords();
                 canvas.renderAll();
                 notify();
             }
@@ -304,6 +484,8 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
             if (activeObject && (activeObject.isType('i-text') || activeObject.isType('text'))) {
                 const isBold = activeObject.fontWeight === 'bold';
                 activeObject.set('fontWeight', isBold ? 'normal' : 'bold');
+                activeObject.initDimensions();
+                activeObject.setCoords();
                 canvas.renderAll();
                 notify();
             }
@@ -313,6 +495,8 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
             if (activeObject && (activeObject.isType('i-text') || activeObject.isType('text'))) {
                 const isItalic = activeObject.fontStyle === 'italic';
                 activeObject.set('fontStyle', isItalic ? 'normal' : 'italic');
+                activeObject.initDimensions();
+                activeObject.setCoords();
                 canvas.renderAll();
                 notify();
             }
@@ -403,6 +587,63 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
                 }
             }
         },
+        centerHorizontal: () => {
+            const activeObject = canvas.getActiveObject();
+            if (!activeObject) return;
+
+            canvas.centerObjectH(activeObject);
+            activeObject.setCoords();
+
+            if (activeObject.boundRect) {
+                const padding = 4;
+                activeObject.boundRect.set({
+                    left: activeObject.left - padding,
+                    top: activeObject.top - padding
+                });
+                activeObject.boundRect.setCoords();
+            }
+
+            canvas.renderAll();
+            notify();
+        },
+        centerVertical: () => {
+            const activeObject = canvas.getActiveObject();
+            if (!activeObject) return;
+
+            canvas.centerObjectV(activeObject);
+            activeObject.setCoords();
+
+            if (activeObject.boundRect) {
+                const padding = 4;
+                activeObject.boundRect.set({
+                    left: activeObject.left - padding,
+                    top: activeObject.top - padding
+                });
+                activeObject.boundRect.setCoords();
+            }
+
+            canvas.renderAll();
+            notify();
+        },
+        centerBoth: () => {
+            const activeObject = canvas.getActiveObject();
+            if (!activeObject) return;
+
+            canvas.centerObject(activeObject);
+            activeObject.setCoords();
+
+            if (activeObject.boundRect) {
+                const padding = 4;
+                activeObject.boundRect.set({
+                    left: activeObject.left - padding,
+                    top: activeObject.top - padding
+                });
+                activeObject.boundRect.setCoords();
+            }
+
+            canvas.renderAll();
+            notify();
+        },
         invertSelected: () => {
             const activeObject = canvas.getActiveObject();
             if (!activeObject) return;
@@ -458,6 +699,9 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
             json.canvasHeight = canvas.height;
             return JSON.stringify(json);
         },
-        dispose: () => canvas.dispose()
+        dispose: () => {
+            window.removeEventListener('keydown', handleKeyDown);
+            canvas.dispose();
+        }
     };
 }

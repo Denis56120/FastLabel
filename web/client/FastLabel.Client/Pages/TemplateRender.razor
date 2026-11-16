@@ -123,6 +123,21 @@
 
                 <div class="vr mx-1"></div>
 
+                <!-- Boutons d'alignement rapide -->
+                <div class="btn-group btn-group-sm" role="group" aria-label="Alignement">
+                    <button class="btn btn-outline-secondary" @onclick="CenterHorizontal" title="Centrer horizontalement">
+                        <i class="bi bi-align-center fs-5"></i>
+                    </button>
+                    <button class="btn btn-outline-secondary" @onclick="CenterVertical" title="Centrer verticalement">
+                        <i class="bi bi-align-middle fs-5"></i>
+                    </button>
+                    <button class="btn btn-outline-secondary" @onclick="CenterBoth" title="Centrer parfaitement (H + V)">
+                        <i class="bi bi-fullscreen fs-5"></i>
+                    </button>
+                </div>
+
+                <div class="vr mx-1"></div>
+
                 <!-- Contrôle de la taille du Canvas / Étiquette -->
                 <div class="d-flex align-items-center gap-2">
                     <span class="text-muted small">Taille:</span>
@@ -403,6 +418,30 @@
         }
     }
 
+    private async Task CenterHorizontal()
+    {
+        if (_editorInstance != null)
+        {
+            await _editorInstance.InvokeVoidAsync("centerHorizontal");
+        }
+    }
+
+    private async Task CenterVertical()
+    {
+        if (_editorInstance != null)
+        {
+            await _editorInstance.InvokeVoidAsync("centerVertical");
+        }
+    }
+
+    private async Task CenterBoth()
+    {
+        if (_editorInstance != null)
+        {
+            await _editorInstance.InvokeVoidAsync("centerBoth");
+        }
+    }
+
     private async Task UpdateCanvasSize()
     {
         if (_editorInstance != null)
@@ -429,11 +468,6 @@
             if (!string.IsNullOrEmpty(json))
             {
                 _template.JsonData = json;
-                
-                // Optionnel : Si ton TemplateDto possède des propriétés Width et Height, 
-                // tu peux les mettre à jour ici à partir de tes variables d'état :
-                // _template.Width = _canvasWidth;
-                // _template.Height = _canvasHeight;
             }
         }
 
