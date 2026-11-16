@@ -2,7 +2,7 @@ namespace FastLabel.Backend.Extensions;
 
 public static class AppExtensions
 {
-    public static WebApplication ConfigurePipeline(this WebApplication app)
+    public static async Task<WebApplication> ConfigurePipelineAsync(this WebApplication app)
     {
         using var scope = app.Services.CreateScope();
         var services = scope.ServiceProvider;
@@ -13,7 +13,8 @@ public static class AppExtensions
             var configuration = services.GetRequiredService<IConfiguration>();
             var passwordHasher = services.GetRequiredService<IPasswordHasher<User>>();
             
-            DbInitializer.InitializeAsync(dbContext, configuration, passwordHasher).GetAwaiter().GetResult();
+            var initializer = new DbInitializer(dbContext, configuration, passwordHasher);
+            await initializer.InitializeAsync();
         }
         catch (Exception ex)
         {

@@ -1,14 +1,23 @@
 namespace FastLabel.Backend.Data;
 
-public static class DbInitializer
+public class DbInitializer(AppDbContext context, IConfiguration configuration, IPasswordHasher<User>? passwordHasher = null)
 {
-    public static async Task InitializeAsync(AppDbContext context, IConfiguration configuration, IPasswordHasher<User>? passwordHasher = null)
-    {
-        await context.Database.EnsureCreatedAsync();
+    private readonly AppDbContext _context = context;
+    private readonly IConfiguration _configuration = configuration;
+    IPasswordHasher<User>? _passwordHasher = passwordHasher;
 
-        async Task<Text> CreateTextWithTranslationsAsync(string tag, string defaultEnglishVal, Dictionary<string, string> translations)
+    public async Task InitializeAsync()
+    {
+        await _context.Database.EnsureCreatedAsync();
+
+        await CreateDatabaseObjectsAsync();
+
+        await CreateUITranslationsAsync();
+    }
+
+    private async Task<Text> CreateTextWithTranslationsAsync(string tag, string defaultEnglishVal, Dictionary<string, string> translations)
         {
-            var textEntity = await context.Texts
+            var textEntity = await _context.Texts
                 .Include(t => t.Translations)
                 .OrderBy(t => t.Id)
                 .FirstOrDefaultAsync(t => t.Tag == tag);
@@ -20,8 +29,8 @@ public static class DbInitializer
                     Tag = tag,
                     DefaultTranslation = defaultEnglishVal
                 };
-                context.Texts.Add(textEntity);
-                await context.SaveChangesAsync();
+                _context.Texts.Add(textEntity);
+                await _context.SaveChangesAsync();
             }
 
             foreach (var kvp in translations)
@@ -29,7 +38,7 @@ public static class DbInitializer
                 var langCode = kvp.Key;
                 var translatedValue = kvp.Value;
 
-                var lang = await context.Languages
+                var lang = await _context.Languages
                     .OrderBy(l => l.Id)
                     .FirstOrDefaultAsync(l => l.Code == langCode);
                 if (lang != null)
@@ -39,7 +48,7 @@ public static class DbInitializer
 
                     if (existingTranslation == null)
                     {
-                        context.Translations.Add(new Translation
+                        _context.Translations.Add(new Translation
                         {
                             TextId = textEntity.Id,
                             LanguageId = lang.Id,
@@ -53,106 +62,108 @@ public static class DbInitializer
                 }
             }
 
-            await context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
             return textEntity;
         }
 
+    private async Task CreateDatabaseObjectsAsync()
+    {
         // 1. Création préalable des Textes de description des langues
         var descFr = await CreateTextWithTranslationsAsync("lang.fr.desc", "French", new() { { "fr", "Français" }, { "en", "French" } });
         var descEn = await CreateTextWithTranslationsAsync("lang.en.desc", "English", new() { { "fr", "Anglais" }, { "en", "English" } });
 
         // 2. Langues insérées APRÈS leurs textes de description
-        if (!await context.Languages.AnyAsync())
+        if (!await _context.Languages.AnyAsync())
         {
-            context.Languages.AddRange(
+            _context.Languages.AddRange(
                 new Language { Code = "fr", DescriptionTextId = descFr.Id, Flag = "🇫🇷" },
                 new Language { Code = "en", DescriptionTextId = descEn.Id, Flag = "🇬🇧" }
             );
-            await context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
         }
 
         // 3. Protocoles d'impression (Protocol)
-        if (!await context.Protocols.AnyAsync())
+        if (!await _context.Protocols.AnyAsync())
         {
             var p1 = await CreateTextWithTranslationsAsync("protocol.rasterized_zpl", "Rasterized ZPL", new() { { "fr", "ZPL Rasterisé" }, { "en", "Rasterized ZPL" } });
             var p2 = await CreateTextWithTranslationsAsync("protocol.native_zpl", "Native ZPL", new() { { "fr", "ZPL Natif" }, { "en", "Native ZPL" } });
 
-            context.Protocols.AddRange(
+            _context.Protocols.AddRange(
                 new Protocol { NameTextId = p1.Id },
                 new Protocol { NameTextId = p2.Id }
             );
-            await context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
         }
 
         // 4. Résolutions DPI (ResolutionDpi)
-        if (!await context.ResolutionDpis.AnyAsync())
+        if (!await _context.ResolutionDpis.AnyAsync())
         {
-            context.ResolutionDpis.AddRange(
+            _context.ResolutionDpis.AddRange(
                 new ResolutionDpi { Value = 203 },
                 new ResolutionDpi { Value = 300 },
                 new ResolutionDpi { Value = 600 }
             );
-            await context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
         }
 
         // 5. Types d'agents (AgentType)
-        if (!await context.AgentTypes.AnyAsync())
+        if (!await _context.AgentTypes.AnyAsync())
         {
             var a1 = await CreateTextWithTranslationsAsync("agenttype.windows", "FastLabel Windows Agent", new() { { "fr", "Agent Windows FastLabel" }, { "en", "FastLabel Windows Agent" } });
             var a2 = await CreateTextWithTranslationsAsync("agenttype.linux", "FastLabel Linux Agent", new() { { "fr", "Agent Linux FastLabel" }, { "en", "FastLabel Linux Agent" } });
 
-            context.AgentTypes.AddRange(
+            _context.AgentTypes.AddRange(
                 new AgentType { NameTextId = a1.Id },
                 new AgentType { NameTextId = a2.Id }
             );
-            await context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
         }
 
         // 6. Statuts de base (BasicStatus)
-        if (!await context.BasicStatuses.AnyAsync())
+        if (!await _context.BasicStatuses.AnyAsync())
         {
             var s1 = await CreateTextWithTranslationsAsync("status.active", "Active", new() { { "fr", "Actif" }, { "en", "Active" } });
             var s2 = await CreateTextWithTranslationsAsync("status.inactive", "Inactive", new() { { "fr", "Inactif" }, { "en", "Inactive" } });
 
-            context.BasicStatuses.AddRange(
+            _context.BasicStatuses.AddRange(
                 new BasicStatus { NameTextId = s1.Id },
                 new BasicStatus { NameTextId = s2.Id }
             );
-            await context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
         }
 
         // 7. Statuts des tâches d'impression (PrintJobStatus)
-        if (!await context.PrintJobStatuses.AnyAsync())
+        if (!await _context.PrintJobStatuses.AnyAsync())
         {
             var j1 = await CreateTextWithTranslationsAsync("jobstatus.created", "Created", new() { { "fr", "Créé" }, { "en", "Created" } });
             var j2 = await CreateTextWithTranslationsAsync("jobstatus.inprogress", "In Progress", new() { { "fr", "En Cours" }, { "en", "In Progress" } });
             var j3 = await CreateTextWithTranslationsAsync("jobstatus.completed", "Completed", new() { { "fr", "Terminé" }, { "en", "Completed" } });
             var j4 = await CreateTextWithTranslationsAsync("jobstatus.suspended", "Suspended", new() { { "fr", "Suspendu" }, { "en", "Suspended" } });
 
-            context.PrintJobStatuses.AddRange(
+            _context.PrintJobStatuses.AddRange(
                 new PrintJobStatus { NameTextId = j1.Id },
                 new PrintJobStatus { NameTextId = j2.Id },
                 new PrintJobStatus { NameTextId = j3.Id },
                 new PrintJobStatus { NameTextId = j4.Id }
             );
-            await context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
         }
 
         // 8. Types d'abonnements (SubscriptionType)
-        if (!await context.SubscriptionTypes.AnyAsync())
+        if (!await _context.SubscriptionTypes.AnyAsync())
         {
             var sub1 = await CreateTextWithTranslationsAsync("subtype.paid", "Paid", new() { { "fr", "Payé" }, { "en", "Paid" } });
             var sub2 = await CreateTextWithTranslationsAsync("subtype.trial", "Trial", new() { { "fr", "Essai" }, { "en", "Trial" } });
 
-            context.SubscriptionTypes.AddRange(
+            _context.SubscriptionTypes.AddRange(
                 new SubscriptionType { NameTextId = sub1.Id },
                 new SubscriptionType { NameTextId = sub2.Id }
             );
-            await context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
         }
 
         // 9. Plans d'abonnement (Plan)
-        if (!await context.Plans.AnyAsync())
+        if (!await _context.Plans.AnyAsync())
         {
             var planFreeText = await CreateTextWithTranslationsAsync("plan.free.name", "Free Plan", new() { { "fr", "Plan Gratuit" }, { "en", "Free Plan" } });
             var planProText = await CreateTextWithTranslationsAsync("plan.pro.name", "Pro Plan", new() { { "fr", "Plan Professionnel" }, { "en", "Pro Plan" } });
@@ -171,10 +182,10 @@ public static class DbInitializer
             var descPro = await CreateTextWithTranslationsAsync("plan.pro.description", proDescEn, new() { { "fr", proDescFr }, { "en", proDescEn } });
             var descEnt = await CreateTextWithTranslationsAsync("plan.enterprise.description", entDescEn, new() { { "fr", entDescFr }, { "en", entDescEn } });
 
-            var activeStatus = await context.BasicStatuses.OrderBy(s => s.Id).FirstOrDefaultAsync();
+            var activeStatus = await _context.BasicStatuses.OrderBy(s => s.Id).FirstOrDefaultAsync();
             int statusId = activeStatus?.Id ?? 1;
 
-            context.Plans.AddRange(
+            _context.Plans.AddRange(
                 new Plan
                 {
                     NameTextId = planFreeText.Id,
@@ -194,50 +205,53 @@ public static class DbInitializer
                     BasicStatusId = statusId
                 }
             );
-            await context.SaveChangesAsync();
+            await _context.SaveChangesAsync();
         }
 
         // 10. Compte Administrateur par défaut
-        if (!await context.Users.AnyAsync())
+        if (!await _context.Users.AnyAsync())
         {
-            var activeStatus = await context.BasicStatuses
+            var activeStatus = await _context.BasicStatuses
                 .OrderBy(s => s.Id)
                 .FirstOrDefaultAsync();
             int statusId = activeStatus?.Id ?? 1;
 
             // Récupérer l'ID de la langue française par défaut (ou fallback sur le premier ID disponible)
-            var frenchLanguage = await context.Languages
+            var frenchLanguage = await _context.Languages
                 .FirstOrDefaultAsync(l => l.Code == "fr");
-            int frenchLanguageId = frenchLanguage?.Id ?? await context.Languages.Select(l => l.Id).FirstOrDefaultAsync();
+            int frenchLanguageId = frenchLanguage?.Id ?? await _context.Languages.Select(l => l.Id).FirstOrDefaultAsync();
 
-            passwordHasher ??= new PasswordHasher<User>();
+            _passwordHasher ??= new PasswordHasher<User>();
 
             var adminUser = new User
             {
-                Name = configuration["ADMIN_USER_NAME"] ?? string.Empty,
-                Email = configuration["ADMIN_USER_EMAIL"] ?? string.Empty,
+                Name = _configuration["ADMIN_USER_NAME"] ?? string.Empty,
+                Email = _configuration["ADMIN_USER_EMAIL"] ?? string.Empty,
                 BasicStatusId = statusId,
                 LanguageId = frenchLanguageId,
                 CreatedAt = DateTime.UtcNow,
                 IsAdmin = true
             };
-            adminUser.PasswordHash = passwordHasher.HashPassword(adminUser, configuration["ADMIN_USER_PASSWORD"] ?? string.Empty);
+            adminUser.PasswordHash = _passwordHasher.HashPassword(adminUser, _configuration["ADMIN_USER_PASSWORD"] ?? string.Empty);
 
             var regularUser = new User
             {
-                Name = configuration["TEST_USER_NAME"] ?? string.Empty,
-                Email = configuration["TEST_USER_EMAIL"] ?? string.Empty,
+                Name = _configuration["TEST_USER_NAME"] ?? string.Empty,
+                Email = _configuration["TEST_USER_EMAIL"] ?? string.Empty,
                 BasicStatusId = statusId,
                 LanguageId = frenchLanguageId,
                 CreatedAt = DateTime.UtcNow,
                 IsAdmin = false
             };
-            regularUser.PasswordHash = passwordHasher.HashPassword(regularUser, configuration["TEST_USER_PASSWORD"] ?? string.Empty);
+            regularUser.PasswordHash = _passwordHasher.HashPassword(regularUser, _configuration["TEST_USER_PASSWORD"] ?? string.Empty);
 
-            context.Users.AddRange(adminUser, regularUser);
-            await context.SaveChangesAsync();
+            _context.Users.AddRange(adminUser, regularUser);
+            await _context.SaveChangesAsync();
         }
+    }
 
+    private async Task CreateUITranslationsAsync()
+    {
         // 11. Textes UI
         await CreateTextWithTranslationsAsync("app.error.unknown", "Une erreur inattendue s'est produite.", new() { { "fr", "Une erreur inattendue s'est produite." }, { "en", "An unexpected error occurred." } });
         await CreateTextWithTranslationsAsync("app.success.saved", "Saved successfully.", new() { { "fr", "Enregistré avec succès." }, { "en", "Saved successfully." } });
