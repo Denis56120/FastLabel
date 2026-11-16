@@ -16,6 +16,12 @@ public class UserDto
 
     public bool IsAdmin { get; set; }
 
+    public bool IsReseller { get; set; }
+
+    public int? ResellerId { get; set; }
+
+    public string? ResellerName { get; set; }
+
     public string BasicStatusName { get; set; } = string.Empty; 
 
     [Required(ErrorMessage = "user.error.language_required")]

@@ -17,21 +17,27 @@ public class User
 
     public bool IsAdmin { get; set; } = false;
 
+    public bool IsReseller { get; set; } = false;
+
+    public int? ResellerId { get; set; }
+
+    [ForeignKey(nameof(ResellerId))]
+    public User? Reseller { get; set; }
+
+    public ICollection<User> ManagedClients { get; set; } = [];
+
+    public StripeRecord? StripeRecord { get; set; }
+
     public string? PasswordResetToken { get; set; }
-
     public DateTime? ResetTokenExpired { get; set; }
-
     public string? EmailVerificationToken { get; set; }
-
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public int BasicStatusId { get; set; }
-
     [ForeignKey(nameof(BasicStatusId))]
     public BasicStatus BasicStatus { get; set; } = null!;
 
     public int LanguageId { get; set; }
-
     [ForeignKey(nameof(LanguageId))]
     public Language Language { get; set; } = null!;
 }

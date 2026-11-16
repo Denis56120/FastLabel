@@ -17,11 +17,12 @@ public class CustomAuthenticationStateProvider(IHttpClientFactory clientFactory)
 
                 if (userInfo != null && !string.IsNullOrEmpty(userInfo.Email))
                 {
+                    var role = userInfo.IsAdmin ? "Admin" : (userInfo.IsReseller ? "Reseller" : "User");
                     var claims = new List<Claim>
                     {
                         new(ClaimTypes.Name, userInfo.Name ?? string.Empty),
                         new(ClaimTypes.Email, userInfo.Email ?? string.Empty),
-                        new(ClaimTypes.Role, userInfo.IsAdmin ? "Admin" : "User")
+                        new(ClaimTypes.Role, role)
                     };
 
                     var identity = new ClaimsIdentity(claims, "cookieAuth");

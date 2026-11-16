@@ -85,7 +85,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         // 3. Protocoles d'impression (Protocol)
         if (!await _context.Protocols.AnyAsync())
         {
-            var p1 = await CreateTextWithTranslationsAsync("protocol.rasterized_zpl", "Rasterized ZPL", new() { { "fr", "ZPL Rasterisé" }, { "en", "Rasterized ZPL" } });
+            var p1 = await CreateTextWithTranslationsAsync("protocol.rasterized_zpl", "Hybrid (ZPL + Raster)", new() { { "fr", "Hybride (ZPL + Raster)" }, { "en", "Hybrid (ZPL + Raster)" } });
             var p2 = await CreateTextWithTranslationsAsync("protocol.native_zpl", "Native ZPL", new() { { "fr", "ZPL Natif" }, { "en", "Native ZPL" } });
 
             _context.Protocols.AddRange(
@@ -230,7 +230,8 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
                 BasicStatusId = statusId,
                 LanguageId = frenchLanguageId,
                 CreatedAt = DateTime.UtcNow,
-                IsAdmin = true
+                IsAdmin = true,
+                IsReseller = false
             };
             adminUser.PasswordHash = _passwordHasher.HashPassword(adminUser, _configuration["ADMIN_USER_PASSWORD"] ?? string.Empty);
 
@@ -241,11 +242,24 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
                 BasicStatusId = statusId,
                 LanguageId = frenchLanguageId,
                 CreatedAt = DateTime.UtcNow,
-                IsAdmin = false
+                IsAdmin = false,
+                IsReseller = false
             };
             regularUser.PasswordHash = _passwordHasher.HashPassword(regularUser, _configuration["TEST_USER_PASSWORD"] ?? string.Empty);
 
-            _context.Users.AddRange(adminUser, regularUser);
+            var resellerUser = new User
+            {
+                Name = _configuration["TEST_RESELLER_NAME"] ?? string.Empty,
+                Email = _configuration["TEST_RESELLER_EMAIL"] ?? string.Empty,
+                BasicStatusId = statusId,
+                LanguageId = frenchLanguageId,
+                CreatedAt = DateTime.UtcNow,
+                IsAdmin = false,
+                IsReseller = true
+            };
+            resellerUser.PasswordHash = _passwordHasher.HashPassword(resellerUser, _configuration["TEST_RESELLER_PASSWORD"] ?? string.Empty);
+
+            _context.Users.AddRange(adminUser, regularUser, resellerUser);
             await _context.SaveChangesAsync();
         }
 
@@ -371,6 +385,13 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         await CreateTextWithTranslationsAsync("common.cancel", "Cancel", new() { { "fr", "Annuler" }, { "en", "Cancel" } });
         await CreateTextWithTranslationsAsync("common.loading", "Loading...", new() { { "fr", "Chargement en cours..." }, { "en", "Loading..." } });
 
+        await CreateTextWithTranslationsAsync("nav.reseller_clients", "My clients", new() { { "fr", "Mes clients" }, { "en", "My clients" } });
+        await CreateTextWithTranslationsAsync("reseller.clients.title", "Client Management", new() { { "fr", "Gestion des clients" }, { "en", "Client Management" } });
+        await CreateTextWithTranslationsAsync("reseller.clients.description", "Manage your end-clients and track your associated licenses.", new() { { "fr", "Gérez vos clients finaux et suivez vos licences associées." }, { "en", "Manage your end-clients and track your associated licenses." } });
+        await CreateTextWithTranslationsAsync("reseller.clients.no_clients", "No clients found.", new() { { "fr", "Aucun client trouvé." }, { "en", "No clients found." } });
+        await CreateTextWithTranslationsAsync("reseller.clients.add_title", "Add Client", new() { { "fr", "Ajouter un client" }, { "en", "Add Client" } });
+        await CreateTextWithTranslationsAsync("reseller.clients.edit_title", "Edit Client", new() { { "fr", "Modifier le client" }, { "en", "Edit Client" } });
+
         await CreateTextWithTranslationsAsync("printjobs.user", "User", new() { { "fr", "Utilisateur" }, { "en", "User" } });
         await CreateTextWithTranslationsAsync("printjobs.status.success", "Success", new() { { "fr", "Succès" }, { "en", "Success" } });
         await CreateTextWithTranslationsAsync("printjobs.status.error", "Error", new() { { "fr", "Erreur" }, { "en", "Error" } });
@@ -386,6 +407,8 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         await CreateTextWithTranslationsAsync("printjobs.add_title", "Add Print Job", new() { { "fr", "Ajouter un travail d'impression" }, { "en", "Add Print Job" } });
         await CreateTextWithTranslationsAsync("printjobs.edit_title", "Edit Print Job", new() { { "fr", "Modifier le travail d'impression" }, { "en", "Edit Print Job" } });
 
+        await CreateTextWithTranslationsAsync("users.reseller", "Reseller", new() { { "fr", "Revendeur" }, { "en", "Reseller" } });
+        await CreateTextWithTranslationsAsync("users.role_reseller", "Reseller", new() { { "fr", "Revendeur" }, { "en", "Reseller" } });
         await CreateTextWithTranslationsAsync("users.role_admin", "Admin", new() { { "fr", "Admin" }, { "en", "Admin" } });
         await CreateTextWithTranslationsAsync("users.role_user", "User", new() { { "fr", "Utilisateur" }, { "en", "User" } });
         await CreateTextWithTranslationsAsync("users.title", "Users Management", new() { { "fr", "Gestion des utilisateurs" }, { "en", "Users Management" } });
@@ -399,6 +422,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         await CreateTextWithTranslationsAsync("users.role", "Role", new() { { "fr", "Rôle" }, { "en", "Role" } });
         await CreateTextWithTranslationsAsync("users.created_at", "Created At", new() { { "fr", "Créé le" }, { "en", "Created At" } });
         await CreateTextWithTranslationsAsync("users.is_admin", "Administrator", new() { { "fr", "Administrateur" }, { "en", "Administrator" } });
+        await CreateTextWithTranslationsAsync("users.is_reseller", "Reseller", new() { { "fr", "Revendeur" }, { "en", "Reseller" } });
         await CreateTextWithTranslationsAsync("users.add_title", "Add User", new() { { "fr", "Ajouter un utilisateur" }, { "en", "Add User" } });
         await CreateTextWithTranslationsAsync("users.edit_title", "Edit User", new() { { "fr", "Modifier l'utilisateur" }, { "en", "Edit User" } });
 
@@ -483,6 +507,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         await CreateTextWithTranslationsAsync("dashboard.profile_status", "Profile Status", new() { { "fr", "Statut du profil" }, { "en", "Profile Status" } });
         await CreateTextWithTranslationsAsync("dashboard.current_subscription", "Current Subscription", new() { { "fr", "Abonnement actuel" }, { "en", "Current Subscription" } });
         await CreateTextWithTranslationsAsync("dashboard.security", "Security & Account", new() { { "fr", "Sécurité & Compte" }, { "en", "Security & Account" } });
+        await CreateTextWithTranslationsAsync("dashboard.role_reseller", "Reseller", new() { { "fr", "Revendeur" }, { "en", "Reseller" } });
         await CreateTextWithTranslationsAsync("dashboard.role.admin", "Administrator", new() { { "fr", "Administrateur" }, { "en", "Administrator" } });
         await CreateTextWithTranslationsAsync("dashboard.role.user", "User", new() { { "fr", "Utilisateur" }, { "en", "User" } });
         await CreateTextWithTranslationsAsync("dashboard.status.active", "Active", new() { { "fr", "Actif" }, { "en", "Active" } });

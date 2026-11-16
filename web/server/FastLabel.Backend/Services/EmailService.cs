@@ -1,11 +1,6 @@
 namespace FastLabel.Backend.Services;
 
-public interface IEmailService
-{
-    Task SendEmailAsync(string toEmail, string subject, string message);
-}
-
-public class EmailService(IConfiguration configuration) : IEmailService
+public class EmailService(IConfiguration configuration)
 {
     private readonly IConfiguration _configuration = configuration;
 
@@ -40,7 +35,7 @@ public class EmailService(IConfiguration configuration) : IEmailService
                 await smtp.AuthenticateAsync(username, password);
             }
 
-            await smtp.SendAsync(new SendRequest(email));
+            await smtp.SendAsync(email); // Remarque : selon MailKit, c'est simplement SendAsync(email)
         }
         catch (Exception ex)
         {

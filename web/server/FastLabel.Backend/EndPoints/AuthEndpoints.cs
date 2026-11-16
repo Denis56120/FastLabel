@@ -34,7 +34,8 @@ public static class AuthEndpoints
                 return Results.BadRequest(new ErrorResponseDto { Message = "auth.error.account_inactive" });
             }
 
-            var role = user.IsAdmin ? "Admin" : "User";
+            // Détermination du rôle selon les flags de l'entité User
+            var role = user.IsAdmin ? "Admin" : (user.IsReseller ? "Reseller" : "User");
 
             var claims = new List<Claim>
             {
@@ -54,7 +55,7 @@ public static class AuthEndpoints
 
             return Results.Ok(new
             {
-                user = new { user.Id, user.Email, user.Name, user.IsAdmin, user.LanguageId } 
+                user = new { user.Id, user.Email, user.Name, user.IsAdmin, user.IsReseller, user.LanguageId } 
             });
         });
 
@@ -64,7 +65,7 @@ public static class AuthEndpoints
             return Results.Ok(new { message = "auth.success.logout" });
         }).RequireAuthorization();
 
-        authGroup.MapPost("/forgot-password", async (ForgotPasswordDto dto, HttpContext httpContext, AppDbContext db, IEmailService emailService, IConfiguration configuration) =>
+        authGroup.MapPost("/forgot-password", async (ForgotPasswordDto dto, HttpContext httpContext, AppDbContext db, EmailService emailService, IConfiguration configuration) =>
         {
             if (!ValidationExtensions.TryValidateModel(dto, out var errorResult))
             {
@@ -144,7 +145,7 @@ public static class AuthEndpoints
             return Results.Ok(new { message = "auth.success.password_reset" });
         });
 
-        authGroup.MapPost("/register", async (RegisterDto dto, HttpContext httpContext, AppDbContext db, IPasswordHasher<User> passwordHasher, IEmailService emailService, IConfiguration configuration) =>
+        authGroup.MapPost("/register", async (RegisterDto dto, HttpContext httpContext, AppDbContext db, IPasswordHasher<User> passwordHasher, EmailService emailService, IConfiguration configuration) =>
         {
             if (!ValidationExtensions.TryValidateModel(dto, out var errorResult))
             {

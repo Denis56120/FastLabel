@@ -7,12 +7,11 @@ public static class UserEndpoints
         routes.MapGet("/api/users/me", async (AppDbContext db, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
         {
             var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier)
-                                        ?? claimsUser.FindFirstValue("nameid");
+                                    ?? claimsUser.FindFirstValue("nameid");
 
             if (!int.TryParse(userIdString, out var userId))
                 return Results.Unauthorized();
 
-            // 1. On récupère d'abord l'utilisateur et le code de sa langue en BDD
             var userInfo = await db.Users
                 .Where(u => u.Id == userId)
                 .Select(u => new
@@ -28,11 +27,10 @@ public static class UserEndpoints
             var user = userInfo.User;
             var userLangCode = userInfo.LangCode;
 
-            // 2. On pose / met à jour le cookie de langue avec la valeur officielle de la BDD
             httpContext.SetLanguageCookie(userLangCode);
 
-            // 3. On construit le DTO en utilisant directement `userLangCode` pour les traductions
             var userDto = await db.Users
+                .Include(u => u.Reseller)
                 .Where(u => u.Id == userId)
                 .Select(u => new UserDto
                 {
@@ -40,6 +38,9 @@ public static class UserEndpoints
                     Name = u.Name,
                     Email = u.Email,
                     IsAdmin = u.IsAdmin,
+                    IsReseller = u.IsReseller,
+                    ResellerId = u.ResellerId,
+                    ResellerName = u.Reseller != null ? u.Reseller.Name : null,
                     LanguageId = u.LanguageId,
                     BasicStatusName = u.BasicStatus != null && u.BasicStatus.Name != null
                         ? (u.BasicStatus.Name.Translations
@@ -55,7 +56,7 @@ public static class UserEndpoints
             return Results.Ok(userDto);
         }).RequireAuthorization();
 
-        routes.MapPut("/api/users/me", async (UserDto updatedDto, AppDbContext db, IPasswordHasher<User> passwordHasher, IEmailService emailService, IConfiguration configuration, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
+        routes.MapPut("/api/users/me", async (UserDto updatedDto, AppDbContext db, IPasswordHasher<User> passwordHasher, EmailService emailService, IConfiguration configuration, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
         {
             if (!ValidationExtensions.TryValidateModel(updatedDto, out var errorResult))
             {
@@ -63,7 +64,7 @@ public static class UserEndpoints
             }
 
             var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier)
-                                        ?? claimsUser.FindFirstValue("nameid");
+                                    ?? claimsUser.FindFirstValue("nameid");
 
             if (!int.TryParse(userIdString, out var userId))
                 return Results.Unauthorized();
@@ -72,7 +73,6 @@ public static class UserEndpoints
             if (user == null)
                 return Results.NotFound(new ErrorResponseDto { Message = "user.error.not_found" });
 
-            // 1. On récupère le code de la langue demandée par l'utilisateur (via son LanguageId)
             var targetLanguageCode = await db.Languages
                 .Where(l => l.Id == updatedDto.LanguageId)
                 .Select(l => l.Code)
@@ -118,7 +118,6 @@ public static class UserEndpoints
                 var serverUrl = configuration["Url:ServerUrl"] ?? "https://fastlabel.com";
                 var verificationLink = $"{serverUrl}/api/auth/verify-email?token={user.EmailVerificationToken}";
 
-                // On utilise le code de la langue cible pour l'e-mail d'activation
                 var emailTexts = await db.Texts
                     .Where(t => t.Tag == "email.activation.subject" || t.Tag == "email.activation.body")
                     .Select(t => new
@@ -152,18 +151,20 @@ public static class UserEndpoints
 
             await db.SaveChangesAsync();
 
-            // 2. On met à jour le cookie de langue avec la nouvelle langue validée
             httpContext.SetLanguageCookie(targetLanguageCode);
 
             return Results.Ok(new { emailChanged });
         }).RequireAuthorization();
 
+        // ==========================================
+        // ENDPOINTS ADMIN EXISTANTS
+        // ==========================================
         var adminGroup = routes.MapGroup("/api/users").RequireAuthorization("AdminOnly");
 
         adminGroup.MapGet("/", async (int page, int pageSize, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
             var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier) 
-                                        ?? claimsUser.FindFirstValue("nameid");
+                                    ?? claimsUser.FindFirstValue("nameid");
 
             if (!int.TryParse(userIdString, out var adminId))
                 return Results.Unauthorized();
@@ -172,7 +173,6 @@ public static class UserEndpoints
             if (pageSize < 1) pageSize = 10;
             if (pageSize > 500) pageSize = 500;
 
-            // Récupère la langue de l'administrateur connecté
             var adminLang = await db.Users
                 .Where(u => u.Id == adminId)
                 .Select(u => u.Language != null ? u.Language.Code : HttpContextExtensions.DefaultLanguage)
@@ -183,12 +183,11 @@ public static class UserEndpoints
                     .ThenInclude(s => s.Name)
                         .ThenInclude(n => n.Translations)
                             .ThenInclude(tr => tr.Language)
+                .Include(u => u.Reseller) // <-- Inclusion du revendeur
                 .AsQueryable();
 
-            // 1. Calcul du nombre total d'utilisateurs
             var totalCount = await query.CountAsync();
 
-            // 2. Application de la pagination
             var users = await query
                 .OrderBy(u => u.Id)
                 .Skip((page - 1) * pageSize)
@@ -199,6 +198,9 @@ public static class UserEndpoints
                     Name = u.Name,
                     Email = u.Email,
                     IsAdmin = u.IsAdmin,
+                    IsReseller = u.IsReseller,
+                    ResellerId = u.ResellerId,
+                    ResellerName = u.Reseller != null ? u.Reseller.Name : null, // <-- Mapping du nom
                     LanguageId = u.LanguageId,
                     BasicStatusName = u.BasicStatus != null && u.BasicStatus.Name != null
                         ? (u.BasicStatus.Name.Translations
@@ -230,7 +232,6 @@ public static class UserEndpoints
             if (!int.TryParse(adminIdString, out var adminId))
                 return Results.Unauthorized();
 
-            // Récupère la langue de l'administrateur connecté
             var adminLang = await db.Users
                 .Where(u => u.Id == adminId)
                 .Select(u => u.Language != null ? u.Language.Code : HttpContextExtensions.DefaultLanguage)
@@ -241,6 +242,7 @@ public static class UserEndpoints
                     .ThenInclude(s => s.Name)
                         .ThenInclude(n => n.Translations)
                             .ThenInclude(tr => tr.Language)
+                .Include(u => u.Reseller) // <-- Inclusion du revendeur
                 .Where(u => u.Id == id)
                 .OrderBy(u => u.Id)
                 .Select(u => new UserDto
@@ -249,6 +251,9 @@ public static class UserEndpoints
                     Name = u.Name,
                     Email = u.Email,
                     IsAdmin = u.IsAdmin,
+                    IsReseller = u.IsReseller,
+                    ResellerId = u.ResellerId,
+                    ResellerName = u.Reseller != null ? u.Reseller.Name : null, // <-- Mapping du nom
                     LanguageId = u.LanguageId,
                     BasicStatusName = u.BasicStatus != null && u.BasicStatus.Name != null
                         ? (u.BasicStatus.Name.Translations
@@ -284,6 +289,7 @@ public static class UserEndpoints
                 Name = dto.Name,
                 Email = dto.Email,
                 IsAdmin = dto.IsAdmin,
+                IsReseller = dto.IsReseller,
                 LanguageId = dto.LanguageId,
                 BasicStatusId = 1,
                 CreatedAt = DateTime.UtcNow
@@ -321,6 +327,7 @@ public static class UserEndpoints
             user.Name = updatedDto.Name;
             user.Email = updatedDto.Email;
             user.IsAdmin = updatedDto.IsAdmin;
+            user.IsReseller = updatedDto.IsReseller;
             user.LanguageId = updatedDto.LanguageId;
 
             if (!string.IsNullOrWhiteSpace(updatedDto.Password))

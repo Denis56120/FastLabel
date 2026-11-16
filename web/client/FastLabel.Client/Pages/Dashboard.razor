@@ -37,7 +37,7 @@
                             <div class="ms-3">
                                 <h6 class="text-muted mb-1">@Translation.GetString("dashboard.profile_status")</h6>
                                 <h5 class="mb-0 fw-semibold">
-                                    @(currentUser?.IsAdmin == true ? Translation.GetString("dashboard.role.admin") : Translation.GetString("dashboard.role.user"))
+                                    @DisplayUserRole
                                 </h5>
                             </div>
                         </div>
@@ -133,6 +133,12 @@
     private SubscriptionDto? currentSubscription;
 
     private bool HasActiveSubscription => currentSubscription != null && currentSubscription.SubscriptionPeriod > 0;
+
+    private string DisplayUserRole => currentUser?.IsAdmin == true
+        ? Translation.GetString("dashboard.role.admin")
+        : (currentUser?.IsReseller == true 
+            ? Translation.GetString("dashboard.role.reseller") 
+            : Translation.GetString("dashboard.role.user"));
 
     protected override async Task OnInitializedAsync()
     {

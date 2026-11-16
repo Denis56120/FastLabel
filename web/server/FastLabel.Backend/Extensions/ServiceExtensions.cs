@@ -54,7 +54,9 @@ public static class ServiceExtensions
                     return new BadRequestObjectResult(response);
                 };
             });
-        services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<EmailService>();
+
+        services.AddScoped<StripeService>();
 
         services.AddSingleton<PrintBrokerService>();
 

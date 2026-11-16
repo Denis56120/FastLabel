@@ -149,7 +149,9 @@
 
     private string DisplayUserRole => _userModel.IsAdmin
         ? Translation.GetString("users.role_admin")
-        : Translation.GetString("users.role_user");
+        : (_userModel.IsReseller
+            ? Translation.GetString("users.role_reseller")
+            : Translation.GetString("users.role_user"));
 
     protected override async Task OnInitializedAsync()
     {

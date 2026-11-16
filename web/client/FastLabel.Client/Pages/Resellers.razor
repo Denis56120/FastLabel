@@ -1,0 +1,50 @@
+@page "/reseller/clients"
+@layout MainLayout
+@attribute [Authorize(Roles = "Reseller")]
+@inject TranslationService Translation
+
+<CrudTablePage @ref="_crudTable"
+               TItem="UserDto" 
+               TKey="int"
+               ApiEndpoint="api/reseller/clients"
+               IdSelector="u => u.Id"
+               CreateNewItem="@(() => new UserDto())"
+               Title="@Translation.GetString("reseller.clients.title")"
+               Description="@Translation.GetString("reseller.clients.description")"
+               EmptyMessage="@Translation.GetString("reseller.clients.no_clients")"
+               AddModalTitle="@Translation.GetString("reseller.clients.add_title")"
+               EditModalTitle="@Translation.GetString("reseller.clients.edit_title")">
+
+    <TableHeader>
+        <th>@Translation.GetString("users.name")</th>
+        <th>@Translation.GetString("users.email")</th>
+        <th>@Translation.GetString("users.created_at")</th>
+    </TableHeader>
+
+    <RowTemplate Context="client">
+        <td>@client.Name</td>
+        <td>@client.Email</td>
+        <td>@client.CreatedAt.ToLocalTime().ToString("g")</td>
+    </RowTemplate>
+
+    <FormFields Context="client">
+        <div class="mb-3">
+            <label class="form-label">@Translation.GetString("users.name")</label>
+            <InputText class="form-control" @bind-Value="client.Name" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">@Translation.GetString("users.email")</label>
+            <InputText class="form-control" @bind-Value="client.Email" />
+        </div>
+    </FormFields>
+
+</CrudTablePage>
+
+@code {
+    private CrudTablePage<UserDto, int>? _crudTable;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+    }
+}

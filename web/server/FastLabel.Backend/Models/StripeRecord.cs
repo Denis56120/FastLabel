@@ -5,7 +5,14 @@ public class StripeRecord
     [Key]
     public int Id { get; set; }
 
-    public int StripeCustomerId { get; set; }
+    [Required]
+    public string StripeCustomerId { get; set; } = string.Empty;
 
-    public int StripeSubscriptionId { get; set; }
+    [Required]
+    public string StripeSubscriptionId { get; set; } = string.Empty;
+
+    public int UserId { get; set; }
+
+    [ForeignKey(nameof(UserId))]
+    public User User { get; set; } = null!;
 }
