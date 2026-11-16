@@ -2,8 +2,6 @@
 @layout MainLayout
 @attribute [Authorize]
 @inject TranslationService Translation
-@using Microsoft.AspNetCore.Components.Authorization
-@using System.Security.Claims
 
 <CrudTablePage @ref="_crudTable"
                TItem="PrintJobsDto" 

@@ -1,7 +1,5 @@
 namespace FastLabel.Shared.DTOs;
 
-using System.ComponentModel.DataAnnotations;
-
 public class StripeDto
 {
     [Required(ErrorMessage = "stripe.error.plan_required")]

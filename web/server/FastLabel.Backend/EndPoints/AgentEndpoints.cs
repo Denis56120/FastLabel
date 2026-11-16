@@ -1,11 +1,3 @@
-using System.Security.Claims;
-using System.Net.WebSockets;
-using Microsoft.EntityFrameworkCore;
-using FastLabel.Backend.Data;
-using FastLabel.Backend.Models;
-using FastLabel.Shared.DTOs;
-using FastLabel.Backend.Services;
-
 namespace FastLabel.Backend.Endpoints;
 
 public static class AgentEndpoints

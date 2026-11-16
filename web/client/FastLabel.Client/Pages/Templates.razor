@@ -3,15 +3,13 @@
 @attribute [Authorize]
 @inject TranslationService Translation
 @inject NavigationManager Navigation
-@using Microsoft.AspNetCore.Components.Authorization
-@using System.Security.Claims
 
 <CrudTablePage @ref="_crudTable"
                TItem="TemplateDto" 
                TKey="int"
                ApiEndpoint="api/templates"
                IdSelector="t => t.Id"
-               CreateNewItem="@(() => new TemplateDto())"
+               CreateNewItem="@(() => new TemplateDto { JsonData = "{}" })"
                Title="@Translation.GetString("templates.title")"
                Description="@Translation.GetString("templates.description")"
                EmptyMessage="@Translation.GetString("templates.no_templates")"
