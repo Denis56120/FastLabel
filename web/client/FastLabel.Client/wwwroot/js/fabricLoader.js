@@ -1,5 +1,6 @@
-export async function initEditor(dotNetHelper, canvasId, initialJson, width, height) {
-    // 0. Charger les polices Google Fonts dynamiquement si absentes (avec tous les styles et italiques)
+// --- 1. CHARGEMENT DES RESSOURCES EXTERNES ---
+async function loadExternalResources() {
+    // Polices Google Fonts
     if (!document.getElementById('google-fonts-fastlabel')) {
         const preconnect1 = document.createElement('link');
         preconnect1.rel = 'preconnect';
@@ -19,38 +20,54 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
         document.head.appendChild(fontLink);
     }
 
-    // 1. Charger Fabric.js si absent
-    if (typeof fabric === 'undefined') {
-        await new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js';
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-        });
-    }
+    // Scripts tiers (Fabric.js, qrcode, JsBarcode)
+    const dependencies = [
+        { name: 'fabric', check: () => typeof fabric !== 'undefined', src: 'https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js' },
+        { name: 'qrcode', check: () => typeof qrcode !== 'undefined', src: 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js' },
+        { name: 'JsBarcode', check: () => typeof JsBarcode !== 'undefined', src: 'https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js' }
+    ];
 
-    // 2. Charger qrcode-generator si absent
-    if (typeof qrcode === 'undefined') {
-        await new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js';
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
-        });
+    for (const dep of dependencies) {
+        if (!dep.check()) {
+            await new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = dep.src;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
     }
+}
 
-    // 3. Charger JsBarcode si absent
-    if (typeof JsBarcode === 'undefined') {
-        await new Promise((resolve, reject) => {
-            const script = document.createElement('script');
-            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js';
-            script.onload = resolve;
-            script.onerror = reject;
-            document.head.appendChild(script);
+// --- 2. CONFIGURATION DES OBJETS ---
+function configureObjectControls(obj) {
+    if (!obj) return;
+    obj.set('lockRotation', true);
+    obj.setControlVisible('mtr', false);
+
+    if (obj.isType('i-text') || obj.isType('text') || obj.isType('textbox')) {
+        obj.setControlsVisibility({
+            mtr: false,
+            ml: true, 
+            mr: true,
+            mt: false,
+            mb: false
         });
     }
+}
+
+// --- 3. UTILITAIRES DE TAILLE DE POLICE ---
+const ALLOWED_SIZES = [12, 14, 16, 18, 24, 28, 32, 40, 48, 56, 64, 72, 96];
+function getClosestAllowedSize(rawSize) {
+    return ALLOWED_SIZES.reduce((prev, curr) =>
+        Math.abs(curr - rawSize) < Math.abs(prev - rawSize) ? curr : prev
+    );
+}
+
+// --- 4. POINT D'ENTRÉE PRINCIPAL DE L'ÉDITEUR ---
+export async function initEditor(dotNetHelper, canvasId, initialJson, width, height) {
+    await loadExternalResources();
 
     const canvas = new fabric.Canvas(canvasId, {
         width: width,
@@ -58,23 +75,7 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
         backgroundColor: '#ffffff'
     });
 
-    // Fonction centralisée pour verrouiller la rotation et les poignées d'étirement texte
-    function configureObjectControls(obj) {
-        if (!obj) return;
-        obj.set('lockRotation', true);
-        obj.setControlVisible('mtr', false);
-
-        if (obj.isType('i-text') || obj.isType('text')) {
-            obj.setControlsVisibility({
-                mtr: false,
-                ml: false,
-                mr: false,
-                mt: false,
-                mb: false
-            });
-        }
-    }
-
+    // Chargement initial du JSON
     if (initialJson) {
         try {
             const parsed = typeof initialJson === 'string' ? JSON.parse(initialJson) : initialJson;
@@ -87,6 +88,7 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
         }
     }
 
+    // --- NOTIFICATIONS ET SÉLECTION ---
     function notifySelection(obj) {
         if (!obj) {
             dotNetHelper.invokeMethodAsync('OnObjectSelected', null);
@@ -94,13 +96,14 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
         }
 
         let type = obj.type;
-        if (type === 'group') {
+        if (obj.isType('textbox') || obj.isType('i-text') || obj.isType('text')) {
+            type = 'textbox';
+        } else if (type === 'group') {
             const items = obj.getObjects();
-            if (items.some(item => item.isType('i-text') || item.isType('text'))) {
+            if (items.some(item => item.isType('textbox') || item.isType('i-text') || item.isType('text'))) {
                 type = 'text-rectangle';
             }
         }
-
         dotNetHelper.invokeMethodAsync('OnObjectSelected', type);
     }
 
@@ -109,96 +112,29 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
         dotNetHelper.invokeMethodAsync('UpdateJsonData', json);
     };
 
-    // Paliers de tailles autorisés pour correspondre exactement aux .ttf du backend
-    const ALLOWED_SIZES = [12, 14, 16, 18, 24, 28, 32, 40, 48, 56, 64, 72, 96];
-    function getClosestAllowedSize(rawSize) {
-        return ALLOWED_SIZES.reduce((prev, curr) =>
-            Math.abs(curr - rawSize) < Math.abs(prev - rawSize) ? curr : prev
-        );
-    }
-
-    canvas.on('object:modified', (e) => {
-        const obj = e.target;
-
-        // Verrouillage / Snap de la taille de police pour aligner le front et le back (.NET)
-        if (obj && (obj.isType('i-text') || obj.isType('text'))) {
-            const scale = Math.max(obj.scaleX, obj.scaleY);
-            const effectiveSize = obj.fontSize * scale;
-            const snappedSize = getClosestAllowedSize(effectiveSize);
-
-            obj.set({
-                fontSize: snappedSize,
-                scaleX: 1,
-                scaleY: 1
-            });
-
-            // Force Fabric.js à recalculer la boîte de sélection bleue
-            obj.initDimensions();
-            obj.setCoords();
-
-            if (obj.boundRect) {
-                const padding = 4;
-                obj.boundRect.set({
-                    left: obj.left - padding,
-                    top: obj.top - padding,
-                    width: obj.width + padding * 2,
-                    height: obj.height + padding * 2
-                });
-                obj.boundRect.setCoords();
-            }
-            canvas.renderAll();
-        }
-
-        notify();
-    });
-
-    canvas.on('object:added', (e) => {
-        configureObjectControls(e.target);
-        notify();
-    });
-
-    canvas.on('object:removed', notify);
-
-    canvas.on('selection:created', (e) => notifySelection(e.selected[0]));
-    canvas.on('selection:updated', (e) => notifySelection(e.selected[0]));
-    canvas.on('selection:cleared', () => notifySelection(null));
-
-    // --- MAGNÉTISME ET GUIDES D'ALIGNEMENT (SNAPPING) ---
+    // --- MAGNÉTISME & GUIDES ---
     const snappingDistance = 5;
     let alignVerticalLine = null;
     let alignHorizontalLine = null;
 
-    function showVerticalGuide(x) {
-        if (!alignVerticalLine) {
-            alignVerticalLine = new fabric.Line([x, 0, x, canvas.height], {
-                stroke: 'rgba(255, 0, 0, 0.6)',
-                strokeWidth: 1,
-                selectable: false,
-                evented: false,
-                excludeFromExport: true
-            });
-            canvas.add(alignVerticalLine);
-        } else {
-            alignVerticalLine.set({ x1: x, x2: x, y2: canvas.height });
-            canvas.bringToFront(alignVerticalLine);
-            alignVerticalLine.set('visible', true);
-        }
-    }
+    function showGuide(isVertical, pos) {
+        const lineRef = isVertical ? alignVerticalLine : alignHorizontalLine;
+        const coords = isVertical ? [pos, 0, pos, canvas.height] : [0, pos, canvas.width, pos];
 
-    function showHorizontalGuide(y) {
-        if (!alignHorizontalLine) {
-            alignHorizontalLine = new fabric.Line([0, y, canvas.width, y], {
+        if (!lineRef) {
+            const newLine = new fabric.Line(coords, {
                 stroke: 'rgba(255, 0, 0, 0.6)',
                 strokeWidth: 1,
                 selectable: false,
                 evented: false,
                 excludeFromExport: true
             });
-            canvas.add(alignHorizontalLine);
+            canvas.add(newLine);
+            if (isVertical) alignVerticalLine = newLine; else alignHorizontalLine = newLine;
         } else {
-            alignHorizontalLine.set({ y1: y, y2: y, x2: canvas.width });
-            canvas.bringToFront(alignHorizontalLine);
-            alignHorizontalLine.set('visible', true);
+            lineRef.set(isVertical ? { x1: pos, x2: pos, y2: canvas.height } : { y1: pos, y2: pos, x2: canvas.width });
+            canvas.bringToFront(lineRef);
+            lineRef.set('visible', true);
         }
     }
 
@@ -207,36 +143,73 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
         if (alignHorizontalLine) alignHorizontalLine.set('visible', false);
     }
 
+    // --- ÉVÉNEMENTS CANVAS ---
+    canvas.on('object:modified', (e) => {
+        const obj = e.target;
+        if (!obj) return;
+
+        if (obj.isType('i-text') || obj.isType('text') || obj.isType('textbox')) {
+            const scale = Math.max(obj.scaleX, obj.scaleY);
+            const snappedSize = getClosestAllowedSize(obj.fontSize * scale);
+            obj.set({ fontSize: snappedSize, scaleX: 1, scaleY: 1 });
+            obj.initDimensions();
+            obj.setCoords();
+
+            if (obj.boundRect) {
+                const padding = 10;
+                obj.boundRect.set({
+                    left: obj.left - padding,
+                    top: obj.top - padding,
+                    width: (obj.width * obj.scaleX) + padding * 2,
+                    height: (obj.height * obj.scaleY) + padding * 2,
+                    scaleX: 1,
+                    scaleY: 1
+                });
+                obj.boundRect.setCoords();
+            }
+        } else if (obj.isType('rect')) {
+            // Aplatit l'échelle pour garder un contour et des coins arrondis bien réguliers
+            obj.set({
+                width: obj.width * obj.scaleX,
+                height: obj.height * obj.scaleY,
+                scaleX: 1,
+                scaleY: 1
+            });
+            obj.setCoords();
+        }
+        notify();
+    });
+
+    canvas.on('object:added', (e) => { configureObjectControls(e.target); notify(); });
+    canvas.on('object:removed', notify);
+    canvas.on('selection:created', (e) => notifySelection(e.selected[0]));
+    canvas.on('selection:updated', (e) => notifySelection(e.selected[0]));
+    canvas.on('selection:cleared', () => notifySelection(null));
+
     canvas.on('object:moving', (e) => {
         const obj = e.target;
         if (obj === alignVerticalLine || obj === alignHorizontalLine) return;
 
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
-
         const objCenterX = obj.left + (obj.width * obj.scaleX) / 2;
         const objCenterY = obj.top + (obj.height * obj.scaleY) / 2;
-
-        let snappedH = false;
-        let snappedV = false;
+        let snappedH = false, snappedV = false;
 
         hideGuides();
 
-        if (Math.abs(objCenterX - canvasWidth / 2) < snappingDistance) {
-            obj.set({ left: canvasWidth / 2 - (obj.width * obj.scaleX) / 2 });
-            showVerticalGuide(canvasWidth / 2);
+        if (Math.abs(objCenterX - canvas.width / 2) < snappingDistance) {
+            obj.set({ left: canvas.width / 2 - (obj.width * obj.scaleX) / 2 });
+            showGuide(true, canvas.width / 2);
             snappedH = true;
         }
 
-        if (Math.abs(objCenterY - canvasHeight / 2) < snappingDistance) {
-            obj.set({ top: canvasHeight / 2 - (obj.height * obj.scaleY) / 2 });
-            showHorizontalGuide(canvasHeight / 2);
+        if (Math.abs(objCenterY - canvas.height / 2) < snappingDistance) {
+            obj.set({ top: canvas.height / 2 - (obj.height * obj.scaleY) / 2 });
+            showGuide(false, canvas.height / 2);
             snappedV = true;
         }
 
-        // Met à jour le rectangle de fond lié s'il existe
         if (obj.boundRect) {
-            const padding = 4;
+            const padding = 10;
             obj.boundRect.set({
                 left: obj.left - padding,
                 top: obj.top - padding
@@ -244,99 +217,54 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
             obj.boundRect.setCoords();
         }
 
-        // TRÈS IMPORTANT : Force Fabric à recalculer les coordonnées du cadre actif pour éviter le double cadre
         obj.setCoords();
-
-        if (!snappedH && alignVerticalLine) alignVerticalLine.set('visible', false);
-        if (!snappedV && alignHorizontalLine) alignHorizontalLine.set('visible', false);
-
         canvas.renderAll();
     });
 
-    canvas.on('mouse:up', () => {
-        hideGuides();
-        canvas.renderAll();
-    });
+    canvas.on('mouse:up', () => { hideGuides(); canvas.renderAll(); });
 
-    // --- GESTION DES RACCOURCIS CLAVIER ---
+    // --- RACCOURCIS CLAVIER ---
     let _clipboard = null;
-
     const handleKeyDown = (e) => {
         const activeObj = canvas.getActiveObject();
-
-        if (
-            e.target.tagName === 'INPUT' ||
-            e.target.tagName === 'TEXTAREA' ||
-            e.target.tagName === 'SELECT' ||
-            (activeObj && activeObj.isEditing)
-        ) {
-            return;
-        }
+        if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName) || (activeObj && activeObj.isEditing)) return;
 
         if ((e.key === 'Delete' || e.key === 'Backspace') && activeObj) {
             e.preventDefault();
             const activeObjects = canvas.getActiveObjects();
             if (activeObjects.length) {
-                activeObjects.forEach(obj => {
-                    if (obj.boundRect) canvas.remove(obj.boundRect);
-                });
+                activeObjects.forEach(obj => { if (obj.boundRect) canvas.remove(obj.boundRect); });
                 canvas.remove(...activeObjects);
                 canvas.discardActiveObject();
                 canvas.renderAll();
                 notify();
             }
         }
-
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c' && activeObj) {
             e.preventDefault();
-            activeObj.clone((cloned) => {
-                _clipboard = cloned;
-            });
+            activeObj.clone((cloned) => { _clipboard = cloned; });
         }
-
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v' && _clipboard) {
             e.preventDefault();
             _clipboard.clone((clonedObj) => {
                 canvas.discardActiveObject();
-
-                clonedObj.set({
-                    left: clonedObj.left + 15,
-                    top: clonedObj.top + 15,
-                    evented: true,
-                });
-
-                if (clonedObj.type === 'activeSelection') {
-                    clonedObj.canvas = canvas;
-                    clonedObj.forEachObject((obj) => {
-                        configureObjectControls(obj);
-                        canvas.add(obj);
-                    });
-                    clonedObj.setCoords();
-                } else {
-                    configureObjectControls(clonedObj);
-                    canvas.add(clonedObj);
-                }
-
-                _clipboard.top += 15;
-                _clipboard.left += 15;
-
+                clonedObj.set({ left: clonedObj.left + 15, top: clonedObj.top + 15, evented: true });
+                configureObjectControls(clonedObj);
+                canvas.add(clonedObj);
+                _clipboard.top += 15; _clipboard.left += 15;
                 canvas.setActiveObject(clonedObj);
                 canvas.requestRenderAll();
                 notify();
             });
         }
     };
-
     window.addEventListener('keydown', handleKeyDown);
 
+    // --- API EXPOSÉE À BLAZOR ---
     return {
         addText: (text, fontFamily = 'Inter') => {
-            const textObj = new fabric.IText(text, {
-                left: 20,
-                top: 20,
-                fontSize: 18,
-                fill: '#000000',
-                fontFamily: fontFamily
+            const textObj = new fabric.Textbox(text, {
+                left: 20, top: 20, width: 180, fontSize: 18, scaleX: 1, scaleY: 1, fill: '#000000', fontFamily: fontFamily, splitByGrapheme: true
             });
             configureObjectControls(textObj);
             canvas.add(textObj);
@@ -345,10 +273,18 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
         },
         addRectangle: () => {
             const rect = new fabric.Rect({
-                left: 20, top: 20, width: 100, height: 50,
-                fill: 'transparent', stroke: '#000000', strokeWidth: 1,
-                rx: 6, ry: 6
-            });
+                    left: 50,
+                    top: 50,
+                    width: 150,
+                    height: 80,
+                    fill: 'transparent',
+                    stroke: '#000000',
+                    strokeWidth: 2,
+                    scaleX: 1,
+                    scaleY: 1,
+                    rx: 8,
+                    ry: 8
+                });
             configureObjectControls(rect);
             canvas.add(rect);
             canvas.setActiveObject(rect);
@@ -357,35 +293,20 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
         addBarcode: (barcodeData) => {
             try {
                 const tempCanvas = document.createElement('canvas');
-                JsBarcode(tempCanvas, barcodeData || "12345678", {
-                    format: "CODE128",
-                    lineColor: "#000",
-                    width: 2,
-                    height: 50,
-                    displayValue: true
-                });
-
-                const imgUrl = tempCanvas.toDataURL("image/png");
-                fabric.Image.fromURL(imgUrl, (img) => {
-                    img.set({ left: 20, top: 20, scaleX: 0.8, scaleY: 0.8 });
+                JsBarcode(tempCanvas, barcodeData || "12345678", { format: "CODE128", lineColor: "#000", width: 2, height: 50, displayValue: true });
+                fabric.Image.fromURL(tempCanvas.toDataURL("image/png"), (img) => {
+                    img.set({ left: 20, top: 20, scaleX: 1, scaleY: 1 });
                     configureObjectControls(img);
                     canvas.add(img);
                     canvas.setActiveObject(img);
                     canvas.renderAll();
                     notify();
                 });
-            } catch (e) {
-                console.error("Erreur génération Code-barres", e);
-            }
+            } catch (e) { console.error(e); }
         },
         addImage: (url) => {
             fabric.Image.fromURL(url, (img) => {
-                img.set({
-                    left: 50,
-                    top: 50,
-                    scaleX: 0.5,
-                    scaleY: 0.5
-                });
+                img.set({ left: 50, top: 50, scaleX: 1, scaleY: 1 });
                 configureObjectControls(img);
                 canvas.add(img);
                 canvas.setActiveObject(img);
@@ -395,56 +316,33 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
         },
         addQrCode: (textData) => {
             try {
-                const typeNumber = 4;
-                const errorCorrectionLevel = 'M';
-                const qr = qrcode(typeNumber, errorCorrectionLevel);
+                const qr = qrcode(4, 'M');
                 qr.addData(textData || "https://fastlabel");
                 qr.make();
-
-                const count = qr.getModuleCount();
-                const tileSize = 6;
-                const margin = 12;
-                const size = count * tileSize + margin * 2;
-
+                const count = qr.getModuleCount(), tileSize = 6, margin = 12, size = count * tileSize + margin * 2;
                 const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = size;
-                tempCanvas.height = size;
+                tempCanvas.width = size; tempCanvas.height = size;
                 const ctx = tempCanvas.getContext('2d');
-
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, size, size);
-
+                ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, size, size);
                 ctx.fillStyle = '#000000';
                 for (let r = 0; r < count; r++) {
                     for (let c = 0; c < count; c++) {
-                        if (qr.isDark(r, c)) {
-                            ctx.fillRect(margin + c * tileSize, margin + r * tileSize, tileSize, tileSize);
-                        }
+                        if (qr.isDark(r, c)) ctx.fillRect(margin + c * tileSize, margin + r * tileSize, tileSize, tileSize);
                     }
                 }
-
-                const imgUrl = tempCanvas.toDataURL("image/png");
-                fabric.Image.fromURL(imgUrl, (img) => {
-                    img.set({
-                        left: 20,
-                        top: 20,
-                        scaleX: 1,
-                        scaleY: 1
-                    });
+                fabric.Image.fromURL(tempCanvas.toDataURL("image/png"), (img) => {
+                    img.set({ left: 20, top: 20, scaleX: 1, scaleY: 1 });
                     configureObjectControls(img);
                     canvas.add(img);
                     canvas.setActiveObject(img);
                     canvas.renderAll();
                     notify();
                 });
-            } catch (e) {
-                console.error("Erreur génération QR Code", e);
-            }
+            } catch (e) { console.error(e); }
         },
         getActiveObjectProperties: () => {
             const obj = canvas.getActiveObject();
             if (!obj) return null;
-
             return {
                 type: obj.type,
                 text: obj.text || '',
@@ -458,259 +356,107 @@ export async function initEditor(dotNetHelper, canvasId, initialJson, width, hei
                 hasBoundRect: !!obj.boundRect
             };
         },
-        resizeCanvas: (newWidth, newHeight) => {
-            canvas.setWidth(newWidth);
-            canvas.setHeight(newHeight);
-            canvas.renderAll();
-            notify();
-        },
+        resizeCanvas: (w, h) => { canvas.setWidth(w); canvas.setHeight(h); canvas.renderAll(); notify(); },
         deleteSelected: () => {
             const activeObjects = canvas.getActiveObjects();
             if (activeObjects.length) {
-                activeObjects.forEach(obj => {
-                    if (obj.boundRect) canvas.remove(obj.boundRect);
-                });
+                activeObjects.forEach(obj => { if (obj.boundRect) canvas.remove(obj.boundRect); });
                 canvas.remove(...activeObjects);
                 canvas.discardActiveObject();
                 canvas.renderAll();
                 notify();
             }
         },
-        bringForward: () => {
-            const activeObject = canvas.getActiveObject();
-            if (activeObject) {
-                canvas.bringForward(activeObject);
-                canvas.renderAll();
-                notify();
-            }
-        },
-        sendBackwards: () => {
-            const activeObject = canvas.getActiveObject();
-            if (activeObject) {
-                canvas.sendBackwards(activeObject);
-                canvas.renderAll();
-                notify();
-            }
-        },
-        setFontFamily: (fontFamily) => {
-            const activeObject = canvas.getActiveObject();
-            if (activeObject && (activeObject.isType('i-text') || activeObject.isType('text'))) {
-                activeObject.set('fontFamily', fontFamily);
-                activeObject.initDimensions();
-                activeObject.setCoords();
-                canvas.renderAll();
-                notify();
-            }
-        },
-        toggleBold: () => {
-            const activeObject = canvas.getActiveObject();
-            if (activeObject && (activeObject.isType('i-text') || activeObject.isType('text'))) {
-                const isBold = activeObject.fontWeight === 'bold';
-                activeObject.set('fontWeight', isBold ? 'normal' : 'bold');
-                activeObject.initDimensions();
-                activeObject.setCoords();
-                canvas.renderAll();
-                notify();
-            }
-        },
-        toggleItalic: () => {
-            const activeObject = canvas.getActiveObject();
-            if (activeObject && (activeObject.isType('i-text') || activeObject.isType('text'))) {
-                const isItalic = activeObject.fontStyle === 'italic';
-                activeObject.set('fontStyle', isItalic ? 'normal' : 'italic');
-                activeObject.initDimensions();
-                activeObject.setCoords();
-                canvas.renderAll();
-                notify();
-            }
-        },
-        toggleUnderline: () => {
-            const activeObject = canvas.getActiveObject();
-            if (activeObject && (activeObject.isType('i-text') || activeObject.isType('text'))) {
-                activeObject.set('underline', !activeObject.underline);
-                canvas.renderAll();
-                notify();
-            }
-        },
-        toggleLinethrough: () => {
-            const activeObject = canvas.getActiveObject();
-            if (activeObject && (activeObject.isType('i-text') || activeObject.isType('text'))) {
-                activeObject.set('linethrough', !activeObject.linethrough);
-                canvas.renderAll();
-                notify();
-            }
-        },
+        bringForward: () => { const o = canvas.getActiveObject(); if (o) { canvas.bringForward(o); canvas.renderAll(); notify(); } },
+        sendBackwards: () => { const o = canvas.getActiveObject(); if (o) { canvas.sendBackwards(o); canvas.renderAll(); notify(); } },
+        setFontFamily: (font) => { const o = canvas.getActiveObject(); if (o && o.set) { o.set('fontFamily', font); o.initDimensions(); o.setCoords(); canvas.renderAll(); notify(); } },
+        toggleBold: () => { const o = canvas.getActiveObject(); if (o && o.set) { o.set('fontWeight', o.fontWeight === 'bold' ? 'normal' : 'bold'); o.initDimensions(); o.setCoords(); canvas.renderAll(); notify(); } },
+        toggleItalic: () => { const o = canvas.getActiveObject(); if (o && o.set) { o.set('fontStyle', o.fontStyle === 'italic' ? 'normal' : 'italic'); o.initDimensions(); o.setCoords(); canvas.renderAll(); notify(); } },
+        toggleUnderline: () => { const o = canvas.getActiveObject(); if (o && o.set) { o.set('underline', !o.underline); canvas.renderAll(); notify(); } },
+        toggleLinethrough: () => { const o = canvas.getActiveObject(); if (o && o.set) { o.set('linethrough', !o.linethrough); canvas.renderAll(); notify(); } },
         toggleTextRectangle: () => {
             const activeObject = canvas.getActiveObject();
-            if (!activeObject || (!activeObject.isType('i-text') && !activeObject.isType('text'))) return;
+            if (!activeObject || (!activeObject.isType('textbox') && !activeObject.isType('i-text') && !activeObject.isType('text'))) return;
 
             if (activeObject.boundRect) {
+                // Suppression du rectangle de fond sans toucher au texte
                 canvas.remove(activeObject.boundRect);
                 activeObject.boundRect = null;
                 canvas.renderAll();
                 notify();
             } else {
-                const isInverse = (activeObject.fill === '#ffffff' || activeObject.backgroundColor === '#000000');
-
-                const fillColor = isInverse ? '#000000' : '#ffffff';
-                const strokeColor = isInverse ? '#ffffff' : '#000000';
-
-                activeObject.set({
-                    fill: isInverse ? '#ffffff' : '#000000',
-                    backgroundColor: 'transparent'
-                });
-
-                const padding = 4;
-                const width = activeObject.width * activeObject.scaleX + padding * 2;
-                const height = activeObject.height * activeObject.scaleY + padding * 2;
+                // Ajout du rectangle de fond derrière le texte
+                const padding = 10;
+                const textWidth = activeObject.width * activeObject.scaleX;
+                const textHeight = activeObject.height * activeObject.scaleY;
 
                 const rect = new fabric.Rect({
                     left: activeObject.left - padding,
                     top: activeObject.top - padding,
-                    width: width,
-                    height: height,
-                    fill: fillColor,
-                    stroke: strokeColor,
+                    width: textWidth + padding * 2,
+                    height: textHeight + padding * 2,
+                    fill: 'transparent', 
+                    stroke: '#000000', 
                     strokeWidth: 2,
+                    rx: 8,
+                    ry: 8,
                     selectable: false,
                     evented: false
                 });
 
                 activeObject.boundRect = rect;
-
-                activeObject.off('moving');
-                activeObject.on('moving', () => {
-                    rect.set({
-                        left: activeObject.left - padding,
-                        top: activeObject.top - padding
-                    });
-                });
-
                 canvas.add(rect);
                 rect.sendToBack();
                 canvas.renderAll();
                 notify();
             }
         },
-        setRectangleCornerRadius: (radius) => {
-            const activeObject = canvas.getActiveObject();
-            if (!activeObject) return;
-
-            if (activeObject.isType('rect')) {
-                activeObject.set({ rx: radius, ry: radius });
-                canvas.renderAll();
-                notify();
-            } else if (activeObject.isType('group')) {
-                const items = activeObject.getObjects();
-                const rectObj = items.find(obj => obj.isType('rect'));
-                if (rectObj) {
-                    rectObj.set({ rx: radius, ry: radius });
-                    canvas.renderAll();
-                    notify();
-                }
-            }
+        setRectangleCornerRadius: (r) => {
+            const o = canvas.getActiveObject();
+            if (!o) return;
+            if (o.isType('rect')) { o.set({ rx: r, ry: r }); canvas.renderAll(); notify(); }
         },
-        centerHorizontal: () => {
-            const activeObject = canvas.getActiveObject();
-            if (!activeObject) return;
-
-            canvas.centerObjectH(activeObject);
-            activeObject.setCoords();
-
-            if (activeObject.boundRect) {
-                const padding = 4;
-                activeObject.boundRect.set({
-                    left: activeObject.left - padding,
-                    top: activeObject.top - padding
-                });
-                activeObject.boundRect.setCoords();
-            }
-
-            canvas.renderAll();
-            notify();
-        },
-        centerVertical: () => {
-            const activeObject = canvas.getActiveObject();
-            if (!activeObject) return;
-
-            canvas.centerObjectV(activeObject);
-            activeObject.setCoords();
-
-            if (activeObject.boundRect) {
-                const padding = 4;
-                activeObject.boundRect.set({
-                    left: activeObject.left - padding,
-                    top: activeObject.top - padding
-                });
-                activeObject.boundRect.setCoords();
-            }
-
-            canvas.renderAll();
-            notify();
-        },
-        centerBoth: () => {
-            const activeObject = canvas.getActiveObject();
-            if (!activeObject) return;
-
-            canvas.centerObject(activeObject);
-            activeObject.setCoords();
-
-            if (activeObject.boundRect) {
-                const padding = 4;
-                activeObject.boundRect.set({
-                    left: activeObject.left - padding,
-                    top: activeObject.top - padding
-                });
-                activeObject.boundRect.setCoords();
-            }
-
-            canvas.renderAll();
-            notify();
-        },
+        centerHorizontal: () => { const o = canvas.getActiveObject(); if (o) { canvas.centerObjectH(o); o.setCoords(); canvas.renderAll(); notify(); } },
+        centerVertical: () => { const o = canvas.getActiveObject(); if (o) { canvas.centerObjectV(o); o.setCoords(); canvas.renderAll(); notify(); } },
+        centerBoth: () => { const o = canvas.getActiveObject(); if (o) { canvas.centerObject(o); o.setCoords(); canvas.renderAll(); notify(); } },
         invertSelected: () => {
             const activeObject = canvas.getActiveObject();
             if (!activeObject) return;
 
             if (activeObject.isType('image') || activeObject.cacheKey) {
                 const filters = activeObject.filters || [];
-                const invertIndex = filters.findIndex(f => f && f.type === 'Invert');
-                if (invertIndex >= 0) {
-                    activeObject.filters.splice(invertIndex, 1);
-                } else {
-                    activeObject.filters.push(new fabric.Image.filters.Invert());
-                }
+                const idx = filters.findIndex(f => f && f.type === 'Invert');
+                if (idx >= 0) activeObject.filters.splice(idx, 1); else activeObject.filters.push(new fabric.Image.filters.Invert());
                 activeObject.applyFilters();
                 canvas.renderAll();
                 notify();
-            } else if (activeObject.isType('i-text') || activeObject.isType('text')) {
-                const currentFill = activeObject.fill;
+            } else if (activeObject.isType('textbox') || activeObject.isType('i-text') || activeObject.isType('text')) {
+                // Gestion du texte avec ou sans boundRect
+                if (activeObject.boundRect) {
+                    const rect = activeObject.boundRect;
+                    const isNormal = (rect.stroke === '#000000'); // Si contour noir, on inverse
 
-                if (currentFill === '#ffffff') {
+                    rect.set({
+                        fill: isNormal ? '#000000' : 'transparent',
+                        stroke: isNormal ? '#ffffff' : '#000000'
+                    });
                     activeObject.set({
-                        fill: '#000000',
-                        backgroundColor: 'transparent'
+                        fill: isNormal ? '#ffffff' : '#000000'
                     });
                 } else {
+                    const currentFill = activeObject.fill;
                     activeObject.set({
-                        fill: '#ffffff',
-                        backgroundColor: '#000000'
+                        fill: currentFill === '#ffffff' ? '#000000' : '#ffffff'
                     });
                 }
                 canvas.renderAll();
                 notify();
             } else if (activeObject.isType('rect')) {
                 const currentFill = activeObject.fill;
-
-                if (currentFill === '#000000') {
-                    activeObject.set({
-                        fill: 'transparent',
-                        stroke: '#000000'
-                    });
+                if (currentFill === 'transparent' || currentFill === '') {
+                    activeObject.set({ fill: '#000000', stroke: '#ffffff' });
                 } else {
-                    activeObject.set({
-                        fill: '#000000',
-                        stroke: '#ffffff'
-                    });
+                    activeObject.set({ fill: 'transparent', stroke: '#000000' });
                 }
                 canvas.renderAll();
                 notify();
