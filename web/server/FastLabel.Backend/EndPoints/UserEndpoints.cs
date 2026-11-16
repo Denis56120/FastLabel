@@ -6,21 +6,34 @@ public static class UserEndpoints
     {
         routes.MapGet("/api/users/me", async (AppDbContext db, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
         {
-            var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier) 
-                                ?? claimsUser.FindFirstValue("nameid");
+            var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier)
+                                        ?? claimsUser.FindFirstValue("nameid");
 
             if (!int.TryParse(userIdString, out var userId))
                 return Results.Unauthorized();
 
-            var lang = HttpContextExtensions.GetRequestLanguage(httpContext);
-
-            var userDto = await db.Users
-                .Include(u => u.BasicStatus)
-                    .ThenInclude(s => s.Name)
-                        .ThenInclude(n => n.Translations)
-                            .ThenInclude(tr => tr.Language)
+            // 1. On récupère d'abord l'utilisateur et le code de sa langue en BDD
+            var userInfo = await db.Users
                 .Where(u => u.Id == userId)
-                .OrderBy(u => u.Id)
+                .Select(u => new
+                {
+                    User = u,
+                    LangCode = u.Language != null ? u.Language.Code : "en"
+                })
+                .FirstOrDefaultAsync();
+
+            if (userInfo == null)
+                return Results.NotFound(new ErrorResponseDto { Message = "user.error.not_found" });
+
+            var user = userInfo.User;
+            var userLangCode = userInfo.LangCode;
+
+            // 2. On pose / met à jour le cookie de langue avec la valeur officielle de la BDD
+            httpContext.SetLanguageCookie(userLangCode);
+
+            // 3. On construit le DTO en utilisant directement `userLangCode` pour les traductions
+            var userDto = await db.Users
+                .Where(u => u.Id == userId)
                 .Select(u => new UserDto
                 {
                     Id = u.Id,
@@ -30,17 +43,14 @@ public static class UserEndpoints
                     LanguageId = u.LanguageId,
                     BasicStatusName = u.BasicStatus != null && u.BasicStatus.Name != null
                         ? (u.BasicStatus.Name.Translations
-                            .Where(tr => tr.Language.Code == lang)
+                            .Where(tr => tr.Language.Code == userLangCode)
                             .Select(tr => tr.TranslatedValue)
                             .FirstOrDefault()
-                           ?? u.BasicStatus.Name.DefaultTranslation)
+                        ?? u.BasicStatus.Name.DefaultTranslation)
                         : string.Empty,
                     CreatedAt = u.CreatedAt
                 })
                 .FirstOrDefaultAsync();
-
-            if (userDto == null)
-                return Results.NotFound(new ErrorResponseDto { Message = "user.error.not_found" });
 
             return Results.Ok(userDto);
         }).RequireAuthorization();
@@ -52,8 +62,8 @@ public static class UserEndpoints
                 return errorResult!;
             }
 
-            var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier) 
-                                ?? claimsUser.FindFirstValue("nameid");
+            var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier)
+                                        ?? claimsUser.FindFirstValue("nameid");
 
             if (!int.TryParse(userIdString, out var userId))
                 return Results.Unauthorized();
@@ -62,8 +72,13 @@ public static class UserEndpoints
             if (user == null)
                 return Results.NotFound(new ErrorResponseDto { Message = "user.error.not_found" });
 
-            bool languageExists = await db.Languages.AnyAsync(l => l.Id == updatedDto.LanguageId);
-            if (!languageExists)
+            // 1. On récupère le code de la langue demandée par l'utilisateur (via son LanguageId)
+            var targetLanguageCode = await db.Languages
+                .Where(l => l.Id == updatedDto.LanguageId)
+                .Select(l => l.Code)
+                .FirstOrDefaultAsync();
+
+            if (string.IsNullOrEmpty(targetLanguageCode))
             {
                 return Results.BadRequest(new ErrorResponseDto { Message = "user.error.language_not_found" });
             }
@@ -103,15 +118,14 @@ public static class UserEndpoints
                 var serverUrl = configuration["Url:ServerUrl"] ?? "https://fastlabel.com";
                 var verificationLink = $"{serverUrl}/api/auth/verify-email?token={user.EmailVerificationToken}";
 
-                var language = httpContext.GetRequestLanguage();
-
+                // On utilise le code de la langue cible pour l'e-mail d'activation
                 var emailTexts = await db.Texts
                     .Where(t => t.Tag == "email.activation.subject" || t.Tag == "email.activation.body")
                     .Select(t => new
                     {
                         t.Tag,
                         Value = t.Translations
-                            .Where(tr => tr.Language.Code == language)
+                            .Where(tr => tr.Language.Code == targetLanguageCode)
                             .Select(tr => tr.TranslatedValue)
                             .FirstOrDefault() ?? t.DefaultTranslation
                     })
@@ -121,7 +135,7 @@ public static class UserEndpoints
                             ?? string.Empty;
 
                 var bodyTemplate = emailTexts.FirstOrDefault(t => t.Tag == "email.activation.body")?.Value
-                                            ?? string.Empty;
+                                        ?? string.Empty;
 
                 var message = string.Format(bodyTemplate, updatedDto.Name, verificationLink);
 
@@ -138,14 +152,27 @@ public static class UserEndpoints
 
             await db.SaveChangesAsync();
 
+            // 2. On met à jour le cookie de langue avec la nouvelle langue validée
+            httpContext.SetLanguageCookie(targetLanguageCode);
+
             return Results.Ok(new { emailChanged });
         }).RequireAuthorization();
 
         var adminGroup = routes.MapGroup("/api/users").RequireAuthorization("AdminOnly");
 
-        adminGroup.MapGet("/", async (AppDbContext db, HttpContext httpContext) =>
+        adminGroup.MapGet("/", async (AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
-            var lang = HttpContextExtensions.GetRequestLanguage(httpContext);
+            var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier) 
+                                        ?? claimsUser.FindFirstValue("nameid");
+
+            if (!int.TryParse(userIdString, out var adminId))
+                return Results.Unauthorized();
+
+            // Récupère la langue de l'administrateur connecté
+            var adminLang = await db.Users
+                .Where(u => u.Id == adminId)
+                .Select(u => u.Language != null ? u.Language.Code : "en")
+                .FirstOrDefaultAsync() ?? "en";
 
             var users = await db.Users
                 .Include(u => u.BasicStatus)
@@ -161,10 +188,10 @@ public static class UserEndpoints
                     LanguageId = u.LanguageId,
                     BasicStatusName = u.BasicStatus != null && u.BasicStatus.Name != null
                         ? (u.BasicStatus.Name.Translations
-                            .Where(tr => tr.Language.Code == lang)
+                            .Where(tr => tr.Language.Code == adminLang)
                             .Select(tr => tr.TranslatedValue)
                             .FirstOrDefault()
-                           ?? u.BasicStatus.Name.DefaultTranslation)
+                        ?? u.BasicStatus.Name.DefaultTranslation)
                         : string.Empty,
                     CreatedAt = u.CreatedAt
                 })
@@ -173,9 +200,19 @@ public static class UserEndpoints
             return Results.Ok(users);
         });
 
-        adminGroup.MapGet("/{id:int}", async (int id, AppDbContext db, HttpContext httpContext) =>
+        adminGroup.MapGet("/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
-            var lang = HttpContextExtensions.GetRequestLanguage(httpContext);
+            var adminIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier) 
+                                ?? claimsUser.FindFirstValue("nameid");
+
+            if (!int.TryParse(adminIdString, out var adminId))
+                return Results.Unauthorized();
+
+            // Récupère la langue de l'administrateur connecté
+            var adminLang = await db.Users
+                .Where(u => u.Id == adminId)
+                .Select(u => u.Language != null ? u.Language.Code : "en")
+                .FirstOrDefaultAsync() ?? "en";
 
             var dto = await db.Users
                 .Include(u => u.BasicStatus)
@@ -193,7 +230,7 @@ public static class UserEndpoints
                     LanguageId = u.LanguageId,
                     BasicStatusName = u.BasicStatus != null && u.BasicStatus.Name != null
                         ? (u.BasicStatus.Name.Translations
-                            .Where(tr => tr.Language.Code == lang)
+                            .Where(tr => tr.Language.Code == adminLang)
                             .Select(tr => tr.TranslatedValue)
                             .FirstOrDefault()
                            ?? u.BasicStatus.Name.DefaultTranslation)
@@ -239,7 +276,7 @@ public static class UserEndpoints
             await db.SaveChangesAsync();
 
             dto.Id = user.Id;
-            dto.Password = null; 
+            dto.Password = null;
             return Results.Created($"/api/users/{user.Id}", dto);
         });
 

@@ -87,14 +87,6 @@
 
             if (response.IsSuccessStatusCode)
             {
-                try
-                {
-                    await Translation.SetLanguageAsync(Translation.CurrentLanguage);
-                }
-                catch
-                {
-                }
-
                 ToastService.ShowSuccess(Translation.GetString("auth.success.registered"));
                 Navigation.NavigateTo("/");
             }

@@ -1,3 +1,9 @@
+using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
+using FastLabel.Backend.Data;
+using FastLabel.Backend.Models;
+using FastLabel.Shared.DTOs;
+
 namespace FastLabel.Backend.Endpoints;
 
 public static class SubscriptionEndpoints
@@ -6,7 +12,7 @@ public static class SubscriptionEndpoints
     {
         var group = routes.MapGroup("/api/account/subscriptions").RequireAuthorization();
         
-        group.MapGet("/", async (AppDbContext db, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
+        group.MapGet("/", async (AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
             var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier) 
                                 ?? claimsUser.FindFirstValue("nameid");
@@ -15,7 +21,12 @@ public static class SubscriptionEndpoints
                 return Results.Unauthorized(); 
 
             bool isAdmin = claimsUser.IsInRole("Admin");
-            var lang = HttpContextExtensions.GetRequestLanguage(httpContext);
+
+            // Récupère la langue de l'utilisateur connecté en base
+            var lang = await db.Users
+                .Where(u => u.Id == userId)
+                .Select(u => u.Language != null ? u.Language.Code : "en")
+                .FirstOrDefaultAsync() ?? "en";
 
             var query = db.Subscriptions
                 .Include(s => s.Plan)
@@ -58,9 +69,9 @@ public static class SubscriptionEndpoints
                 .ToListAsync();
 
             return Results.Ok(subscriptions);
-        }).RequireAuthorization();
+        });
 
-        group.MapGet("/current", async (AppDbContext db, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
+        group.MapGet("/current", async (AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
             var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier) 
                                 ?? claimsUser.FindFirstValue("nameid");
@@ -68,7 +79,12 @@ public static class SubscriptionEndpoints
             if (!int.TryParse(userIdString, out var userId))
                 return Results.Unauthorized(); 
 
-            var lang = HttpContextExtensions.GetRequestLanguage(httpContext);
+            // Récupère la langue de l'utilisateur connecté en base
+            var lang = await db.Users
+                .Where(u => u.Id == userId)
+                .Select(u => u.Language != null ? u.Language.Code : "en")
+                .FirstOrDefaultAsync() ?? "en";
+
             var now = DateTime.UtcNow;
 
             var userSubscriptions = await db.Subscriptions
@@ -111,6 +127,6 @@ public static class SubscriptionEndpoints
             };
 
             return Results.Ok(subscriptionDto);
-        }).RequireAuthorization();
+        });
     }
 }

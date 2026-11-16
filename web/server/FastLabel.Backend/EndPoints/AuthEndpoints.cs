@@ -1,3 +1,13 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using FastLabel.Backend.Data;
+using FastLabel.Backend.Models;
+using FastLabel.Shared.DTOs;
+using FastLabel.Backend.Services;
+
 namespace FastLabel.Backend.Endpoints;
 
 public static class AuthEndpoints
@@ -87,7 +97,12 @@ public static class AuthEndpoints
             var clientUrl = configuration["Url:ClientUrl"] ?? "https://fastlabel.com";
             var resetLink = $"{clientUrl}/reset-password?token={user.PasswordResetToken}";
 
-            var language = httpContext.GetRequestLanguage();
+            // Récupération de la langue via le cookie du navigateur (ou 'en' par défaut)
+            string language = "en";
+            if (httpContext.Request.Cookies.TryGetValue("language", out var cookieLang) && !string.IsNullOrEmpty(cookieLang))
+            {
+                language = cookieLang;
+            }
 
             var emailTexts = await db.Texts
                 .Where(t => t.Tag == "email.reset.subject" || t.Tag == "email.reset.body")
@@ -105,7 +120,7 @@ public static class AuthEndpoints
                         ?? "Reset your FastLabel password";
 
             var bodyTemplate = emailTexts.FirstOrDefault(t => t.Tag == "email.reset.body")?.Value
-                                            ?? "Hello {0},\n\nPlease click the following link to reset your password:\n{1}";
+                                    ?? "Hello {0},\n\nPlease click the following link to reset your password:\n{1}";
 
             var message = string.Format(bodyTemplate, user.Name, resetLink);
 
@@ -191,7 +206,12 @@ public static class AuthEndpoints
             var serverUrl = configuration["Url:ServerUrl"] ?? "https://fastlabel.com";
             var verificationLink = $"{serverUrl}/api/auth/verify-email?token={user.EmailVerificationToken}";
 
-            var language = httpContext.GetRequestLanguage();
+            // Récupération de la langue via le cookie du navigateur (ou 'en' par défaut)
+            string language = "en";
+            if (httpContext.Request.Cookies.TryGetValue("language", out var cookieLang) && !string.IsNullOrEmpty(cookieLang))
+            {
+                language = cookieLang;
+            }
 
             var emailTexts = await db.Texts
                 .Where(t => t.Tag == "email.activation.subject" || t.Tag == "email.activation.body")
@@ -209,7 +229,7 @@ public static class AuthEndpoints
                         ?? string.Empty;
 
             var bodyTemplate = emailTexts.FirstOrDefault(t => t.Tag == "email.activation.body")?.Value
-                                            ?? string.Empty;
+                                    ?? string.Empty;
 
             var message = string.Format(bodyTemplate, user.Name, verificationLink);
 

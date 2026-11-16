@@ -1,3 +1,9 @@
+using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
+using FastLabel.Backend.Data;
+using FastLabel.Backend.Models;
+using FastLabel.Shared.DTOs;
+
 namespace FastLabel.Backend.Endpoints;
 
 public static class ProtocolEndpoints
@@ -6,9 +12,19 @@ public static class ProtocolEndpoints
     {
         var group = routes.MapGroup("/api/protocols").RequireAuthorization();
 
-        group.MapGet("/", async (AppDbContext db, HttpContext httpContext) =>
+        group.MapGet("/", async (AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
-            var lang = HttpContextExtensions.GetRequestLanguage(httpContext);
+            var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier) 
+                                ?? claimsUser.FindFirstValue("nameid");
+
+            if (!int.TryParse(userIdString, out var userId))
+                return Results.Unauthorized();
+
+            // Récupère la langue de l'utilisateur connecté en base
+            var lang = await db.Users
+                .Where(u => u.Id == userId)
+                .Select(u => u.Language != null ? u.Language.Code : "en")
+                .FirstOrDefaultAsync() ?? "en";
 
             var protocols = await db.Protocols
                 .Include(p => p.Name)

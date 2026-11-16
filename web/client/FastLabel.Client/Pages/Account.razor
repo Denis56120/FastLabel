@@ -207,7 +207,6 @@
                     var selectedLang = _languages.FirstOrDefault(l => l.Id == _userModel.LanguageId);
                     if (selectedLang != null && !string.IsNullOrEmpty(selectedLang.Code))
                     {
-                        await Translation.SetLanguageAsync(selectedLang.Code);
                         try
                         {
                             await Translation.InitializeAsync();

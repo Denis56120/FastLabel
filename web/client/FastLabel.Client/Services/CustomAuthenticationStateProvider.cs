@@ -14,7 +14,6 @@ public class CustomAuthenticationStateProvider : AuthenticationStateProvider
     {
         try
         {
-            // Appel vers le backend pour récupérer l'utilisateur connecté via le cookie HttpOnly
             var response = await _httpClient.GetAsync("api/users/me");
 
             if (response.IsSuccessStatusCode)

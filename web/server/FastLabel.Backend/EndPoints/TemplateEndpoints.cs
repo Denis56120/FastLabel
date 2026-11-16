@@ -24,10 +24,16 @@ public static class TemplateEndpoints
             return (userId, isAdmin);
         }
 
-        group.MapGet("/", async (AppDbContext db, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
+        group.MapGet("/", async (AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
             var (userId, isAdmin) = GetUserInfo(claimsUser);
-            var lang = HttpContextExtensions.GetRequestLanguage(httpContext);
+            if (userId == 0) return Results.Unauthorized();
+
+            // Récupère la langue de l'utilisateur connecté pour traduire les statuts
+            var lang = await db.Users
+                .Where(u => u.Id == userId)
+                .Select(u => u.Language != null ? u.Language.Code : "en")
+                .FirstOrDefaultAsync() ?? "en";
 
             var query = db.LabelTemplates
                 .Include(t => t.BasicStatus)
@@ -62,10 +68,16 @@ public static class TemplateEndpoints
             return Results.Ok(templates);
         });
 
-        group.MapGet("/{id:int}", async (int id, AppDbContext db, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
+        group.MapGet("/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
             var (userId, isAdmin) = GetUserInfo(claimsUser);
-            var lang = HttpContextExtensions.GetRequestLanguage(httpContext);
+            if (userId == 0) return Results.Unauthorized();
+
+            // Récupère la langue de l'utilisateur connecté pour traduire les statuts
+            var lang = await db.Users
+                .Where(u => u.Id == userId)
+                .Select(u => u.Language != null ? u.Language.Code : "en")
+                .FirstOrDefaultAsync() ?? "en";
 
             var query = db.LabelTemplates
                 .Include(t => t.BasicStatus)
@@ -142,6 +154,7 @@ public static class TemplateEndpoints
             }
 
             var (userId, isAdmin) = GetUserInfo(claimsUser);
+            if (userId == 0) return Results.Unauthorized();
 
             var template = await db.LabelTemplates.FindAsync(id);
             if (template is null) return Results.NotFound(new ErrorResponseDto { Message = "template.error.not_found" });
@@ -165,6 +178,7 @@ public static class TemplateEndpoints
         group.MapDelete("/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
             var (userId, isAdmin) = GetUserInfo(claimsUser);
+            if (userId == 0) return Results.Unauthorized();
 
             var template = await db.LabelTemplates.FindAsync(id);
             if (template is null) return Results.NotFound(new ErrorResponseDto { Message = "template.error.not_found" });

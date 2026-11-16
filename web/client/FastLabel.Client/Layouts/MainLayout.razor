@@ -95,11 +95,6 @@ else
             {
                 var languages = await ApiClient.GetFromJsonAsync<List<LanguageDto>>("api/languages");
                 var userLang = languages?.FirstOrDefault(l => l.Id == user.LanguageId);
-
-                if (userLang != null && !string.IsNullOrEmpty(userLang.Code))
-                {
-                    await Translation.SetLanguageAsync(userLang.Code);   
-                }
             }
         }
         catch

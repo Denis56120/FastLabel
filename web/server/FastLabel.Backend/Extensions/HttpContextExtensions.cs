@@ -2,17 +2,17 @@ namespace FastLabel.Backend.Extensions;
 
 public static class HttpContextExtensions
 {
-    public static string GetRequestLanguage(this HttpContext context)
+    public static void SetLanguageCookie(this HttpContext httpContext, string langCode)
     {
-        var lang = context.Request.Headers["X-Language"].ToString();
-
-        if (string.IsNullOrEmpty(lang))
+        if (!string.IsNullOrEmpty(langCode))
         {
-            lang = context.Request.Headers.AcceptLanguage.ToString();
+            httpContext.Response.Cookies.Append("language", langCode, new CookieOptions
+            {
+                HttpOnly = false,
+                Secure = httpContext.Request.IsHttps,
+                SameSite = SameSiteMode.Lax,
+                Expires = DateTimeOffset.UtcNow.AddYears(1)
+            });
         }
-
-        if (string.IsNullOrEmpty(lang)) return "en"; 
-        if (lang.Length >= 2) lang = lang.Substring(0, 2);
-        return lang.ToLower();
     }
 }

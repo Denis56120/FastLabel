@@ -1,3 +1,9 @@
+using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
+using FastLabel.Backend.Data;
+using FastLabel.Backend.Models;
+using FastLabel.Shared.DTOs;
+
 namespace FastLabel.Backend.Endpoints;
 
 public static class PrinterEndpoints
@@ -18,10 +24,16 @@ public static class PrinterEndpoints
             return (userId, isAdmin);
         }
 
-        group.MapGet("/", async (AppDbContext db, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
+        group.MapGet("/", async (AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
             var (userId, isAdmin) = GetUserInfo(claimsUser);
-            var lang = HttpContextExtensions.GetRequestLanguage(httpContext);
+            if (userId == 0) return Results.Unauthorized();
+
+            // Récupère la langue de l'utilisateur connecté en base
+            var lang = await db.Users
+                .Where(u => u.Id == userId)
+                .Select(u => u.Language != null ? u.Language.Code : "en")
+                .FirstOrDefaultAsync() ?? "en";
 
             var query = db.Printers
                 .Include(p => p.Protocol)
@@ -73,10 +85,16 @@ public static class PrinterEndpoints
             return Results.Ok(printers);
         });
 
-        group.MapGet("/{id:int}", async (int id, AppDbContext db, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
+        group.MapGet("/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
             var (userId, isAdmin) = GetUserInfo(claimsUser);
-            var lang = HttpContextExtensions.GetRequestLanguage(httpContext);
+            if (userId == 0) return Results.Unauthorized();
+
+            // Récupère la langue de l'utilisateur connecté en base
+            var lang = await db.Users
+                .Where(u => u.Id == userId)
+                .Select(u => u.Language != null ? u.Language.Code : "en")
+                .FirstOrDefaultAsync() ?? "en";
 
             var query = db.Printers
                 .Include(p => p.Protocol)
@@ -176,6 +194,7 @@ public static class PrinterEndpoints
             }
 
             var (userId, isAdmin) = GetUserInfo(claimsUser);
+            if (userId == 0) return Results.Unauthorized();
 
             var printer = await db.Printers.FindAsync(id);
             if (printer is null) return Results.NotFound(new ErrorResponseDto { Message = "printer.error.not_found" });
@@ -205,6 +224,7 @@ public static class PrinterEndpoints
         group.MapDelete("/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
             var (userId, isAdmin) = GetUserInfo(claimsUser);
+            if (userId == 0) return Results.Unauthorized();
 
             var printer = await db.Printers.FindAsync(id);
             if (printer is null) return Results.NotFound(new ErrorResponseDto { Message = "printer.error.not_found" });

@@ -1,3 +1,11 @@
+using System.Security.Claims;
+using System.Net.WebSockets;
+using Microsoft.EntityFrameworkCore;
+using FastLabel.Backend.Data;
+using FastLabel.Backend.Models;
+using FastLabel.Shared.DTOs;
+using FastLabel.Backend.Services;
+
 namespace FastLabel.Backend.Endpoints;
 
 public static class AgentEndpoints
@@ -18,10 +26,16 @@ public static class AgentEndpoints
             return (userId, isAdmin);
         }
 
-        group.MapGet("/", async (AppDbContext db, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
+        group.MapGet("/", async (AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
             var (userId, isAdmin) = GetUserInfo(claimsUser);
-            var lang = HttpContextExtensions.GetRequestLanguage(httpContext);
+            if (userId == 0) return Results.Unauthorized();
+
+            // Récupère la langue de l'utilisateur connecté en base
+            var lang = await db.Users
+                .Where(u => u.Id == userId)
+                .Select(u => u.Language != null ? u.Language.Code : "en")
+                .FirstOrDefaultAsync() ?? "en";
 
             var query = db.Agents
                 .Include(a => a.AgentType)
@@ -57,6 +71,7 @@ public static class AgentEndpoints
         group.MapPost("/", async (AgentDto dto, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
             var (userId, _) = GetUserInfo(claimsUser);
+            if (userId == 0) return Results.Unauthorized();
 
             var typeExists = await db.AgentTypes.AnyAsync(at => at.Id == dto.AgentTypeId);
             if (!typeExists)
@@ -85,6 +100,7 @@ public static class AgentEndpoints
         group.MapPut("/{id:int}", async (int id, AgentDto updatedDto, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
             var (userId, isAdmin) = GetUserInfo(claimsUser);
+            if (userId == 0) return Results.Unauthorized();
 
             var agent = await db.Agents.FindAsync(id);
             if (agent is null) return Results.NotFound();
@@ -111,6 +127,7 @@ public static class AgentEndpoints
         group.MapDelete("/{id:int}", async (int id, AppDbContext db, PrintBrokerService broker, ClaimsPrincipal claimsUser) =>
         {
             var (userId, isAdmin) = GetUserInfo(claimsUser);
+            if (userId == 0) return Results.Unauthorized();
 
             var agent = await db.Agents.FindAsync(id);
             if (agent is null) return Results.NotFound();
