@@ -1,7 +1,7 @@
 @page "/agents"
 @layout MainLayout
 @attribute [Authorize]
-@inherits TranslatableComponent
+@inject TranslationService Translation
 @inject ApiClient ApiClient
 
 <CrudTablePage @ref="_crudTable"
@@ -80,18 +80,6 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Erreur chargement AgentTypes: {ex.Message}");
-        }
-    }
-
-    protected override async Task OnLanguageChangedAsync()
-    {
-        StateHasChanged();
-
-        await LoadAgentTypesAsync();
-
-        if (_crudTable != null)
-        {
-            await _crudTable.LoadDataAsync();
         }
     }
 }

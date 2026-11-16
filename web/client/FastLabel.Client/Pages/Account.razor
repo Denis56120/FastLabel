@@ -153,6 +153,11 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await InitPageAsync();
+    }
+
+    private async Task InitPageAsync()
+    {
         await LoadLanguagesAsync();
         await LoadUserDataAsync();
     }
@@ -209,7 +214,6 @@
                     {
                         try
                         {
-                            await Translation.ChangeLanguagePageAsync();
                             await Translation.InitializeAsync();
                         }
                         catch
@@ -226,7 +230,7 @@
                 }
 
                 _userModel.Password = null;
-                await LoadUserDataAsync();
+                await InitPageAsync();
             }
             else
             {
@@ -241,12 +245,5 @@
         {
             _isSaving = false;
         }
-    }
-
-    protected override async Task OnLanguageChangedAsync()
-    {
-        StateHasChanged();
-        await LoadLanguagesAsync();
-        await LoadUserDataAsync();
     }
 }

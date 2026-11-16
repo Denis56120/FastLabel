@@ -30,8 +30,8 @@ public static class PrinterEndpoints
             // Récupère la langue de l'utilisateur connecté en base
             var lang = await db.Users
                 .Where(u => u.Id == userId)
-                .Select(u => u.Language != null ? u.Language.Code : "en")
-                .FirstOrDefaultAsync() ?? "en";
+                .Select(u => u.Language != null ? u.Language.Code : HttpContextExtensions.DefaultLanguage)
+                .FirstOrDefaultAsync() ?? HttpContextExtensions.DefaultLanguage;
 
             var query = db.Printers
                 .Include(p => p.Protocol)
@@ -107,8 +107,8 @@ public static class PrinterEndpoints
             // Récupère la langue de l'utilisateur connecté en base
             var lang = await db.Users
                 .Where(u => u.Id == userId)
-                .Select(u => u.Language != null ? u.Language.Code : "en")
-                .FirstOrDefaultAsync() ?? "en";
+                .Select(u => u.Language != null ? u.Language.Code : HttpContextExtensions.DefaultLanguage)
+                .FirstOrDefaultAsync() ?? HttpContextExtensions.DefaultLanguage;
 
             var query = db.Printers
                 .Include(p => p.Protocol)

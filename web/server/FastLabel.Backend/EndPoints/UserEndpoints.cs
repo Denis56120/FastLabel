@@ -18,7 +18,7 @@ public static class UserEndpoints
                 .Select(u => new
                 {
                     User = u,
-                    LangCode = u.Language != null ? u.Language.Code : "en"
+                    LangCode = u.Language != null ? u.Language.Code : HttpContextExtensions.DefaultLanguage
                 })
                 .FirstOrDefaultAsync();
 
@@ -175,8 +175,8 @@ public static class UserEndpoints
             // Récupère la langue de l'administrateur connecté
             var adminLang = await db.Users
                 .Where(u => u.Id == adminId)
-                .Select(u => u.Language != null ? u.Language.Code : "en")
-                .FirstOrDefaultAsync() ?? "en";
+                .Select(u => u.Language != null ? u.Language.Code : HttpContextExtensions.DefaultLanguage)
+                .FirstOrDefaultAsync() ?? HttpContextExtensions.DefaultLanguage;
 
             var query = db.Users
                 .Include(u => u.BasicStatus)
@@ -233,8 +233,8 @@ public static class UserEndpoints
             // Récupère la langue de l'administrateur connecté
             var adminLang = await db.Users
                 .Where(u => u.Id == adminId)
-                .Select(u => u.Language != null ? u.Language.Code : "en")
-                .FirstOrDefaultAsync() ?? "en";
+                .Select(u => u.Language != null ? u.Language.Code : HttpContextExtensions.DefaultLanguage)
+                .FirstOrDefaultAsync() ?? HttpContextExtensions.DefaultLanguage;
 
             var dto = await db.Users
                 .Include(u => u.BasicStatus)

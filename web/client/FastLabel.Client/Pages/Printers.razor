@@ -1,10 +1,10 @@
 @page "/printers"
 @layout MainLayout
 @attribute [Authorize]
-@inherits TranslatableComponent
+@inject TranslationService Translation
 @inject ApiClient ApiClient
 
-<CrudTablePage @ref="_tableRef"
+<CrudTablePage @ref="_crudTable"
                TItem="PrinterDto" 
                TKey="int"
                ApiEndpoint="api/printers"
@@ -88,7 +88,7 @@
 </CrudTablePage>
 
 @code {
-    private CrudTablePage<PrinterDto, int> _tableRef = default!;
+    private CrudTablePage<PrinterDto, int>? _crudTable;
     private List<ProtocolDto> _protocols = new();
     private List<ResolutionDpiDto> _resolutions = new();
 
@@ -108,16 +108,6 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Erreur chargement listes: {ex.Message}");
-        }
-    }
-
-    protected override async Task OnLanguageChangedAsync()
-    {
-        await LoadDropdownDataAsync();
-
-        if (_tableRef != null)
-        {
-            await _tableRef.LoadDataAsync();
         }
     }
 }

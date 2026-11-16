@@ -2,6 +2,8 @@ namespace FastLabel.Backend.Extensions;
 
 public static class HttpContextExtensions
 {
+    public const string DefaultLanguage = "en";
+    
     public static void SetLanguageCookie(this HttpContext httpContext, string langCode)
     {
         if (!string.IsNullOrEmpty(langCode))

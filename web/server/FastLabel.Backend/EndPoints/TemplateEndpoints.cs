@@ -31,8 +31,8 @@ public static class TemplateEndpoints
             // Récupère la langue de l'utilisateur connecté pour traduire les statuts
             var lang = await db.Users
                 .Where(u => u.Id == userId)
-                .Select(u => u.Language != null ? u.Language.Code : "en")
-                .FirstOrDefaultAsync() ?? "en";
+                .Select(u => u.Language != null ? u.Language.Code : HttpContextExtensions.DefaultLanguage)
+                .FirstOrDefaultAsync() ?? HttpContextExtensions.DefaultLanguage;
 
             var query = db.LabelTemplates
                 .Include(t => t.BasicStatus)
@@ -91,8 +91,8 @@ public static class TemplateEndpoints
             // Récupère la langue de l'utilisateur connecté pour traduire les statuts
             var lang = await db.Users
                 .Where(u => u.Id == userId)
-                .Select(u => u.Language != null ? u.Language.Code : "en")
-                .FirstOrDefaultAsync() ?? "en";
+                .Select(u => u.Language != null ? u.Language.Code : HttpContextExtensions.DefaultLanguage)
+                .FirstOrDefaultAsync() ?? HttpContextExtensions.DefaultLanguage;
 
             var query = db.LabelTemplates
                 .Include(t => t.BasicStatus)

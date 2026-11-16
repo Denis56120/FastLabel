@@ -8,11 +8,11 @@ public static class LanguageEndpoints
         
         group.MapGet("/", async (AppDbContext db, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
         {
-            string lang = "en";
+            string lang = HttpContextExtensions.DefaultLanguage;
 
             // 1. Si l'utilisateur est connecté, on cherche sa langue en base en priorité
             var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier) 
-                            ?? claimsUser.FindFirstValue("nameid");
+                                    ?? claimsUser.FindFirstValue("nameid");
 
             if (!string.IsNullOrEmpty(userIdString) && int.TryParse(userIdString, out var userId))
             {
@@ -45,7 +45,7 @@ public static class LanguageEndpoints
                             .Where(tr => tr.Language.Code == lang)
                             .Select(tr => tr.TranslatedValue)
                             .FirstOrDefault()
-                        ?? l.Description.DefaultTranslation)
+                           ?? l.Description.DefaultTranslation)
                         : string.Empty,
                     Flag = l.Flag
                 })
@@ -54,20 +54,22 @@ public static class LanguageEndpoints
             return Results.Ok(languages);
         });
 
-        group.MapGet("/set", (string language, HttpResponse response) =>
+        group.MapGet("/set", async (string language, AppDbContext db, HttpContext httpContext) =>
         {
-            if (string.IsNullOrWhiteSpace(language) || (language != "fr" && language != "en"))
+            if (string.IsNullOrWhiteSpace(language))
             {
                 return Results.BadRequest(new ErrorResponseDto { Message = "language.error.invalid" });
             }
 
-            response.Cookies.Append("language", language, new CookieOptions
+            // Vérifie dynamiquement dans la table Language si le code existe en base
+            var languageExists = await db.Languages.AnyAsync(l => l.Code == language);
+            if (!languageExists)
             {
-                Expires = DateTimeOffset.UtcNow.AddYears(1),
-                IsEssential = true,
-                SameSite = SameSiteMode.Lax,
-                HttpOnly = false
-            });
+                return Results.BadRequest(new ErrorResponseDto { Message = "language.error.invalid" });
+            }
+
+            // Pose le cookie proprement via l'extension HttpContext
+            httpContext.SetLanguageCookie(language);
 
             return Results.Ok();
         });

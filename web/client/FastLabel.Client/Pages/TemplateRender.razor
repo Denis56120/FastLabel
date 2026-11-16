@@ -1,7 +1,7 @@
 @page "/templates/render/{Id:int}"
 @layout MainLayout
 @attribute [Authorize]
-@inherits TranslatableComponent
+@inject TranslationService Translation
 @inject ApiClient ApiClient
 @inject NavigationManager Navigation
 @inject ToastService ToastService

@@ -88,7 +88,7 @@ public static class AuthEndpoints
             var resetLink = $"{clientUrl}/reset-password?token={user.PasswordResetToken}";
 
             // Récupération de la langue via le cookie du navigateur (ou 'en' par défaut)
-            string language = "en";
+            string language = HttpContextExtensions.DefaultLanguage;
             if (httpContext.Request.Cookies.TryGetValue("language", out var cookieLang) && !string.IsNullOrEmpty(cookieLang))
             {
                 language = cookieLang;
@@ -156,7 +156,7 @@ public static class AuthEndpoints
                 return Results.BadRequest(new ErrorResponseDto { Message = "auth.error.email_already_taken" });
             }
 
-            var englishLanguage = await db.Languages.FirstOrDefaultAsync(l => l.Code == "en");
+            var englishLanguage = await db.Languages.FirstOrDefaultAsync(l => l.Code == HttpContextExtensions.DefaultLanguage);
             int defaultLanguageId = englishLanguage?.Id ?? await db.Languages.Select(l => l.Id).FirstOrDefaultAsync();
 
             var user = new User
@@ -197,7 +197,7 @@ public static class AuthEndpoints
             var verificationLink = $"{serverUrl}/api/auth/verify-email?token={user.EmailVerificationToken}";
 
             // Récupération de la langue via le cookie du navigateur (ou 'en' par défaut)
-            string language = "en";
+            string language = HttpContextExtensions.DefaultLanguage;
             if (httpContext.Request.Cookies.TryGetValue("language", out var cookieLang) && !string.IsNullOrEmpty(cookieLang))
             {
                 language = cookieLang;

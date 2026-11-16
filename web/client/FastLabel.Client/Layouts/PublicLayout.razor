@@ -117,6 +117,7 @@ else
         {
             var u when u.Contains("/register") => "auth.register_title",
             var u when u.Contains("/forgot-password") => "auth.forgot_heading",
+            var u when u.Contains("/reset-password") => "auth.reset_password_title",
             _ => "auth.login_title"
         };
 
@@ -146,25 +147,22 @@ else
     private async Task ChangeLanguage(string languageCode)
     {
         _isDropdownOpen = false;
-
-        await Translation.SetLanguageAsync(languageCode);
-        await Translation.ChangeLanguagePageAsync();
         
         try
         {
-            await Translation.InitializeAsync();
+            await Translation.SetLanguageAsync(languageCode);
+        }
+        catch
+        {
+        }
+
+        try
+        {
             await LoadLanguagesAsync();
         }
         catch
         {
         }
         
-        StateHasChanged();
-    }
-
-    protected override async Task OnLanguageChangedAsync()
-    {
-        StateHasChanged();
-        await LoadLanguagesAsync();
     }
 }

@@ -2,69 +2,79 @@ namespace FastLabel.Client.Services;
 
 public class TranslationService(IHttpClientFactory httpClientFactory, CookieService cookieService, IServiceProvider serviceProvider)
 {
+    public const string DefaultLanguage = "en";
     private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
     private readonly IServiceProvider _serviceProvider = serviceProvider;
     private readonly CookieService _cookieService = cookieService;
     private Dictionary<string, string> _translations = new(StringComparer.OrdinalIgnoreCase);
-    private string _currentLanguage = "en";
+    private string _currentLanguage = DefaultLanguage;
     private string? _loadedLanguage;
     private Task? _loadingTask;
     private IJSRuntime? _jsRuntime;
-    private IJSRuntime JsRuntime => 
+    private IJSRuntime JsRuntime =>
         _jsRuntime ??= _serviceProvider.GetRequiredService<IJSRuntime>();
 
     public event Action? OnChange;
 
     public string CurrentLanguage => _currentLanguage;
 
-    public string this[string key] => GetString(key);
+    public string GetString(string key)
+    {
+        if (_translations.TryGetValue(key, out var value))
+        {
+            return value;
+        }
+        return key;
+    }
 
     public async Task InitializeAsync()
     {
-        string language = _currentLanguage;
+        string targetLanguage = _currentLanguage;
 
         try
         {
-            var cookieValue = await _cookieService.GetCookieAsync("language");
-            if (!string.IsNullOrEmpty(cookieValue))
+            var client = _httpClientFactory.CreateClient("PublicClient");
+            var response = await client.GetAsync("api/languages");
+
+            if (response.IsSuccessStatusCode)
             {
-                language = cookieValue;
-            }
-            else
-            {
-                var browserLang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
-                if (!string.IsNullOrEmpty(browserLang))
+                var jsonString = await response.Content.ReadAsStringAsync();
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var availableLanguages = JsonSerializer.Deserialize<List<LanguageDto>>(jsonString, options);
+
+                if (availableLanguages != null && availableLanguages.Count > 0)
                 {
-                    language = browserLang.Equals("fr", StringComparison.OrdinalIgnoreCase) ? "fr" : "en";
+                    var cookieValue = await _cookieService.GetCookieAsync("language");
+                    var matchedLanguage = availableLanguages.FirstOrDefault(l => l.Code.Equals(cookieValue, StringComparison.OrdinalIgnoreCase));
+
+                    if (matchedLanguage != null)
+                    {
+                        targetLanguage = matchedLanguage.Code;
+                    }
+                    else
+                    {
+                        var browserLang = System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
+                        var browserMatch = availableLanguages.FirstOrDefault(l => l.Code.Equals(browserLang, StringComparison.OrdinalIgnoreCase));
+
+                        if (browserMatch != null)
+                        {
+                            targetLanguage = browserMatch.Code;
+                        }
+                        else
+                        {
+                            targetLanguage = availableLanguages.FirstOrDefault(l => l.Code.Equals(DefaultLanguage, StringComparison.OrdinalIgnoreCase))?.Code
+                                             ?? availableLanguages.First().Code;
+                        }
+                    }
                 }
             }
         }
         catch
         {
+            targetLanguage = DefaultLanguage;
         }
 
-        await InitializeAsync(language);
-    }
-
-    private async Task InitializeAsync(string language)
-    {
-        var targetLanguage = string.IsNullOrEmpty(language) ? _currentLanguage : language;
-
-        if (_loadedLanguage == targetLanguage && _translations.Count > 0)
-        {
-            return;
-        }
-
-        _currentLanguage = targetLanguage;
-
-        if (_loadingTask != null && !_loadingTask.IsCompleted)
-        {
-            await _loadingTask;
-            return;
-        }
-
-        _loadingTask = FetchTranslationsAsync(_currentLanguage);
-        await _loadingTask;
+        await SetLanguageAsync(targetLanguage);
     }
 
     private async Task FetchTranslationsAsync(string language)
@@ -112,31 +122,35 @@ public class TranslationService(IHttpClientFactory httpClientFactory, CookieServ
         OnChange?.Invoke();
     }
 
-    public async Task ChangeLanguagePageAsync()
-    {
-        try
-        {
-            var language =await _cookieService.GetCookieAsync("language");
-            await JsRuntime.InvokeVoidAsync("appInterop.setDocumentLanguage", language);
-        }
-        catch { }
-    }
-
     public async Task SetLanguageAsync(string language)
     {
         if (string.IsNullOrEmpty(language)) return;
 
-        await _cookieService.SetCookieAsync("language", language, days: 365);
-
-        await InitializeAsync(language);
-    }
-
-    public string GetString(string key)
-    {
-        if (_translations.TryGetValue(key, out var value))
+        if (_loadedLanguage == language && _translations.Count > 0)
         {
-            return value;
+            return;
         }
-        return key;
+        
+        _currentLanguage = language;
+
+        try
+        {
+            await _cookieService.SetCookieAsync("language", language, days: 365);
+        }
+        catch { }
+        try
+        {
+            await JsRuntime.InvokeVoidAsync("appInterop.setDocumentLanguage", language);
+        }
+        catch { }
+
+        if (_loadingTask != null && !_loadingTask.IsCompleted)
+        {
+            await _loadingTask;
+            return;
+        }
+
+        _loadingTask = FetchTranslationsAsync(_currentLanguage);
+        await _loadingTask;
     }
 }

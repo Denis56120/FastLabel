@@ -1,9 +1,9 @@
 @page "/history"
 @layout MainLayout
 @attribute [Authorize]
-@inherits TranslatableComponent
+@inject TranslationService Translation
 
-<CrudTablePage @ref="_tableRef"
+<CrudTablePage @ref="_crudTable"
                TItem="PrintHistoryDto" 
                TKey="int"
                ApiEndpoint="api/jobs"
@@ -36,13 +36,10 @@
 </CrudTablePage>
 
 @code {
-    private CrudTablePage<PrintHistoryDto, int> _tableRef = default!;
+    private CrudTablePage<PrintHistoryDto, int>? _crudTable;
 
-    protected override async Task OnLanguageChangedAsync()
+    protected override async Task OnInitializedAsync()
     {
-        if (_tableRef != null)
-        {
-            await _tableRef.LoadDataAsync();
-        }
+        await base.OnInitializedAsync();
     }
 }

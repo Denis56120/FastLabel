@@ -22,8 +22,8 @@ public static class AgentTypeEndpoints
             // Récupère la langue de l'utilisateur connecté en base
             var lang = await db.Users
                 .Where(u => u.Id == userId)
-                .Select(u => u.Language != null ? u.Language.Code : "en")
-                .FirstOrDefaultAsync() ?? "en";
+                .Select(u => u.Language != null ? u.Language.Code : HttpContextExtensions.DefaultLanguage) // Utilise la langue par défaut si l'utilisateur n'a pas de langue définie
+                .FirstOrDefaultAsync() ?? HttpContextExtensions.DefaultLanguage;
 
             var agentTypes = await db.AgentTypes
                 .Include(at => at.Name)
