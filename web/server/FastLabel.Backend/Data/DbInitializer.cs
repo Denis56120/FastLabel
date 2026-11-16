@@ -476,6 +476,8 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         await CreateTextWithTranslationsAsync("account.subscription.period", "Period", new() { { "fr", "Période" }, { "en", "Period" } });
         await CreateTextWithTranslationsAsync("account.subscription.date", "Created At", new() { { "fr", "Créé le" }, { "en", "Created At" } });
 
+        await CreateTextWithTranslationsAsync("dashboard.subscription.checkout_success", "Default", new() { { "fr", "Votre abonnement a été activé avec succès !" }, { "en", "Your subscription has been successfully activated!" } });
+        await CreateTextWithTranslationsAsync("dashboard.subscription.checkout_cancel", "Default", new() { { "fr", "Le processus de paiement a été annulé." }, { "en", "The payment process was canceled." } });
         await CreateTextWithTranslationsAsync("dashboard.title", "Dashboard", new() { { "fr", "Tableau de bord" }, { "en", "Dashboard" } });
         await CreateTextWithTranslationsAsync("dashboard.welcome_subtitle", "Welcome to your FastLabel management area.", new() { { "fr", "Bienvenue sur votre espace de gestion FastLabel." }, { "en", "Welcome to your FastLabel management area." } });
         await CreateTextWithTranslationsAsync("dashboard.profile_status", "Profile Status", new() { { "fr", "Statut du profil" }, { "en", "Profile Status" } });

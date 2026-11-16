@@ -1,4 +1,6 @@
 @page "/dashboard"
+@page "/dashboard/subscription/success"
+@page "/dashboard/subscription/cancel"
 @layout MainLayout
 @attribute [Authorize]
 @inject TranslationService Translation
@@ -134,6 +136,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        HandleStripeRedirect();
+
         try
         {
             isLoading = true;
@@ -153,6 +157,25 @@
         finally
         {
             isLoading = false;
+        }
+    }
+
+    private void HandleStripeRedirect()
+    {
+        var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
+        var path = uri.AbsolutePath.TrimEnd('/');
+
+        if (path.EndsWith("/dashboard/subscription/success", StringComparison.OrdinalIgnoreCase))
+        {
+            ToastService.ShowSuccess(Translation.GetString("dashboard.subscription.checkout_success"));
+            // Nettoie l'URL dans la barre d'adresse sans recharger la page
+            Navigation.NavigateTo("/dashboard", replace: true);
+        }
+        else if (path.EndsWith("/dashboard/subscription/cancel", StringComparison.OrdinalIgnoreCase))
+        {
+            ToastService.ShowWarning(Translation.GetString("dashboard.subscription.checkout_cancel"));
+            // Nettoie l'URL dans la barre d'adresse sans recharger la page
+            Navigation.NavigateTo("/dashboard", replace: true);
         }
     }
 
