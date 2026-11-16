@@ -1,3 +1,9 @@
+using System.Security.Claims;
+using Microsoft.EntityFrameworkCore;
+using FastLabel.Backend.Data;
+using FastLabel.Backend.Models;
+using FastLabel.Shared.DTOs;
+
 namespace FastLabel.Backend.Endpoints;
 
 public static class PrintJobEndpoints
@@ -18,14 +24,15 @@ public static class PrintJobEndpoints
             return (userId, isAdmin);
         }
 
-        group.MapGet("/", async (AppDbContext db, int? limit, ClaimsPrincipal claimsUser) =>
+        group.MapGet("/", async (int page, int pageSize, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
-            if (limit.HasValue && limit.Value <= 0)
-            {
-                return Results.BadRequest(new ErrorResponseDto { Message = "job.error.invalid_limit" });
-            }
+            // Valeurs par défaut de sécurité
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 10;
+            if (pageSize > 500) pageSize = 500; // Limite maximale de sécurité par page
 
             var (userId, isAdmin) = GetUserInfo(claimsUser);
+            if (userId == 0 && !isAdmin) return Results.Unauthorized();
 
             var query = db.PrintJobs
                 .Include(j => j.Printer)
@@ -38,10 +45,13 @@ public static class PrintJobEndpoints
                 query = query.Where(j => j.Printer.UserId == userId);
             }
 
-            var takeCount = limit.HasValue ? Math.Min(limit.Value, 500) : 100;
+            // 1. Calcul du nombre total d'éléments avant la pagination
+            var totalCount = await query.CountAsync();
 
+            // 2. Application de la pagination (Skip & Take)
             var jobs = await query
-                .Take(takeCount)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(j => new PrintHistoryDto
                 {
                     Id = j.Id,
@@ -56,12 +66,22 @@ public static class PrintJobEndpoints
                 })
                 .ToListAsync();
 
-            return Results.Ok(jobs);
+            // 3. Encapsulation dans le PagedResultDto
+            var result = new PagedResultDto<PrintHistoryDto>
+            {
+                Items = jobs,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
+
+            return Results.Ok(result);
         });
 
         group.MapGet("/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
             var (userId, isAdmin) = GetUserInfo(claimsUser);
+            if (userId == 0 && !isAdmin) return Results.Unauthorized();
 
             var query = db.PrintJobs
                 .Include(j => j.Printer)
@@ -75,7 +95,6 @@ public static class PrintJobEndpoints
             }
 
             var jobDto = await query
-                .OrderBy(j => j.Id)
                 .Select(j => new PrintHistoryDto
                 {
                     Id = j.Id,

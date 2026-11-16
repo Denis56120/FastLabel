@@ -24,10 +24,15 @@ public static class TemplateEndpoints
             return (userId, isAdmin);
         }
 
-        group.MapGet("/", async (AppDbContext db, ClaimsPrincipal claimsUser) =>
+        group.MapGet("/", async (int page, int pageSize, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
             var (userId, isAdmin) = GetUserInfo(claimsUser);
             if (userId == 0) return Results.Unauthorized();
+
+            // Valeurs par défaut de sécurité
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 10;
+            if (pageSize > 500) pageSize = 500;
 
             // Récupère la langue de l'utilisateur connecté pour traduire les statuts
             var lang = await db.Users
@@ -47,7 +52,14 @@ public static class TemplateEndpoints
                 query = query.Where(t => t.UserId == userId);
             }
 
+            // 1. Calcul du nombre total d'éléments avant pagination
+            var totalCount = await query.CountAsync();
+
+            // 2. Application de la pagination (Skip & Take)
             var templates = await query
+                .OrderByDescending(t => t.UpdatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(t => new TemplateDto
                 {
                     Id = t.Id,
@@ -65,7 +77,16 @@ public static class TemplateEndpoints
                 })
                 .ToListAsync();
 
-            return Results.Ok(templates);
+            // 3. Encapsulation dans le PagedResultDto
+            var result = new PagedResultDto<TemplateDto>
+            {
+                Items = templates,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
+
+            return Results.Ok(result);
         });
 
         group.MapGet("/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal claimsUser) =>
@@ -93,7 +114,6 @@ public static class TemplateEndpoints
             }
 
             var template = await query
-                .OrderBy(t => t.Id)
                 .Select(t => new TemplateDto
                 {
                     Id = t.Id,

@@ -106,6 +106,37 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- Barre de pagination -->
+        @if (_totalPages > 1)
+        {
+            <nav class="d-flex justify-content-between align-items-center mt-3" aria-label="Pagination">
+                <span class="text-muted small">
+                    @Translation.GetString("common.page") @_currentPage / @_totalPages
+                </span>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item @(_currentPage == 1 ? "disabled" : "")">
+                        <button class="page-link" @onclick="() => ChangePageAsync(_currentPage - 1)">
+                            <i class="bi bi-chevron-left"></i>
+                        </button>
+                    </li>
+                    
+                    @for (int i = 1; i <= _totalPages; i++)
+                    {
+                        var pageNumber = i;
+                        <li class="page-item @(pageNumber == _currentPage ? "active" : "")">
+                            <button class="page-link" @onclick="() => ChangePageAsync(pageNumber)">@pageNumber</button>
+                        </li>
+                    }
+
+                    <li class="page-item @(_currentPage == _totalPages ? "disabled" : "")">
+                        <button class="page-link" @onclick="() => ChangePageAsync(_currentPage + 1)">
+                            <i class="bi bi-chevron-right"></i>
+                        </button>
+                    </li>
+                </ul>
+            </nav>
+        }
     }
 </div>
 
@@ -141,11 +172,12 @@
     [Parameter] public RenderFragment<TItem>? FormFields { get; set; }
     [Parameter] public RenderFragment<TItem>? CustomToolbarActions { get; set; }
 
-    // Paramètres pour désactiver le CRUD
     [Parameter] public bool IsReadOnly { get; set; } = false;
     [Parameter] public bool DisableAdd { get; set; } = false;
     [Parameter] public bool DisableEdit { get; set; } = false;
     [Parameter] public bool DisableDelete { get; set; } = false;
+
+    [Parameter] public int PageSize { get; set; } = 10;
     
     private List<TItem> _items = new();
     private HashSet<TKey> _selectedIds = new();
@@ -154,6 +186,9 @@
     private bool _isEditMode = false;
     private TItem _currentItem = new();
     private EditContext? _editContext;
+
+    private int _currentPage = 1;
+    private int _totalPages = 1;
 
     private bool IsAllSelected => _items.Any() && _selectedIds.Count == _items.Count;
 
@@ -173,7 +208,23 @@
         _selectedIds.Clear();
         try
         {
-            _items = await ApiClient.GetFromJsonAsync<List<TItem>>(ApiEndpoint) ?? new();
+            string separator = ApiEndpoint.Contains("?") ? "&" : "?";
+            var url = $"{ApiEndpoint}{separator}page={_currentPage}&pageSize={PageSize}";
+
+            var pagedResult = await ApiClient.GetFromJsonAsync<PagedResultDto<TItem>>(url);
+            
+            if (pagedResult != null)
+            {
+                _items = pagedResult.Items ?? new();
+                _totalPages = pagedResult.TotalPages > 0 ? pagedResult.TotalPages : 1;
+            }
+            else
+            {
+                var rawList = await ApiClient.GetFromJsonAsync<List<TItem>>(ApiEndpoint) ?? new();
+                _items = rawList.Skip((_currentPage - 1) * PageSize).Take(PageSize).ToList();
+                _totalPages = (int)Math.Ceiling((double)rawList.Count / PageSize);
+                if (_totalPages < 1) _totalPages = 1;
+            }
         }
         catch
         {
@@ -184,6 +235,13 @@
         {
             _isLoading = false;
         }
+    }
+
+    private async Task ChangePageAsync(int newPage)
+    {
+        if (newPage < 1 || newPage > _totalPages || newPage == _currentPage) return;
+        _currentPage = newPage;
+        await LoadDataAsync();
     }
 
     private void ToggleSelection(TKey id, object? checkedValue)
@@ -274,12 +332,17 @@
         }
         else
         {
+            // Correction ici : .ToList() au lieu de .List()
             (isSuccess, errorKey) = await ApiClient.PostAsync($"{ApiEndpoint}/delete-batch", _selectedIds.ToList());
         }
 
         if (isSuccess)
         {
             ToastService.ShowSuccess(Translation.GetString("app.success.deleted"));
+            if (_items.Count == _selectedIds.Count && _currentPage > 1)
+            {
+                _currentPage--;
+            }
             await LoadDataAsync();
         }
         else

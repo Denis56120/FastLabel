@@ -26,10 +26,14 @@ public static class AgentEndpoints
             return (userId, isAdmin);
         }
 
-        group.MapGet("/", async (AppDbContext db, ClaimsPrincipal claimsUser) =>
+        group.MapGet("/", async (int page, int pageSize, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
             var (userId, isAdmin) = GetUserInfo(claimsUser);
             if (userId == 0) return Results.Unauthorized();
+
+            // Valeurs par défaut de sécurité si non fournies par le client
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 10;
 
             // Récupère la langue de l'utilisateur connecté en base
             var lang = await db.Users
@@ -49,21 +53,39 @@ public static class AgentEndpoints
                 query = query.Where(a => a.UserId == userId);
             }
 
-            var result = await query.Select(a => new AgentDto
+            // 1. Calcul du nombre total d'éléments avant pagination
+            var totalCount = await query.CountAsync();
+
+            // 2. Application de la pagination (Skip & Take)
+            var items = await query
+                .OrderBy(a => a.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(a => new AgentDto
+                {
+                    Id = a.Id,
+                    AgentTypeId = a.AgentTypeId,
+                    AgentTypeName = a.AgentType != null && a.AgentType.Name != null
+                        ? (a.AgentType.Name.Translations
+                            .Where(tr => tr.Language.Code == lang)
+                            .Select(tr => tr.TranslatedValue)
+                            .FirstOrDefault()
+                           ?? a.AgentType.Name.DefaultTranslation)
+                        : string.Empty,
+                    ApiKey = a.ApiKey ?? string.Empty,
+                    CreatedAt = a.CreatedAt,
+                    LastSeenAt = a.LastSeenAt
+                })
+                .ToListAsync();
+
+            // 3. Encapsulation dans le PagedResultDto
+            var result = new PagedResultDto<AgentDto>
             {
-                Id = a.Id,
-                AgentTypeId = a.AgentTypeId,
-                AgentTypeName = a.AgentType != null && a.AgentType.Name != null
-                    ? (a.AgentType.Name.Translations
-                        .Where(tr => tr.Language.Code == lang)
-                        .Select(tr => tr.TranslatedValue)
-                        .FirstOrDefault()
-                       ?? a.AgentType.Name.DefaultTranslation)
-                    : string.Empty,
-                ApiKey = a.ApiKey ?? string.Empty,
-                CreatedAt = a.CreatedAt,
-                LastSeenAt = a.LastSeenAt
-            }).ToListAsync();
+                Items = items,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
 
             return Results.Ok(result);
         });

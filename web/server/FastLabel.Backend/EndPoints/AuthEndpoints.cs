@@ -1,13 +1,3 @@
-using System.Security.Claims;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using FastLabel.Backend.Data;
-using FastLabel.Backend.Models;
-using FastLabel.Shared.DTOs;
-using FastLabel.Backend.Services;
-
 namespace FastLabel.Backend.Endpoints;
 
 public static class AuthEndpoints

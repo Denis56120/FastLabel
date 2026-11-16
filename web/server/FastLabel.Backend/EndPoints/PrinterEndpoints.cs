@@ -24,10 +24,14 @@ public static class PrinterEndpoints
             return (userId, isAdmin);
         }
 
-        group.MapGet("/", async (AppDbContext db, ClaimsPrincipal claimsUser) =>
+        group.MapGet("/", async (int page, int pageSize, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
             var (userId, isAdmin) = GetUserInfo(claimsUser);
             if (userId == 0) return Results.Unauthorized();
+
+            // Valeurs par défaut de sécurité si non fournies
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 10;
 
             // Récupère la langue de l'utilisateur connecté en base
             var lang = await db.Users
@@ -52,7 +56,14 @@ public static class PrinterEndpoints
                 query = query.Where(p => p.UserId == userId);
             }
 
+            // 1. Calcul du nombre total d'éléments avant pagination
+            var totalCount = await query.CountAsync();
+
+            // 2. Application de la pagination (Skip & Take)
             var printers = await query
+                .OrderBy(p => p.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(p => new PrinterDto
                 {
                     Id = p.Id,
@@ -82,7 +93,16 @@ public static class PrinterEndpoints
                 })
                 .ToListAsync();
 
-            return Results.Ok(printers);
+            // 3. Encapsulation dans le PagedResultDto
+            var result = new PagedResultDto<PrinterDto>
+            {
+                Items = printers,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
+
+            return Results.Ok(result);
         });
 
         group.MapGet("/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal claimsUser) =>

@@ -1,3 +1,11 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using FastLabel.Backend.Data;
+using FastLabel.Backend.Models;
+using FastLabel.Shared.DTOs;
+using FastLabel.Backend.Services;
+
 namespace FastLabel.Backend.Endpoints;
 
 public static class UserEndpoints
@@ -135,7 +143,7 @@ public static class UserEndpoints
                             ?? string.Empty;
 
                 var bodyTemplate = emailTexts.FirstOrDefault(t => t.Tag == "email.activation.body")?.Value
-                                        ?? string.Empty;
+                                    ?? string.Empty;
 
                 var message = string.Format(bodyTemplate, updatedDto.Name, verificationLink);
 
@@ -160,7 +168,7 @@ public static class UserEndpoints
 
         var adminGroup = routes.MapGroup("/api/users").RequireAuthorization("AdminOnly");
 
-        adminGroup.MapGet("/", async (AppDbContext db, ClaimsPrincipal claimsUser) =>
+        adminGroup.MapGet("/", async (int page, int pageSize, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
             var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier) 
                                         ?? claimsUser.FindFirstValue("nameid");
@@ -168,17 +176,31 @@ public static class UserEndpoints
             if (!int.TryParse(userIdString, out var adminId))
                 return Results.Unauthorized();
 
+            if (page < 1) page = 1;
+            if (pageSize < 1) pageSize = 10;
+            if (pageSize > 500) pageSize = 500;
+
             // Récupère la langue de l'administrateur connecté
             var adminLang = await db.Users
                 .Where(u => u.Id == adminId)
                 .Select(u => u.Language != null ? u.Language.Code : "en")
                 .FirstOrDefaultAsync() ?? "en";
 
-            var users = await db.Users
+            var query = db.Users
                 .Include(u => u.BasicStatus)
                     .ThenInclude(s => s.Name)
                         .ThenInclude(n => n.Translations)
                             .ThenInclude(tr => tr.Language)
+                .AsQueryable();
+
+            // 1. Calcul du nombre total d'utilisateurs
+            var totalCount = await query.CountAsync();
+
+            // 2. Application de la pagination
+            var users = await query
+                .OrderBy(u => u.Id)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .Select(u => new UserDto
                 {
                     Id = u.Id,
@@ -197,7 +219,15 @@ public static class UserEndpoints
                 })
                 .ToListAsync();
 
-            return Results.Ok(users);
+            var result = new PagedResultDto<UserDto>
+            {
+                Items = users,
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
+
+            return Results.Ok(result);
         });
 
         adminGroup.MapGet("/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal claimsUser) =>
@@ -233,7 +263,7 @@ public static class UserEndpoints
                             .Where(tr => tr.Language.Code == adminLang)
                             .Select(tr => tr.TranslatedValue)
                             .FirstOrDefault()
-                           ?? u.BasicStatus.Name.DefaultTranslation)
+                        ?? u.BasicStatus.Name.DefaultTranslation)
                         : string.Empty,
                     CreatedAt = u.CreatedAt
                 })
