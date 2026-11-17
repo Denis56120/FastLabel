@@ -3,6 +3,7 @@
 @inject TranslationService Translation
 @inject ApiClient ApiClient
 @inject ToastService ToastService
+@inject ILogger<CrudTablePage<TItem, TKey>> Logger
 
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -47,6 +48,14 @@
             }
         </div>
     </div>
+
+    <!-- Zone de filtres personnalisés injectée par la page parente -->
+    @if (ToolbarFilters != null)
+    {
+        <div class="mb-3">
+            @ToolbarFilters
+        </div>
+    }
 
     @if (_isLoading)
     {
@@ -171,6 +180,12 @@
     [Parameter, EditorRequired] public RenderFragment<TItem> RowTemplate { get; set; } = default!;
     [Parameter] public RenderFragment<TItem>? FormFields { get; set; }
     [Parameter] public RenderFragment<TItem>? CustomToolbarActions { get; set; }
+    [Parameter] public RenderFragment? ToolbarFilters { get; set; }
+
+    // Nouveaux paramètres optionnels pour les filtres et le tri
+    [Parameter] public Dictionary<string, string>? AdditionalQueryParameters { get; set; }
+    [Parameter] public string? SortBy { get; set; }
+    [Parameter] public bool SortAscending { get; set; } = true;
 
     [Parameter] public bool IsReadOnly { get; set; } = false;
     [Parameter] public bool DisableAdd { get; set; } = false;
@@ -194,22 +209,41 @@
 
     protected override async Task OnInitializedAsync() => await LoadDataAsync();
 
-    protected override void OnParametersSet()
-    {
-        base.OnParametersSet();
-        if (string.IsNullOrEmpty(EmptyMessage)) EmptyMessage = Translation.GetString("common.no_records");
-        if (string.IsNullOrEmpty(AddModalTitle)) AddModalTitle = Translation.GetString("common.add");
-        if (string.IsNullOrEmpty(EditModalTitle)) EditModalTitle = Translation.GetString("common.edit");
-    }
-
+    /// <summary>
+    /// Permet de recharger les données en changeant de page ou en appliquant des filtres depuis l'extérieur
+    /// </summary>
     public async Task LoadDataAsync()
     {
         _isLoading = true;
         _selectedIds.Clear();
         try
         {
+            // Construction dynamique de l'URL avec pagination, tri et filtres additionnels
+            var queryParams = new List<string>
+            {
+                $"page={_currentPage}",
+                $"pageSize={PageSize}"
+            };
+
+            if (!string.IsNullOrEmpty(SortBy))
+            {
+                queryParams.Add($"sortBy={Uri.EscapeDataString(SortBy)}");
+                queryParams.Add($"ascending={SortAscending.ToString().ToLower()}");
+            }
+
+            if (AdditionalQueryParameters != null)
+            {
+                foreach (var param in AdditionalQueryParameters)
+                {
+                    if (!string.IsNullOrEmpty(param.Value))
+                    {
+                        queryParams.Add($"{Uri.EscapeDataString(param.Key)}={Uri.EscapeDataString(param.Value)}");
+                    }
+                }
+            }
+
             string separator = ApiEndpoint.Contains("?") ? "&" : "?";
-            var url = $"{ApiEndpoint}{separator}page={_currentPage}&pageSize={PageSize}";
+            var url = $"{ApiEndpoint}{separator}{string.Join("&", queryParams)}";
 
             var pagedResult = await ApiClient.GetFromJsonAsync<PagedResultDto<TItem>>(url);
             
@@ -220,21 +254,34 @@
             }
             else
             {
-                var rawList = await ApiClient.GetFromJsonAsync<List<TItem>>(ApiEndpoint) ?? new();
-                _items = rawList.Skip((_currentPage - 1) * PageSize).Take(PageSize).ToList();
-                _totalPages = (int)Math.Ceiling((double)rawList.Count / PageSize);
-                if (_totalPages < 1) _totalPages = 1;
+                _items = new();
+                _totalPages = 1;
             }
         }
-        catch
+        catch (Exception ex)
         {
+            Logger.LogError(ex, "Erreur lors du chargement des données pour l'endpoint {Endpoint}", ApiEndpoint);
             _items = new();
             ToastService.ShowError(Translation.GetString("app.error.unknown"));
         }
         finally
         {
             _isLoading = false;
+            StateHasChanged();
         }
+    }
+
+    /// <summary>
+    /// Méthode publique à appeler depuis la page parente lorsque l'utilisateur modifie un filtre de recherche
+    /// </summary>
+    public async Task ApplyFiltersAsync(Dictionary<string, string> filters, string? newSortBy = null, bool? sortAscending = null)
+    {
+        AdditionalQueryParameters = filters;
+        if (newSortBy != null) SortBy = newSortBy;
+        if (sortAscending.HasValue) SortAscending = sortAscending.Value;
+        
+        _currentPage = 1; // On revient à la première page lors d'un filtre
+        await LoadDataAsync();
     }
 
     private async Task ChangePageAsync(int newPage)
@@ -308,7 +355,7 @@
 
         if (isSuccess)
         {
-            _isModalOpen = false;
+            _isModalOpen = false; // Corrigé ici (suppression du / ou du = en trop)
             ToastService.ShowSuccess(Translation.GetString("app.success.saved"));
             await LoadDataAsync();
         }
@@ -332,7 +379,6 @@
         }
         else
         {
-            // Correction ici : .ToList() au lieu de .List()
             (isSuccess, errorKey) = await ApiClient.PostAsync($"{ApiEndpoint}/delete-batch", _selectedIds.ToList());
         }
 

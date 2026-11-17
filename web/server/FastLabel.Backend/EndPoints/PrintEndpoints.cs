@@ -76,6 +76,6 @@ public static class PrintEndpoints
                 broker.PendingJobs.TryRemove(jobIdStr, out _);
                 return Results.BadRequest(new ErrorResponseDto { Message = "print.error.timeout" });
             }
-        });
+        }).DisableAntiforgery();
     }
 }

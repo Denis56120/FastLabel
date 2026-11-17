@@ -10,6 +10,7 @@ global using MailKit.Net.Smtp;
 global using MailKit.Security;
 global using MimeKit;
 global using MimeKit.Text;
+global using Microsoft.AspNetCore.Antiforgery;
 global using Microsoft.AspNetCore.Authentication;
 global using Microsoft.AspNetCore.Authentication.Cookies;
 global using Microsoft.AspNetCore.Identity;

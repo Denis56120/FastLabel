@@ -21,7 +21,9 @@ public static class AppExtensions
                 if (app.Environment.IsDevelopment())
                 {
                     var dataseeder = new DevelopmentDataSeeder(dbContext, passwordHasher);
-                    await dataseeder.SeedAsync();                
+                    await dataseeder.SeedAsync();   
+
+                    app.UseDeveloperExceptionPage();         
                 }
             }
             catch (Exception ex)
@@ -56,6 +58,7 @@ public static class AppExtensions
         app.MapSubscriptionEndpoints();
         app.MapStripeEndpoints();
         app.MapResellerEndpoints();
+        app.MapAntiforgeryEndpoints();
 
         return app;
     }

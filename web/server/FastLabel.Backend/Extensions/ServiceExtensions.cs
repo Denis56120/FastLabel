@@ -39,7 +39,19 @@ public static class ServiceExtensions
             });
         });
 
-        services.AddControllers()
+        services.AddAntiforgery(options =>
+        {
+            options.HeaderName = "X-XSRF-TOKEN";
+            options.Cookie.Name = "XSRF-TOKEN";
+            options.Cookie.HttpOnly = false;
+            options.Cookie.SecurePolicy = Enum.TryParse<CookieSecurePolicy>(configuration["CookieSettings:SecurePolicy"], out var securePolicy) ? securePolicy : CookieSecurePolicy.SameAsRequest;
+            options.Cookie.SameSite = SameSiteMode.Strict;
+        });
+
+        services.AddControllers(options =>
+            {
+                options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
+            })
             .ConfigureApiBehaviorOptions(options =>
             {
                 options.InvalidModelStateResponseFactory = context =>
@@ -54,6 +66,7 @@ public static class ServiceExtensions
                     return new BadRequestObjectResult(response);
                 };
             });
+
         services.AddScoped<IEmailService, EmailService>();
 
         services.AddScoped<IStripeService, StripeService>();

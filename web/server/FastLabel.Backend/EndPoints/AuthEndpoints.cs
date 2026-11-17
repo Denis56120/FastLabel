@@ -261,6 +261,6 @@ public static class AuthEndpoints
 
             var clientUrl = configuration["Url:ClientUrl"] ?? "https://fastlabel.com";
             return Results.Redirect($"{clientUrl}/?activated=true");
-        });
+        }).DisableAntiforgery();
     }
 }

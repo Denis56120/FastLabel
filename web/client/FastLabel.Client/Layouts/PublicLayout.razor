@@ -86,6 +86,7 @@ else
 
         try
         {
+            await ApiClient.GetAsync("api/antiforgery/token");
             await Translation.InitializeAsync();
             await LoadLanguagesAsync();
         }

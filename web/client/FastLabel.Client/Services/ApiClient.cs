@@ -40,6 +40,19 @@ public class ApiClient(HttpClient httpClient)
         return await ParseErrorResponseAsync(response);
     }
 
+    public async Task<(bool IsSuccess, string? ErrorMessage)> GetAsync(string endpoint)
+    {
+        var response = await _httpClient.GetAsync(endpoint);
+        
+        if (response.IsSuccessStatusCode)
+        {
+            return (true, null);
+        }
+
+        var (isSuccess, errorMessage) = await ParseErrorResponseAsync(response);
+        return (false, errorMessage);
+    }
+
     public async Task<T?> GetFromJsonAsync<T>(string endpoint)
     {
         return await _httpClient.GetFromJsonAsync<T>(endpoint);
