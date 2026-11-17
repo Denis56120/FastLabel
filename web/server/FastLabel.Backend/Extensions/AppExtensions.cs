@@ -2,6 +2,33 @@ namespace FastLabel.Backend.Extensions;
 
 public static class AppExtensions
 {
+    private static async Task<WebApplication> UseDatabaseMigrationsAsync(this WebApplication app)
+    {
+        using var scope = app.Services.CreateScope();
+        var services = scope.ServiceProvider;
+
+        try
+        {
+            var dbContext = services.GetRequiredService<AppDbContext>();
+
+            // En mode développement, si tu veux vider/recréer automatiquement :
+            // await dbContext.Database.EnsureDeletedAsync();
+
+            // Applique automatiquement toutes les migrations en attente
+            await dbContext.Database.MigrateAsync();
+
+            // Optionnel : Appeler un service de Seed ici si tu en as un
+            // await AppDbContextSeed.SeedAsync(dbContext);
+        }
+        catch (Exception ex)
+        {
+            var logger = services.GetRequiredService<ILogger<Program>>();
+            logger.LogError(ex, "Une erreur s'est produite lors de la migration de la base de données.");
+        }
+
+        return app;
+    }
+
     public static async Task<WebApplication> ConfigurePipelineAsync(this WebApplication app)
     {
         if (!app.Environment.IsEnvironment("Testing"))
@@ -33,6 +60,8 @@ public static class AppExtensions
                 throw;
             }
         }
+
+        await app.UseDatabaseMigrationsAsync();
 
         app.UseResponseCompression();
 

@@ -13,6 +13,7 @@ public static class ServiceExtensions
 
         return services;
     }
+    
     public static IServiceCollection AddAppServices(this IServiceCollection services, IConfiguration configuration)
     {
         Stripe.StripeConfiguration.ApiKey = configuration["STRIPE_SECRET_KEY"];
