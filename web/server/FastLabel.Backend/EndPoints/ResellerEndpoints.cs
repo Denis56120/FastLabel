@@ -6,8 +6,16 @@ public static class ResellerEndpoints
     {
         var resellerGroup = routes.MapGroup("/api/reseller").RequireAuthorization();
 
-        // 1. Lister les clients finaux gérés par le revendeur connecté (avec support optionnel de la pagination)
-        resellerGroup.MapGet("/clients", async (int? page, int? pageSize, AppDbContext db, ClaimsPrincipal claimsUser) =>
+        // 1. Lister les clients finaux gérés par le revendeur connecté (avec support du tri et des filtres)
+        resellerGroup.MapGet("/clients", async (
+            int? page, 
+            int? pageSize, 
+            string? sortBy, 
+            bool? sortAscending, 
+            string? filterByName,
+            string? filterByEmail,
+            AppDbContext db, 
+            ClaimsPrincipal claimsUser) =>
         {
             var resellerIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier)
                                 ?? claimsUser.FindFirstValue("nameid");
@@ -22,11 +30,32 @@ public static class ResellerEndpoints
             int currentPage = page ?? 1;
             int size = pageSize ?? 10;
 
-            var query = db.Users.Where(u => u.ResellerId == resellerId);
+            var query = db.Users.Where(u => u.ResellerId == resellerId).AsQueryable();
+
+            // Application des filtres textuels
+            if (!string.IsNullOrWhiteSpace(filterByName))
+            {
+                query = query.Where(u => u.Name != null && u.Name.Contains(filterByName));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filterByEmail))
+            {
+                query = query.Where(u => u.Email != null && u.Email.Contains(filterByEmail));
+            }
+
             int totalCount = await query.CountAsync();
 
+            // Application du tri dynamique
+            bool ascending = sortAscending ?? true;
+            query = sortBy?.ToLower() switch
+            {
+                "name" => ascending ? query.OrderBy(u => u.Name) : query.OrderByDescending(u => u.Name),
+                "email" => ascending ? query.OrderBy(u => u.Email) : query.OrderByDescending(u => u.Email),
+                "createdat" => ascending ? query.OrderBy(u => u.CreatedAt) : query.OrderByDescending(u => u.CreatedAt),
+                _ => query.OrderBy(u => u.Id) // Tri par défaut
+            };
+
             var items = await query
-                .OrderBy(u => u.Id)
                 .Skip((currentPage - 1) * size)
                 .Take(size)
                 .Select(u => new UserDto

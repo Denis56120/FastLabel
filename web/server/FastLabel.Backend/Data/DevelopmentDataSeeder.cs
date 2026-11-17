@@ -75,7 +75,7 @@ public class DevelopmentDataSeeder(AppDbContext context, IPasswordHasher<User> p
                 {
                     UserId = user.Id,
                     AgentTypeId = windowsAgentTypeId,
-                    ApiKey = Guid.NewGuid().ToString("N"),
+                    ApiKey = $"fl_{Guid.NewGuid():N}{Guid.NewGuid():N}",
                     CreatedAt = DateTime.UtcNow
                 });
             }

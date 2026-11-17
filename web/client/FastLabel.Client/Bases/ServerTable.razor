@@ -1,0 +1,242 @@
+@typeparam TItem
+@inject ApiClient ApiClient
+
+<CascadingValue Value="this" IsFixed="true">
+    <div class="card shadow-sm border-0">
+        @if (!string.IsNullOrEmpty(Title) || !string.IsNullOrEmpty(Description))
+        {
+            <div class="card-header d-flex justify-content-between align-items-center bg-white py-3">
+                <div>
+                    @if (!string.IsNullOrEmpty(Title))
+                    {
+                        <h4 class="mb-0">@Title</h4>
+                    }
+                    @if (!string.IsNullOrEmpty(Description))
+                    {
+                        <small class="text-muted">@Description</small>
+                    }
+                </div>
+            </div>
+        }
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            @TableHeader
+                        </tr>
+                        @if (EnableFiltering && TableFilters != null)
+                        {
+                            <tr class="bg-light">
+                                @TableFilters
+                            </tr>
+                        }
+                    </thead>
+                    <tbody>
+                        @if (_loading)
+                        {
+                            <tr>
+                                <td colspan="100" class="text-center py-4">
+                                    <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                                    <span class="ms-2">Chargement...</span>
+                                </td>
+                            </tr>
+                        }
+                        else if (_items == null || !_items.Any())
+                        {
+                            <tr>
+                                <td colspan="100" class="text-center py-4 text-muted">
+                                    @(string.IsNullOrEmpty(EmptyMessage) ? "Aucune donnée" : EmptyMessage)
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var item in _items)
+                            {
+                                <tr>
+                                    @RowTemplate(item)
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        @if (TotalPages > 0)
+        {
+            <div class="card-footer d-flex justify-content-between align-items-center bg-white py-3">
+                <div class="d-flex align-items-center">
+                    <span class="me-2 text-muted small">Lignes par page :</span>
+                    <select class="form-select form-select-sm w-auto" @value="_pageSize" @onchange="OnPageSizeChanged">
+                        <option value="5">5</option>
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                    </select>
+                    <span class="ms-3 text-muted small">
+                        Total : <strong>@_totalCount</strong> éléments (Page @_page sur @TotalPages)
+                    </span>
+                </div>
+
+                <nav aria-label="Pagination">
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item @(_page <= 1 ? "disabled" : "")">
+                            <button class="page-link" @onclick="() => ChangePage(1)">
+                                <i class="bi bi-chevron-double-left"></i>
+                            </button>
+                        </li>
+                        <li class="page-item @(_page <= 1 ? "disabled" : "")">
+                            <button class="page-link" @onclick="() => ChangePage(_page - 1)">
+                                <i class="bi bi-chevron-left"></i>
+                            </button>
+                        </li>
+                        <li class="page-item @(_page >= TotalPages ? "disabled" : "")">
+                            <button class="page-link" @onclick="() => ChangePage(_page + 1)">
+                                <i class="bi bi-chevron-right"></i>
+                            </button>
+                        </li>
+                        <li class="page-item @(_page >= TotalPages ? "disabled" : "")">
+                            <button class="page-link" @onclick="() => ChangePage(TotalPages)">
+                                <i class="bi bi-chevron-double-right"></i>
+                            </button>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        }
+    </div>
+</CascadingValue>
+
+@code {
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public string Description { get; set; } = string.Empty;
+    [Parameter] public string ApiEndpoint { get; set; } = string.Empty;
+    [Parameter] public string EmptyMessage { get; set; } = string.Empty;
+    [Parameter] public bool EnableFiltering { get; set; } = true;
+
+    [Parameter] public RenderFragment TableHeader { get; set; } = null!;
+    [Parameter] public RenderFragment TableFilters { get; set; } = null!;
+    [Parameter] public RenderFragment<TItem> RowTemplate { get; set; } = null!;
+
+    [Parameter] public List<TItem> Items { get; set; } = new();
+    [Parameter] public EventCallback<List<TItem>> ItemsChanged { get; set; }
+
+    private List<TItem> _items = new();
+    private int _page = 1;
+    private int _pageSize = 10;
+    private int _totalCount = 0;
+    private bool _loading = false;
+    private string? _lastLoadedEndpoint;
+    
+    private string? _sortBy;
+    private bool _sortAscending = true;
+    private Dictionary<string, string> _filters = new();
+
+    private int TotalPages => _pageSize > 0 ? (int)Math.Ceiling((double)_totalCount / _pageSize) : 1;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrEmpty(ApiEndpoint) && ApiEndpoint != _lastLoadedEndpoint)
+        {
+            _lastLoadedEndpoint = ApiEndpoint;
+            await LoadDataAsync();
+        }
+    }
+
+    public async Task LoadDataAsync()
+    {       
+        if (string.IsNullOrEmpty(ApiEndpoint)) return;
+
+        _loading = true;
+        StateHasChanged();
+
+        try
+        {
+            var url = $"{ApiEndpoint}?page={_page}&pageSize={_pageSize}";
+            if (!string.IsNullOrEmpty(_sortBy))
+            {
+                url += $"&sortBy={_sortBy}&sortAscending={_sortAscending}";
+            }
+            
+            foreach (var filter in _filters)
+            {
+                if (!string.IsNullOrEmpty(filter.Value))
+                {
+                    url += $"&{filter.Key}={Uri.EscapeDataString(filter.Value)}";
+                }
+            }
+
+            // Utilisation d'ApiClient ici à la place de HttpClient
+            var result = await ApiClient.GetFromJsonAsync<PagedResultDto<TItem>>(url);
+            if (result != null)
+            {
+                _items = result.Items ?? new();
+                _totalCount = result.TotalCount;
+                
+                // Remonte la liste des items vers le composant parent (CrudTablePage)
+                await ItemsChanged.InvokeAsync(_items);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur chargement tableau : {ex.Message}");
+        }
+        finally
+        {
+            _loading = false;
+            StateHasChanged();
+        }
+    }
+
+    public async Task ApplySortAsync(string column)
+    {
+        if (_sortBy == column)
+        {
+            _sortAscending = !_sortAscending;
+        }
+        else
+        {
+            _sortBy = column;
+            _sortAscending = true;
+        }
+        _page = 1;
+        await LoadDataAsync();
+    }
+
+    public async Task ApplyFilterAsync(string column, string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            _filters.Remove(column);
+        }
+        else
+        {
+            _filters[column] = value;
+        }
+        _page = 1;
+        await LoadDataAsync();
+    }
+
+    private async Task ChangePage(int newPage)
+    {
+        if (newPage >= 1 && newPage <= TotalPages && newPage != _page)
+        {
+            _page = newPage;
+            await LoadDataAsync();
+        }
+    }
+
+    private async Task OnPageSizeChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var newSize))
+        {
+            _pageSize = newSize;
+            _page = 1;
+            await LoadDataAsync();
+        }
+    }
+}

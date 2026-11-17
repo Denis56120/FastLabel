@@ -18,7 +18,16 @@ public static class PrinterEndpoints
             return (userId, isAdmin);
         }
 
-        group.MapGet("/", async (int page, int pageSize, AppDbContext db, ClaimsPrincipal claimsUser) =>
+        group.MapGet("/", async (
+            int page, 
+            int pageSize, 
+            string? sortBy, 
+            bool? sortAscending, 
+            string? filterByUser,
+            string? filterByName,
+            string? filterByLocation,
+            AppDbContext db, 
+            ClaimsPrincipal claimsUser) =>
         {
             var (userId, isAdmin) = GetUserInfo(claimsUser);
             if (userId == 0) return Results.Unauthorized();
@@ -43,7 +52,7 @@ public static class PrinterEndpoints
                     .ThenInclude(s => s.Name)
                         .ThenInclude(t => t.Translations)
                             .ThenInclude(tr => tr.Language)
-                .Include(p => p.User) // <--- Inclusion de l'utilisateur pour le mode admin
+                .Include(p => p.User)
                 .AsQueryable();
 
             if (!isAdmin)
@@ -51,12 +60,41 @@ public static class PrinterEndpoints
                 query = query.Where(p => p.UserId == userId);
             }
 
-            // 1. Calcul du nombre total d'éléments avant pagination
+            // 1. Application des filtres textuels reçus du front
+            if (!string.IsNullOrWhiteSpace(filterByUser))
+            {
+                query = query.Where(p => p.User != null && p.User.Name.Contains(filterByUser));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filterByName))
+            {
+                query = query.Where(p => p.Name != null && p.Name.Contains(filterByName));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filterByLocation))
+            {
+                query = query.Where(p => p.Location != null && p.Location.Contains(filterByLocation));
+            }
+
+            // 2. Calcul du nombre total d'éléments après filtrage et avant pagination
             var totalCount = await query.CountAsync();
 
-            // 2. Application de la pagination (Skip & Take)
+            // 3. Application du tri dynamique (basé sur les en-têtes cliqués)
+            bool ascending = sortAscending ?? true;
+            query = sortBy?.ToLower() switch
+            {
+                "username" => ascending ? query.OrderBy(p => p.User != null ? p.User.Name : string.Empty) : query.OrderByDescending(p => p.User != null ? p.User.Name : string.Empty),
+                "name" => ascending ? query.OrderBy(p => p.Name) : query.OrderByDescending(p => p.Name),
+                "location" => ascending ? query.OrderBy(p => p.Location) : query.OrderByDescending(p => p.Location),
+                "protocolname" => ascending ? query.OrderBy(p => p.Protocol.Name.DefaultTranslation) : query.OrderByDescending(p => p.Protocol.Name.DefaultTranslation),
+                "resolutiondpivalue" => ascending ? query.OrderBy(p => p.ResolutionDpi.Value) : query.OrderByDescending(p => p.ResolutionDpi.Value),
+                "statusname" => ascending ? query.OrderBy(p => p.BasicStatus.Name.DefaultTranslation) : query.OrderByDescending(p => p.BasicStatus.Name.DefaultTranslation),
+                "createdat" => ascending ? query.OrderBy(p => p.CreatedAt) : query.OrderByDescending(p => p.CreatedAt),
+                _ => query.OrderBy(p => p.Id) // Tri par défaut
+            };
+
+            // 4. Application de la pagination (Skip & Take)
             var printers = await query
-                .OrderBy(p => p.Id)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .Select(p => new PrinterDto
@@ -84,12 +122,12 @@ public static class PrinterEndpoints
                             .FirstOrDefault() 
                            ?? p.BasicStatus.Name.DefaultTranslation) 
                         : string.Empty,
-                    UserName = p.User != null ? p.User.Name : string.Empty, // <--- Assignation du nom d'utilisateur
+                    UserName = p.User != null ? p.User.Name : string.Empty,
                     CreatedAt = p.CreatedAt
                 })
                 .ToListAsync();
 
-            // 3. Encapsulation dans le PagedResultDto
+            // 5. Encapsulation dans le PagedResultDto
             var result = new PagedResultDto<PrinterDto>
             {
                 Items = printers,
@@ -122,7 +160,7 @@ public static class PrinterEndpoints
                     .ThenInclude(s => s.Name)
                         .ThenInclude(t => t.Translations)
                             .ThenInclude(tr => tr.Language)
-                .Include(p => p.User) // <--- Inclusion de l'utilisateur
+                .Include(p => p.User)
                 .Where(p => p.Id == id)
                 .AsQueryable();
 
@@ -157,7 +195,7 @@ public static class PrinterEndpoints
                             .FirstOrDefault() 
                            ?? p.BasicStatus.Name.DefaultTranslation) 
                         : string.Empty,
-                    UserName = p.User != null ? p.User.Name : string.Empty, // <--- Assignation du nom d'utilisateur
+                    UserName = p.User != null ? p.User.Name : string.Empty,
                     CreatedAt = p.CreatedAt
                 })
                 .FirstOrDefaultAsync();

@@ -18,7 +18,16 @@ public static class PrintJobEndpoints
             return (userId, isAdmin);
         }
 
-        group.MapGet("/", async (int page, int pageSize, AppDbContext db, ClaimsPrincipal claimsUser) =>
+        group.MapGet("/", async (
+            int page, 
+            int pageSize, 
+            string? sortBy, 
+            bool? sortAscending, 
+            string? filterByUser,
+            string? filterByPrinter,
+            string? filterByTemplate,
+            AppDbContext db, 
+            ClaimsPrincipal claimsUser) =>
         {
             // Valeurs par défaut de sécurité
             if (page < 1) page = 1;
@@ -30,9 +39,8 @@ public static class PrintJobEndpoints
 
             var query = db.PrintJobs
                 .Include(j => j.Printer)
-                    .ThenInclude(p => p.User) // <--- Inclusion de l'utilisateur via la relation Printer -> User
+                    .ThenInclude(p => p.User) 
                 .Include(j => j.LabelTemplate)
-                .OrderByDescending(j => j.CreatedAt)
                 .AsQueryable();
 
             if (!isAdmin)
@@ -40,10 +48,38 @@ public static class PrintJobEndpoints
                 query = query.Where(j => j.Printer.UserId == userId);
             }
 
-            // 1. Calcul du nombre total d'éléments avant la pagination
+            // 1. Application des filtres textuels reçus du front
+            if (!string.IsNullOrWhiteSpace(filterByUser))
+            {
+                query = query.Where(j => j.Printer != null && j.Printer.User != null && j.Printer.User.Name.Contains(filterByUser));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filterByPrinter))
+            {
+                query = query.Where(j => j.Printer != null && j.Printer.Name.Contains(filterByPrinter));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filterByTemplate))
+            {
+                query = query.Where(j => j.LabelTemplate != null && j.LabelTemplate.Name.Contains(filterByTemplate));
+            }
+
+            // 2. Calcul du nombre total d'éléments après filtrage et avant la pagination
             var totalCount = await query.CountAsync();
 
-            // 2. Application de la pagination (Skip & Take)
+            // 3. Application du tri dynamique (basé sur les en-têtes cliqués)
+            bool ascending = sortAscending ?? true;
+            query = sortBy?.ToLower() switch
+            {
+                "username" => ascending ? query.OrderBy(j => j.Printer.User.Name) : query.OrderByDescending(j => j.Printer.User.Name),
+                "printername" => ascending ? query.OrderBy(j => j.Printer.Name) : query.OrderByDescending(j => j.Printer.Name),
+                "templatename" => ascending ? query.OrderBy(j => j.LabelTemplate.Name) : query.OrderByDescending(j => j.LabelTemplate.Name),
+                "quantity" => ascending ? query.OrderBy(j => j.Quantity) : query.OrderByDescending(j => j.Quantity),
+                "createdat" => ascending ? query.OrderBy(j => j.CreatedAt) : query.OrderByDescending(j => j.CreatedAt),
+                _ => query.OrderByDescending(j => j.CreatedAt) // Tri par défaut (du plus récent au plus ancien)
+            };
+
+            // 4. Application de la pagination (Skip & Take)
             var jobs = await query
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
@@ -62,7 +98,7 @@ public static class PrintJobEndpoints
                 })
                 .ToListAsync();
 
-            // 3. Encapsulation dans le PagedResultDto
+            // 5. Encapsulation dans le PagedResultDto
             var result = new PagedResultDto<PrintJobsDto>
             {
                 Items = jobs,
@@ -101,7 +137,7 @@ public static class PrintJobEndpoints
                     InputDataJson = j.InputDataJson ?? string.Empty,
                     GeneratedPayload = j.GeneratedPayload,
                     ResponseMessage = j.ResponseMessage,
-                    UserName = j.Printer != null && j.Printer.User != null ? j.Printer.User.Name : string.Empty, // <--- Assignation du UserName
+                    UserName = j.Printer != null && j.Printer.User != null ? j.Printer.User.Name : string.Empty,
                     CreatedAt = j.CreatedAt,
                     ProcessedAt = j.ProcessedAt
                 })

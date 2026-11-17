@@ -16,13 +16,43 @@
                EditModalTitle="@Translation.GetString("users.edit_title")">
 
     <TableHeader>
-        <th>@Translation.GetString("users.name")</th>
-        <th>@Translation.GetString("users.email")</th>
-        <th>@Translation.GetString("users.role")</th>
-        <th>@Translation.GetString("users.reseller")</th> <!-- Nouvelle colonne -->
-        <th>@Translation.GetString("users.status")</th>
-        <th>@Translation.GetString("users.created_at")</th>
+        <th role="button" @onclick='() => SortAsync("Name")'>
+            @Translation.GetString("users.name") <i class="bi bi-arrow-down-up small text-muted"></i>
+        </th>
+        <th role="button" @onclick='() => SortAsync("Email")'>
+            @Translation.GetString("users.email") <i class="bi bi-arrow-down-up small text-muted"></i>
+        </th>
+        <th role="button" @onclick='() => SortAsync("Role")'>
+            @Translation.GetString("users.role") <i class="bi bi-arrow-down-up small text-muted"></i>
+        </th>
+        <th role="button" @onclick='() => SortAsync("ResellerName")'>
+            @Translation.GetString("users.reseller") <i class="bi bi-arrow-down-up small text-muted"></i>
+        </th>
+        <th role="button" @onclick='() => SortAsync("BasicStatusName")'>
+            @Translation.GetString("users.status") <i class="bi bi-arrow-down-up small text-muted"></i>
+        </th>
+        <th role="button" @onclick='() => SortAsync("CreatedAt")'>
+            @Translation.GetString("users.created_at") <i class="bi bi-arrow-down-up small text-muted"></i>
+        </th>
     </TableHeader>
+
+    <TableFilters>
+        <th>
+            <input type="text" class="form-control form-control-sm" placeholder="Filtrer..." 
+                   @oninput='e => FilterAsync("filterByName", e.Value?.ToString())' />
+        </th>
+        <th>
+            <input type="text" class="form-control form-control-sm" placeholder="Filtrer..." 
+                   @oninput='e => FilterAsync("filterByEmail", e.Value?.ToString())' />
+        </th>
+        <th></th>
+        <th>
+            <input type="text" class="form-control form-control-sm" placeholder="Filtrer..." 
+                   @oninput='e => FilterAsync("filterByReseller", e.Value?.ToString())' />
+        </th>
+        <th></th>
+        <th></th>
+    </TableFilters>
 
     <RowTemplate Context="user">
         <td>@user.Name</td>
@@ -97,5 +127,21 @@
     private void TogglePasswordVisibility()
     {
         _showPassword = !_showPassword;
+    }
+
+    private async Task SortAsync(string columnName)
+    {
+        if (_crudTable != null)
+        {
+            await _crudTable.ApplySortAsync(columnName);
+        }
+    }
+
+    private async Task FilterAsync(string columnName, string? value)
+    {
+        if (_crudTable != null)
+        {
+            await _crudTable.ApplyFilterAsync(columnName, value ?? string.Empty);
+        }
     }
 }

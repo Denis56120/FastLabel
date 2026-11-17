@@ -19,13 +19,38 @@
     <TableHeader>
         @if (_isAdmin)
         {
-            <th>@Translation.GetString("agents.user")</th>
+            <th role="button" @onclick='() => SortAsync("UserName")'>
+                @Translation.GetString("agents.user") <i class="bi bi-arrow-down-up small text-muted"></i>
+            </th>
         }
-        <th>@Translation.GetString("agents.type")</th>
+        <th role="button" @onclick='() => SortAsync("AgentTypeName")'>
+            @Translation.GetString("agents.type") <i class="bi bi-arrow-down-up small text-muted"></i>
+        </th>
         <th>@Translation.GetString("agents.api_key")</th>
-        <th>@Translation.GetString("agents.created_at")</th>
-        <th>@Translation.GetString("agents.last_seen")</th>
+        <th role="button" @onclick='() => SortAsync("CreatedAt")'>
+            @Translation.GetString("agents.created_at") <i class="bi bi-arrow-down-up small text-muted"></i>
+        </th>
+        <th role="button" @onclick='() => SortAsync("LastSeenAt")'>
+            @Translation.GetString("agents.last_seen") <i class="bi bi-arrow-down-up small text-muted"></i>
+        </th>
     </TableHeader>
+
+    <TableFilters>
+        @if (_isAdmin)
+        {
+            <th>
+                <input type="text" class="form-control form-control-sm" placeholder="Filtrer..." 
+                       @oninput='e => FilterAsync("filterByUser", e.Value?.ToString())' />
+            </th>
+        }
+        <th>
+            <input type="text" class="form-control form-control-sm" placeholder="Filtrer..." 
+                   @oninput='e => FilterAsync("filterByType", e.Value?.ToString())' />
+        </th>
+        <th></th>
+        <th></th>
+        <th></th>
+    </TableFilters>
 
     <RowTemplate Context="agent">
         @if (_isAdmin)
@@ -52,11 +77,6 @@
                 }
             </InputSelect>
         </div>
-        <div class="mb-3">
-            <label class="form-label">@Translation.GetString("agents.api_key")</label>
-            <InputText class="form-control bg-light font-monospace" @bind-Value="agent.ApiKey" readonly />
-            <small class="form-text text-muted">@Translation.GetString("agents.api_key_readonly_help")</small>
-        </div>
     </FormFields>
 
 </CrudTablePage>
@@ -71,10 +91,8 @@
 
     private AgentDto CreateNewAgent()
     {
-        return new AgentDto
-        {
-            ApiKey = "fl_" + Guid.NewGuid().ToString("N")
-        };
+        // La clé sera générée et renvoyée par le serveur lors de la création
+        return new AgentDto();
     }
 
     protected override async Task OnInitializedAsync()
@@ -97,6 +115,22 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Erreur chargement AgentTypes: {ex.Message}");
+        }
+    }
+
+    private async Task SortAsync(string columnName)
+    {
+        if (_crudTable != null)
+        {
+            await _crudTable.ApplySortAsync(columnName);
+        }
+    }
+
+    private async Task FilterAsync(string columnName, string? value)
+    {
+        if (_crudTable != null)
+        {
+            await _crudTable.ApplyFilterAsync(columnName, value ?? string.Empty);
         }
     }
 }

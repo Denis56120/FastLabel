@@ -157,11 +157,20 @@ public static class UserEndpoints
         }).RequireAuthorization();
 
         // ==========================================
-        // ENDPOINTS ADMIN EXISTANTS
+        // ENDPOINTS ADMIN (AVEC FILTRES & TRI)
         // ==========================================
         var adminGroup = routes.MapGroup("/api/users").RequireAuthorization("AdminOnly");
 
-        adminGroup.MapGet("/", async (int page, int pageSize, AppDbContext db, ClaimsPrincipal claimsUser) =>
+        adminGroup.MapGet("/", async (
+            int page, 
+            int pageSize, 
+            string? sortBy, 
+            bool? sortAscending, 
+            string? filterByName,
+            string? filterByEmail,
+            string? filterByReseller,
+            AppDbContext db, 
+            ClaimsPrincipal claimsUser) =>
         {
             var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier) 
                                     ?? claimsUser.FindFirstValue("nameid");
@@ -183,13 +192,41 @@ public static class UserEndpoints
                     .ThenInclude(s => s.Name)
                         .ThenInclude(n => n.Translations)
                             .ThenInclude(tr => tr.Language)
-                .Include(u => u.Reseller) // <-- Inclusion du revendeur
+                .Include(u => u.Reseller)
                 .AsQueryable();
+
+            // 1. Application des filtres textuels
+            if (!string.IsNullOrWhiteSpace(filterByName))
+            {
+                query = query.Where(u => u.Name != null && u.Name.Contains(filterByName));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filterByEmail))
+            {
+                query = query.Where(u => u.Email != null && u.Email.Contains(filterByEmail));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filterByReseller))
+            {
+                query = query.Where(u => u.Reseller != null && u.Reseller.Name != null && u.Reseller.Name.Contains(filterByReseller));
+            }
 
             var totalCount = await query.CountAsync();
 
+            // 2. Application du tri dynamique
+            bool ascending = sortAscending ?? true;
+            query = sortBy?.ToLower() switch
+            {
+                "name" => ascending ? query.OrderBy(u => u.Name) : query.OrderByDescending(u => u.Name),
+                "email" => ascending ? query.OrderBy(u => u.Email) : query.OrderByDescending(u => u.Email),
+                "role" => ascending ? query.OrderBy(u => u.IsAdmin).ThenBy(u => u.IsReseller) : query.OrderByDescending(u => u.IsAdmin).ThenByDescending(u => u.IsReseller),
+                "resellername" => ascending ? query.OrderBy(u => u.Reseller != null ? u.Reseller.Name : string.Empty) : query.OrderByDescending(u => u.Reseller != null ? u.Reseller.Name : string.Empty),
+                "basicstatusname" => ascending ? query.OrderBy(u => u.BasicStatus.Name.DefaultTranslation) : query.OrderByDescending(u => u.BasicStatus.Name.DefaultTranslation),
+                "createdat" => ascending ? query.OrderBy(u => u.CreatedAt) : query.OrderByDescending(u => u.CreatedAt),
+                _ => query.OrderBy(u => u.Id) // Tri par défaut
+            };
+
             var users = await query
-                .OrderBy(u => u.Id)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .Select(u => new UserDto
@@ -200,7 +237,7 @@ public static class UserEndpoints
                     IsAdmin = u.IsAdmin,
                     IsReseller = u.IsReseller,
                     ResellerId = u.ResellerId,
-                    ResellerName = u.Reseller != null ? u.Reseller.Name : null, // <-- Mapping du nom
+                    ResellerName = u.Reseller != null ? u.Reseller.Name : null,
                     LanguageId = u.LanguageId,
                     BasicStatusName = u.BasicStatus != null && u.BasicStatus.Name != null
                         ? (u.BasicStatus.Name.Translations
@@ -242,7 +279,7 @@ public static class UserEndpoints
                     .ThenInclude(s => s.Name)
                         .ThenInclude(n => n.Translations)
                             .ThenInclude(tr => tr.Language)
-                .Include(u => u.Reseller) // <-- Inclusion du revendeur
+                .Include(u => u.Reseller)
                 .Where(u => u.Id == id)
                 .OrderBy(u => u.Id)
                 .Select(u => new UserDto
@@ -253,7 +290,7 @@ public static class UserEndpoints
                     IsAdmin = u.IsAdmin,
                     IsReseller = u.IsReseller,
                     ResellerId = u.ResellerId,
-                    ResellerName = u.Reseller != null ? u.Reseller.Name : null, // <-- Mapping du nom
+                    ResellerName = u.Reseller != null ? u.Reseller.Name : null,
                     LanguageId = u.LanguageId,
                     BasicStatusName = u.BasicStatus != null && u.BasicStatus.Name != null
                         ? (u.BasicStatus.Name.Translations

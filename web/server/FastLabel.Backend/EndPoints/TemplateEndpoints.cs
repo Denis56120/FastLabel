@@ -18,7 +18,16 @@ public static class TemplateEndpoints
             return (userId, isAdmin);
         }
 
-        group.MapGet("/", async (int page, int pageSize, AppDbContext db, ClaimsPrincipal claimsUser) =>
+        group.MapGet("/", async (
+            int page, 
+            int pageSize, 
+            string? sortBy, 
+            bool? sortAscending, 
+            string? filterByUser,
+            string? filterByName,
+            string? filterByStatus,
+            AppDbContext db, 
+            ClaimsPrincipal claimsUser) =>
         {
             var (userId, isAdmin) = GetUserInfo(claimsUser);
             if (userId == 0) return Results.Unauthorized();
@@ -39,7 +48,7 @@ public static class TemplateEndpoints
                     .ThenInclude(s => s.Name)
                         .ThenInclude(t => t.Translations)
                             .ThenInclude(tr => tr.Language)
-                .Include(t => t.User) // Inclus pour récupérer le nom de l'utilisateur
+                .Include(t => t.User)
                 .AsQueryable();
 
             if (!isAdmin)
@@ -47,12 +56,44 @@ public static class TemplateEndpoints
                 query = query.Where(t => t.UserId == userId);
             }
 
-            // 1. Calcul du nombre total d'éléments avant pagination
+            // 1. Application des filtres textuels reçus du front
+            if (!string.IsNullOrWhiteSpace(filterByUser))
+            {
+                query = query.Where(t => t.User != null && t.User.Name.Contains(filterByUser));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filterByName))
+            {
+                query = query.Where(t => t.Name != null && t.Name.Contains(filterByName));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filterByStatus))
+            {
+                query = query.Where(t => t.BasicStatus != null && t.BasicStatus.Name != null &&
+                    (t.BasicStatus.Name.Translations
+                        .Where(tr => tr.Language.Code == lang)
+                        .Select(tr => tr.TranslatedValue)
+                        .FirstOrDefault() ?? t.BasicStatus.Name.DefaultTranslation)
+                    .Contains(filterByStatus));
+            }
+
+            // 2. Calcul du nombre total d'éléments après filtrage et avant pagination
             var totalCount = await query.CountAsync();
 
-            // 2. Application de la pagination (Skip & Take)
+            // 3. Application du tri dynamique (basé sur les en-têtes cliqués)
+            bool ascending = sortAscending ?? true;
+            query = sortBy?.ToLower() switch
+            {
+                "username" => ascending ? query.OrderBy(t => t.User != null ? t.User.Name : string.Empty) : query.OrderByDescending(t => t.User != null ? t.User.Name : string.Empty),
+                "name" => ascending ? query.OrderBy(t => t.Name) : query.OrderByDescending(t => t.Name),
+                "basicstatusname" => ascending ? query.OrderBy(t => t.BasicStatus.Name.DefaultTranslation) : query.OrderByDescending(t => t.BasicStatus.Name.DefaultTranslation),
+                "createdat" => ascending ? query.OrderBy(t => t.CreatedAt) : query.OrderByDescending(t => t.CreatedAt),
+                "updatedat" => ascending ? query.OrderBy(t => t.UpdatedAt) : query.OrderByDescending(t => t.UpdatedAt),
+                _ => query.OrderByDescending(t => t.UpdatedAt) // Tri par défaut
+            };
+
+            // 4. Application de la pagination (Skip & Take)
             var templates = await query
-                .OrderByDescending(t => t.UpdatedAt)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .Select(t => new TemplateDto
@@ -66,14 +107,14 @@ public static class TemplateEndpoints
                             .FirstOrDefault() 
                            ?? t.BasicStatus.Name.DefaultTranslation) 
                         : string.Empty,
-                    UserName = t.User != null ? t.User.Name : string.Empty, // Alimentation du UserName
+                    UserName = t.User != null ? t.User.Name : string.Empty,
                     JsonData = t.JsonData ?? string.Empty,
                     CreatedAt = t.CreatedAt,
                     UpdatedAt = t.UpdatedAt
                 })
                 .ToListAsync();
 
-            // 3. Encapsulation dans le PagedResultDto
+            // 5. Encapsulation dans le PagedResultDto
             var result = new PagedResultDto<TemplateDto>
             {
                 Items = templates,
@@ -101,7 +142,7 @@ public static class TemplateEndpoints
                     .ThenInclude(s => s.Name)
                         .ThenInclude(t => t.Translations)
                             .ThenInclude(tr => tr.Language)
-                .Include(t => t.User) // Inclus pour récupérer le nom de l'utilisateur
+                .Include(t => t.User)
                 .Where(t => t.Id == id)
                 .AsQueryable();
 
@@ -122,7 +163,7 @@ public static class TemplateEndpoints
                             .FirstOrDefault() 
                            ?? t.BasicStatus.Name.DefaultTranslation) 
                         : string.Empty,
-                    UserName = t.User != null ? t.User.Name : string.Empty, // Alimentation du UserName
+                    UserName = t.User != null ? t.User.Name : string.Empty,
                     JsonData = t.JsonData ?? string.Empty,
                     CreatedAt = t.CreatedAt,
                     UpdatedAt = t.UpdatedAt

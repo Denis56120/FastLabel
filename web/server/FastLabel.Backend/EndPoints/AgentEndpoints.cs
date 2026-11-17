@@ -18,7 +18,15 @@ public static class AgentEndpoints
             return (userId, isAdmin);
         }
 
-        group.MapGet("/", async (int page, int pageSize, AppDbContext db, ClaimsPrincipal claimsUser) =>
+        group.MapGet("/", async (
+            int page, 
+            int pageSize, 
+            string? sortBy, 
+            bool? sortAscending, 
+            string? filterByUser,
+            string? filterByType,
+            AppDbContext db, 
+            ClaimsPrincipal claimsUser) =>
         {
             var (userId, isAdmin) = GetUserInfo(claimsUser);
             if (userId == 0) return Results.Unauthorized();
@@ -38,7 +46,7 @@ public static class AgentEndpoints
                     .ThenInclude(at => at.Name)
                         .ThenInclude(n => n.Translations)
                             .ThenInclude(tr => tr.Language)
-                .Include(a => a.User) // <--- Ajouté pour récupérer le nom de l'utilisateur
+                .Include(a => a.User)
                 .AsQueryable();
 
             if (!isAdmin)
@@ -46,12 +54,39 @@ public static class AgentEndpoints
                 query = query.Where(a => a.UserId == userId);
             }
 
-            // 1. Calcul du nombre total d'éléments avant pagination
+            // 1. Application des filtres textuels reçus du front
+            if (!string.IsNullOrWhiteSpace(filterByUser))
+            {
+                query = query.Where(a => a.User != null && a.User.Name.Contains(filterByUser));
+            }
+
+            if (!string.IsNullOrWhiteSpace(filterByType))
+            {
+                // Filtrage sur le nom traduit ou la valeur par défaut du type d'agent
+                query = query.Where(a => a.AgentType != null && a.AgentType.Name != null &&
+                    (a.AgentType.Name.Translations
+                        .Where(tr => tr.Language.Code == lang)
+                        .Select(tr => tr.TranslatedValue)
+                        .FirstOrDefault() ?? a.AgentType.Name.DefaultTranslation)
+                    .Contains(filterByType));
+            }
+
+            // 2. Calcul du nombre total d'éléments après filtrage et avant pagination
             var totalCount = await query.CountAsync();
 
-            // 2. Application de la pagination (Skip & Take)
+            // 3. Application du tri dynamique (basé sur les en-têtes cliqués)
+            bool ascending = sortAscending ?? true;
+            query = sortBy?.ToLower() switch
+            {
+                "username" => ascending ? query.OrderBy(a => a.User != null ? a.User.Name : string.Empty) : query.OrderByDescending(a => a.User != null ? a.User.Name : string.Empty),
+                "agenttypename" => ascending ? query.OrderBy(a => a.AgentType.Name.DefaultTranslation) : query.OrderByDescending(a => a.AgentType.Name.DefaultTranslation),
+                "createdat" => ascending ? query.OrderBy(a => a.CreatedAt) : query.OrderByDescending(a => a.CreatedAt),
+                "lastseenat" => ascending ? query.OrderBy(a => a.LastSeenAt) : query.OrderByDescending(a => a.LastSeenAt),
+                _ => query.OrderBy(a => a.Id) // Tri par défaut
+            };
+
+            // 4. Application de la pagination (Skip & Take)
             var items = await query
-                .OrderBy(a => a.Id)
                 .Skip((page - 1) * pageSize)
                 .Take(pageSize)
                 .Select(a => new AgentDto
@@ -65,14 +100,14 @@ public static class AgentEndpoints
                             .FirstOrDefault()
                            ?? a.AgentType.Name.DefaultTranslation)
                         : string.Empty,
-                    UserName = a.User != null ? a.User.Name : string.Empty, // <--- Assignation du UserName
-                    ApiKey = a.ApiKey ?? string.Empty,
+                    UserName = a.User != null ? a.User.Name : string.Empty,
+                    ApiKey = a.ApiKey, 
                     CreatedAt = a.CreatedAt,
                     LastSeenAt = a.LastSeenAt
                 })
                 .ToListAsync();
 
-            // 3. Encapsulation dans le PagedResultDto
+            // 5. Encapsulation dans le PagedResultDto
             var result = new PagedResultDto<AgentDto>
             {
                 Items = items,
@@ -95,11 +130,14 @@ public static class AgentEndpoints
                 return Results.BadRequest(new { message = "agents.error.invalid_type" });
             }
 
+            // Génération sécurisée côté serveur d'une clé d'API unique
+            var secureApiKey = $"fl_{Guid.NewGuid():N}{Guid.NewGuid():N}";
+
             var agent = new Agent
             {
                 AgentTypeId = dto.AgentTypeId,
                 UserId = userId,
-                ApiKey = string.IsNullOrWhiteSpace(dto.ApiKey) ? Guid.NewGuid().ToString("N") : dto.ApiKey,
+                ApiKey = secureApiKey, // Stockée en base
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -108,7 +146,7 @@ public static class AgentEndpoints
 
             dto.Id = agent.Id;
             dto.CreatedAt = agent.CreatedAt;
-            dto.ApiKey = agent.ApiKey;
+            dto.ApiKey = secureApiKey; 
 
             return Results.Created($"/api/agents/{agent.Id}", dto);
         });
@@ -132,8 +170,10 @@ public static class AgentEndpoints
                 return Results.BadRequest(new { message = "agents.error.invalid_type" });
             }
 
+            // On met à jour uniquement les champs autorisés (ex: le type d'agent)
             agent.AgentTypeId = updatedDto.AgentTypeId;
             
+            // On s'assure de renvoyer la clé existante (masquée ou non modifiée) dans le DTO de retour
             updatedDto.ApiKey = agent.ApiKey;
 
             await db.SaveChangesAsync();

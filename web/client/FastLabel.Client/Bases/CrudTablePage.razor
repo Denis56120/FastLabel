@@ -7,12 +7,19 @@
 
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3 class="mb-0">@Title</h3>
+        <div>
+            <h3 class="mb-0">@Title</h3>
+            @if (!string.IsNullOrEmpty(Description))
+            {
+                <small class="text-muted">@Description</small>
+            }
+        </div>
         
         <div class="d-flex align-items-center gap-2">
             @if (CustomToolbarActions != null && _selectedIds.Count == 1)
             {
-                var selectedItem = _items.FirstOrDefault(i => EqualityComparer<TKey>.Default.Equals(IdSelector(i), _selectedIds.First()));
+                var selectedItem = _items.FirstOrDefault(i => EqualityComparer<TKey>.Default.Equals(IdSelector(i),
+            _selectedIds.First()));
                 if (selectedItem != null)
                 {
                     @CustomToolbarActions(selectedItem)
@@ -24,22 +31,20 @@
                 <div class="btn-group" role="group">
                     @if (!DisableAdd)
                     {
-                        <button class="btn btn-primary" @onclick="OpenAddModal">
+                        <button class="btn btn-primary btn-sm" @onclick="OpenAddModal">
                             <i class="bi bi-plus-lg"></i> @Translation.GetString("common.add")
                         </button>
                     }
                     @if (!DisableEdit)
                     {
-                        <button class="btn btn-outline-secondary" 
-                                disabled="@(_selectedIds.Count != 1)" 
+                        <button class="btn btn-outline-secondary btn-sm" disabled="@(_selectedIds.Count != 1)"
                                 @onclick="OpenEditModal">
                             <i class="bi bi-pencil"></i> @Translation.GetString("common.edit")
                         </button>
                     }
                     @if (!DisableDelete)
                     {
-                        <button class="btn btn-outline-danger" 
-                                disabled="@(_selectedIds.Count == 0)" 
+                        <button class="btn btn-outline-danger btn-sm" disabled="@(_selectedIds.Count == 0)"
                                 @onclick="DeleteSelectedAsync">
                             <i class="bi bi-trash"></i> @Translation.GetString("common.delete") (@_selectedIds.Count)
                         </button>
@@ -49,7 +54,7 @@
         </div>
     </div>
 
-    <!-- Zone de filtres personnalisés injectée par la page parente -->
+    <!-- Zone de filtres globaux personnalisés injectée par la page parente -->
     @if (ToolbarFilters != null)
     {
         <div class="mb-3">
@@ -57,105 +62,49 @@
         </div>
     }
 
-    @if (_isLoading)
-    {
-        <div class="d-flex justify-content-center my-5">
-            <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">@Translation.GetString("common.loading")</span>
-            </div>
-        </div>
-    }
-    else if (_items == null || !_items.Any())
-    {
-        @if (!string.IsNullOrEmpty(Description))
-        {
-            <p class="text-muted">@Description</p>
-        }
-        <div class="alert alert-secondary" role="alert">
-            @EmptyMessage
-        </div>
-    }
-    else
-    {
-        @if (!string.IsNullOrEmpty(Description))
-        {
-            <p class="text-muted">@Description</p>
-        }
-        <div class="table-responsive">
-            <table class="table table-striped table-hover align-middle">
-                <thead>
-                    <tr>
-                        @if (!IsReadOnly && (!DisableEdit || !DisableDelete))
-                        {
-                            <th style="width: 40px;">
-                                <input type="checkbox" class="form-check-input" 
-                                       checked="@IsAllSelected" 
-                                       @onchange="ToggleSelectAll" />
-                            </th>
-                        }
-                        @TableHeader
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var item in _items)
-                    {
-                        var id = IdSelector(item);
-                        <tr class="@(_selectedIds.Contains(id) ? "table-active" : "")">
-                            @if (!IsReadOnly && (!DisableEdit || !DisableDelete))
-                            {
-                                <td>
-                                    <input type="checkbox" class="form-check-input" 
-                                           checked="@_selectedIds.Contains(id)" 
-                                           @onchange="(e) => ToggleSelection(id, e.Value)" />
-                                </td>
-                            }
-                            @RowTemplate(item)
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+    <!-- Encapsulation dans le ServerTable unifié -->
+    <ServerTable @ref="_table" TItem="TItem" Title="" Description="" EmptyMessage="@EmptyMessage"
+                 ApiEndpoint="@ApiEndpoint" EnableFiltering="@EnableFiltering" @bind-Items="_items">
 
-        <!-- Barre de pagination -->
-        @if (_totalPages > 1)
-        {
-            <nav class="d-flex justify-content-between align-items-center mt-3" aria-label="Pagination">
-                <span class="text-muted small">
-                    @Translation.GetString("common.page") @_currentPage / @_totalPages
-                </span>
-                <ul class="pagination pagination-sm mb-0">
-                    <li class="page-item @(_currentPage == 1 ? "disabled" : "")">
-                        <button class="page-link" @onclick="() => ChangePageAsync(_currentPage - 1)">
-                            <i class="bi bi-chevron-left"></i>
-                        </button>
-                    </li>
-                    
-                    @for (int i = 1; i <= _totalPages; i++)
-                    {
-                        var pageNumber = i;
-                        <li class="page-item @(pageNumber == _currentPage ? "active" : "")">
-                            <button class="page-link" @onclick="() => ChangePageAsync(pageNumber)">@pageNumber</button>
-                        </li>
-                    }
+        <TableHeader>
+            @if (!IsReadOnly && (!DisableEdit || !DisableDelete))
+            {
+                <th style="width: 40px;">
+                    <input type="checkbox" class="form-check-input" checked="@IsAllSelected" @onchange="ToggleSelectAll" />
+                </th>
+            }
+            @TableHeader
+        </TableHeader>
 
-                    <li class="page-item @(_currentPage == _totalPages ? "disabled" : "")">
-                        <button class="page-link" @onclick="() => ChangePageAsync(_currentPage + 1)">
-                            <i class="bi bi-chevron-right"></i>
-                        </button>
-                    </li>
-                </ul>
-            </nav>
-        }
-    }
+        <TableFilters>
+            @if (!IsReadOnly && (!DisableEdit || !DisableDelete))
+            {
+                <th></th>
+            }
+            @TableFilters
+        </TableFilters>
+
+        <RowTemplate Context="item">
+            @{
+                var id = IdSelector(item);
+            }
+            @if (!IsReadOnly && (!DisableEdit || !DisableDelete))
+            {
+                <td>
+                    <input type="checkbox" class="form-check-input" checked="@_selectedIds.Contains(id)"
+                           @onchange="(e) => ToggleSelection(id, e.Value)" />
+                </td>
+            }
+            @RowTemplate(item)
+        </RowTemplate>
+
+    </ServerTable>
 </div>
 
 @if (!IsReadOnly)
 {
-    <BaseModal IsOpen="@_isModalOpen" 
-               Title="@(_isEditMode ? EditModalTitle : AddModalTitle)" 
-               EditContext="@_editContext"
-               OnSave="SaveItemAsync" 
-               OnClose="CloseModal">
+    <BaseModal IsOpen="@_isModalOpen" Title="@(_isEditMode ? EditModalTitle : AddModalTitle)" EditContext="@_editContext"
+               OnSave="SaveItemAsync" OnClose="CloseModal">
         @if (_editContext != null && FormFields != null)
         {
             <EditForm EditContext="@_editContext">
@@ -176,119 +125,40 @@
     [Parameter] public string EmptyMessage { get; set; } = string.Empty;
     [Parameter] public string AddModalTitle { get; set; } = string.Empty;
     [Parameter] public string EditModalTitle { get; set; } = string.Empty;
+    
     [Parameter, EditorRequired] public RenderFragment TableHeader { get; set; } = default!;
+    [Parameter] public RenderFragment? TableFilters { get; set; }
     [Parameter, EditorRequired] public RenderFragment<TItem> RowTemplate { get; set; } = default!;
     [Parameter] public RenderFragment<TItem>? FormFields { get; set; }
     [Parameter] public RenderFragment<TItem>? CustomToolbarActions { get; set; }
     [Parameter] public RenderFragment? ToolbarFilters { get; set; }
 
-    // Nouveaux paramètres optionnels pour les filtres et le tri
-    [Parameter] public Dictionary<string, string>? AdditionalQueryParameters { get; set; }
-    [Parameter] public string? SortBy { get; set; }
-    [Parameter] public bool SortAscending { get; set; } = true;
-
+    [Parameter] public bool EnableFiltering { get; set; } = true;
     [Parameter] public bool IsReadOnly { get; set; } = false;
     [Parameter] public bool DisableAdd { get; set; } = false;
     [Parameter] public bool DisableEdit { get; set; } = false;
     [Parameter] public bool DisableDelete { get; set; } = false;
 
-    [Parameter] public int PageSize { get; set; } = 10;
-    
+    private ServerTable<TItem>? _table;
     private List<TItem> _items = new();
     private HashSet<TKey> _selectedIds = new();
-    private bool _isLoading = true;
     private bool _isModalOpen = false;
     private bool _isEditMode = false;
     private TItem _currentItem = new();
     private EditContext? _editContext;
 
-    private int _currentPage = 1;
-    private int _totalPages = 1;
-
     private bool IsAllSelected => _items.Any() && _selectedIds.Count == _items.Count;
 
-    protected override async Task OnInitializedAsync() => await LoadDataAsync();
-
     /// <summary>
-    /// Permet de recharger les données en changeant de page ou en appliquant des filtres depuis l'extérieur
+    /// Permet de forcer un rafraîchissement des données depuis la table serveur.
     /// </summary>
-    public async Task LoadDataAsync()
+    public async Task RefreshAsync()
     {
-        _isLoading = true;
         _selectedIds.Clear();
-        try
+        if (_table != null)
         {
-            // Construction dynamique de l'URL avec pagination, tri et filtres additionnels
-            var queryParams = new List<string>
-            {
-                $"page={_currentPage}",
-                $"pageSize={PageSize}"
-            };
-
-            if (!string.IsNullOrEmpty(SortBy))
-            {
-                queryParams.Add($"sortBy={Uri.EscapeDataString(SortBy)}");
-                queryParams.Add($"ascending={SortAscending.ToString().ToLower()}");
-            }
-
-            if (AdditionalQueryParameters != null)
-            {
-                foreach (var param in AdditionalQueryParameters)
-                {
-                    if (!string.IsNullOrEmpty(param.Value))
-                    {
-                        queryParams.Add($"{Uri.EscapeDataString(param.Key)}={Uri.EscapeDataString(param.Value)}");
-                    }
-                }
-            }
-
-            string separator = ApiEndpoint.Contains("?") ? "&" : "?";
-            var url = $"{ApiEndpoint}{separator}{string.Join("&", queryParams)}";
-
-            var pagedResult = await ApiClient.GetFromJsonAsync<PagedResultDto<TItem>>(url);
-            
-            if (pagedResult != null)
-            {
-                _items = pagedResult.Items ?? new();
-                _totalPages = pagedResult.TotalPages > 0 ? pagedResult.TotalPages : 1;
-            }
-            else
-            {
-                _items = new();
-                _totalPages = 1;
-            }
+            await _table.LoadDataAsync();
         }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Erreur lors du chargement des données pour l'endpoint {Endpoint}", ApiEndpoint);
-            _items = new();
-            ToastService.ShowError(Translation.GetString("app.error.unknown"));
-        }
-        finally
-        {
-            _isLoading = false;
-            StateHasChanged();
-        }
-    }
-
-    /// <summary>
-    /// Méthode publique à appeler depuis la page parente lorsque l'utilisateur modifie un filtre de recherche
-    /// </summary>
-    public async Task ApplyFiltersAsync(Dictionary<string, string> filters, string? newSortBy = null, bool? sortAscending = null)
-    {
-        AdditionalQueryParameters = filters;
-        if (newSortBy != null) SortBy = newSortBy;
-        if (sortAscending.HasValue) SortAscending = sortAscending.Value;
-        
-        _currentPage = 1; // On revient à la première page lors d'un filtre
-        await LoadDataAsync();
-    }
-
-    private async Task ChangePageAsync(int newPage)
-    {
-        if (newPage < 1 || newPage > _totalPages || newPage == _currentPage) return;
-        _currentPage = newPage;
-        await LoadDataAsync();
     }
 
     private void ToggleSelection(TKey id, object? checkedValue)
@@ -312,7 +182,7 @@
         _currentItem = CreateNewItem != null ? CreateNewItem() : new TItem();
         _editContext = new EditContext(_currentItem);
         _isModalOpen = true;
-        StateHasChanged(); 
+        StateHasChanged();
     }
 
     private void OpenEditModal()
@@ -324,8 +194,8 @@
         if (itemToEdit != null)
         {
             _isEditMode = true;
-            _currentItem = CloneItem != null 
-                ? CloneItem(itemToEdit) 
+            _currentItem = CloneItem != null
+                ? CloneItem(itemToEdit)
                 : System.Text.Json.JsonSerializer.Deserialize<TItem>(System.Text.Json.JsonSerializer.Serialize(itemToEdit))!;
             
             _editContext = new EditContext(_currentItem);
@@ -355,9 +225,9 @@
 
         if (isSuccess)
         {
-            _isModalOpen = false; // Corrigé ici (suppression du / ou du = en trop)
+            _isModalOpen = false;
             ToastService.ShowSuccess(Translation.GetString("app.success.saved"));
-            await LoadDataAsync();
+            await RefreshAsync();
         }
         else
         {
@@ -385,16 +255,22 @@
         if (isSuccess)
         {
             ToastService.ShowSuccess(Translation.GetString("app.success.deleted"));
-            if (_items.Count == _selectedIds.Count && _currentPage > 1)
-            {
-                _currentPage--;
-            }
-            await LoadDataAsync();
+            await RefreshAsync();
         }
         else
         {
             var keyToTranslate = errorKey ?? "app.error.unknown";
             ToastService.ShowError(Translation.GetString(keyToTranslate));
         }
+    }
+
+    public async Task ApplySortAsync(string columnName)
+    {
+        if (_table != null) await _table.ApplySortAsync(columnName);
+    }
+
+    public async Task ApplyFilterAsync(string columnName, string value)
+    {
+        if (_table != null) await _table.ApplyFilterAsync(columnName, value);
     }
 }

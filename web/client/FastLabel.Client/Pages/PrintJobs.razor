@@ -16,14 +16,45 @@
     <TableHeader>
         @if (_isAdmin)
         {
-            <th>@Translation.GetString("printjobs.user")</th>
+            <th role="button" @onclick='() => SortAsync("UserName")'>
+                @Translation.GetString("printjobs.user") <i class="bi bi-arrow-down-up small text-muted"></i>
+            </th>
         }
-        <th>@Translation.GetString("printjobs.printer")</th>
-        <th>@Translation.GetString("printjobs.template")</th>
-        <th>@Translation.GetString("printjobs.quantity")</th>
+        <th role="button" @onclick='() => SortAsync("PrinterName")'>
+            @Translation.GetString("printjobs.printer") <i class="bi bi-arrow-down-up small text-muted"></i>
+        </th>
+        <th role="button" @onclick='() => SortAsync("TemplateName")'>
+            @Translation.GetString("printjobs.template") <i class="bi bi-arrow-down-up small text-muted"></i>
+        </th>
+        <th role="button" @onclick='() => SortAsync("Quantity")'>
+            @Translation.GetString("printjobs.quantity") <i class="bi bi-arrow-down-up small text-muted"></i>
+        </th>
         <th>@Translation.GetString("printjobs.status")</th>
-        <th>@Translation.GetString("printjobs.date")</th>
+        <th role="button" @onclick='() => SortAsync("CreatedAt")'>
+            @Translation.GetString("printjobs.date") <i class="bi bi-arrow-down-up small text-muted"></i>
+        </th>
     </TableHeader>
+
+    <TableFilters>
+        @if (_isAdmin)
+        {
+            <th>
+                <input type="text" class="form-control form-control-sm" placeholder="Filtrer..." 
+                       @oninput='e => FilterAsync("filterByUser", e.Value?.ToString())' />
+            </th>
+        }
+        <th>
+            <input type="text" class="form-control form-control-sm" placeholder="Filtrer..." 
+                   @oninput='e => FilterAsync("filterByPrinter", e.Value?.ToString())' />
+        </th>
+        <th>
+            <input type="text" class="form-control form-control-sm" placeholder="Filtrer..." 
+                   @oninput='e => FilterAsync("filterByTemplate", e.Value?.ToString())' />
+        </th>
+        <th></th>
+        <th></th>
+        <th></th>
+    </TableFilters>
 
     <RowTemplate Context="item">
         @if (_isAdmin)
@@ -57,5 +88,21 @@
         var authState = await AuthStateTask;
         var user = authState.User;
         _isAdmin = user.IsInRole("Admin");
+    }
+
+    private async Task SortAsync(string columnName)
+    {
+        if (_crudTable != null)
+        {
+            await _crudTable.ApplySortAsync(columnName);
+        }
+    }
+
+    private async Task FilterAsync(string columnName, string? value)
+    {
+        if (_crudTable != null)
+        {
+            await _crudTable.ApplyFilterAsync(columnName, value ?? string.Empty);
+        }
     }
 }
