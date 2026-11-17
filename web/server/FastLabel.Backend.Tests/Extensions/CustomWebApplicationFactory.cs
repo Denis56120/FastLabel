@@ -20,6 +20,12 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
             configuration = config.Build();
         });
 
+        builder.ConfigureLogging(logging =>
+        {
+            // Ignore les logs de connexion transitoires [20004] d'EF Core qui polluent la sortie de test
+            logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Connection", LogLevel.Critical);
+        });
+
         builder.ConfigureTestServices(services =>
         {
             // 2. Récupération sécurisée de la chaîne de connexion via la configuration
@@ -30,13 +36,17 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
             services.RemoveAll<AppDbContext>();
 
             services.AddDbContext<AppDbContext>(options =>
-                options.UseNpgsql(connectionString, o => o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
+                options.UseNpgsql(connectionString, npgsqlOptions =>
+                {
+                    // Fractionnement des requêtes
+                    npgsqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+                })
+                .ConfigureWarnings(warnings => warnings
+                    .Throw(CoreEventId.RowLimitingOperationWithoutOrderByWarning)
+                    .Throw(CoreEventId.FirstWithoutOrderByAndFilterWarning)
+                    .Throw(RelationalEventId.MultipleCollectionIncludeWarning)
+                )
             );
-
-            services.AddLogging(logging =>
-            {
-                logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Connection", LogLevel.Warning);
-            });
 
             services.RemoveAll<IEmailService>();
             services.AddSingleton(EmailServiceMock.Object);
@@ -51,14 +61,11 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
         using var scope = Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        // 1. Nettoie et applique les migrations
         await db.Database.EnsureDeletedAsync();
         await db.Database.MigrateAsync();
 
-        // 2. Initialise les données de référence (BasicStatuses, Languages, etc.)
-        var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
         var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
-
+        var configuration = Services.GetRequiredService<IConfiguration>();
         var initializer = new DbInitializer(db, configuration, passwordHasher);
         await initializer.InitializeAsync();
     }

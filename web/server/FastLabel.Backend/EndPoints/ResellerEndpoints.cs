@@ -26,6 +26,7 @@ public static class ResellerEndpoints
             int totalCount = await query.CountAsync();
 
             var items = await query
+                .OrderBy(u => u.Id)
                 .Skip((currentPage - 1) * size)
                 .Take(size)
                 .Select(u => new UserDto

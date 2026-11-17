@@ -1,6 +1,7 @@
 namespace FastLabel.Backend.Tests.Tests;
 
-public class StripeEndpointsTests(CustomWebApplicationFactory factory) : IClassFixture<CustomWebApplicationFactory>
+[Collection("FastLabel Test Collection")]
+public class StripeEndpointsTests(CustomWebApplicationFactory factory)
 {
     private readonly CustomWebApplicationFactory _factory = factory;
 

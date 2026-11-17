@@ -1,6 +1,7 @@
 namespace FastLabel.Backend.Tests.Tests;
 
-public class ResellerEndpointsTests(CustomWebApplicationFactory factory) : IClassFixture<CustomWebApplicationFactory>
+[Collection("FastLabel Test Collection")]
+public class ResellerEndpointsTests(CustomWebApplicationFactory factory)
 {
     private readonly CustomWebApplicationFactory _factory = factory;
 
@@ -220,7 +221,7 @@ public class ResellerEndpointsTests(CustomWebApplicationFactory factory) : IClas
         using (var scope = _factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            var reseller = await db.Users.FirstAsync(u => u.Email == resellerEmail);
+            var reseller = await db.Users.OrderBy(u => u.Id).FirstAsync(u => u.Email == resellerEmail);
             var inactiveStatus = await db.BasicStatuses.OrderBy(s => s.Id).FirstAsync();
 
             var clientUser = new User

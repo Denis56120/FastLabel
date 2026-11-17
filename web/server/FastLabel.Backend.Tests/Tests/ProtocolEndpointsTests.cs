@@ -1,6 +1,7 @@
 namespace FastLabel.Backend.Tests.Tests;
 
-public class ProtocolEndpointsTests(CustomWebApplicationFactory factory) : IClassFixture<CustomWebApplicationFactory>
+[Collection("FastLabel Test Collection")]
+public class ProtocolEndpointsTests(CustomWebApplicationFactory factory)
 {
     private readonly CustomWebApplicationFactory _factory = factory;
     private readonly HttpClient _client = factory.CreateClient(new WebApplicationFactoryClientOptions

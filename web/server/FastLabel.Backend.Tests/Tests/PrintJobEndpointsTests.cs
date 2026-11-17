@@ -1,6 +1,7 @@
 namespace FastLabel.Backend.Tests.Tests;
 
-public class PrintJobEndpointsTests(CustomWebApplicationFactory factory) : IClassFixture<CustomWebApplicationFactory>
+[Collection("FastLabel Test Collection")]
+public class PrintJobEndpointsTests(CustomWebApplicationFactory factory)
 {
     private readonly CustomWebApplicationFactory _factory = factory;
     private readonly HttpClient _client = factory.CreateClient(new WebApplicationFactoryClientOptions
@@ -87,7 +88,7 @@ public class PrintJobEndpointsTests(CustomWebApplicationFactory factory) : IClas
         db.Printers.Add(printer);
 
         // Récupère ou crée un Template valide conforme au modèle Template.cs
-        var template = await db.Templates.FirstOrDefaultAsync();
+        var template = await db.Templates.OrderBy(t => t.Id).FirstOrDefaultAsync();
         if (template == null)
         {
             template = new Template
