@@ -30,8 +30,12 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
             services.RemoveAll<AppDbContext>();
 
             services.AddDbContext<AppDbContext>(options =>
+                options.UseNpgsql(connectionString, o => o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery))
+            );
+
+            services.AddLogging(logging =>
             {
-                options.UseNpgsql(connectionString);
+                logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Connection", LogLevel.Warning);
             });
 
             services.RemoveAll<IEmailService>();
