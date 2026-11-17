@@ -9,34 +9,12 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
     {
         builder.UseEnvironment("Testing");
 
-        // 1. Charge ton fichier .env et construit la configuration
         IConfiguration? configuration = null;
 
         builder.ConfigureAppConfiguration((context, config) =>
         {
-            // Charge le .env s'il existe à la racine
-            var envPath = Path.Combine(Directory.GetCurrentDirectory(), ".env");
-            if (File.Exists(envPath))
-            {
-                Env.Load(envPath);
-            }
-            else
-            {
-                // Recherche alternative si on est dans bin/Debug/net10.0
-                var parentDir = Directory.GetParent(Directory.GetCurrentDirectory());
-                while (parentDir != null)
-                {
-                    var candidate = Path.Combine(parentDir.FullName, ".env");
-                    if (File.Exists(candidate))
-                    {
-                        Env.Load(candidate);
-                        break;
-                    }
-                    parentDir = parentDir.Parent;
-                }
-            }
+            ServiceExtensions.AddEnvironmentConfiguration();
 
-            // Permet aussi de lire les variables d'environnement système/chargées par DotNetEnv
             config.AddEnvironmentVariables();
 
             configuration = config.Build();
