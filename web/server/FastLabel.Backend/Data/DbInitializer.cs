@@ -82,6 +82,11 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             await _context.SaveChangesAsync();
         }
 
+        // Trouve la langue anglaise
+        var englishLanguage = await _context.Languages
+            .FirstOrDefaultAsync(l => l.Code == "en") ?? throw new InvalidOperationException("La langue anglaise ne peut pas être trouvée");
+        int englishLanguageId = englishLanguage.Id;    
+
         // 3. Protocoles d'impression (Protocol)
         if (!await _context.Protocols.AnyAsync())
         {
@@ -131,6 +136,17 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             );
             await _context.SaveChangesAsync();
         }
+
+        // Trouve le statut actif
+        var statusTextId = await _context.Texts
+        .Where(t => t.Tag == "status.active")
+        .Select(t => (int?)t.Id)
+        .FirstOrDefaultAsync() ?? throw new InvalidOperationException("Le texte avec le tag 'status.active' est introuvable dans la base. Le DbInitializer a-t-il bien été exécuté avant ?");
+
+        var activeStatus = await _context.BasicStatuses
+        .FirstOrDefaultAsync(s => s.NameTextId == statusTextId) ?? throw new InvalidOperationException("Le BasicStatus correspondant au tag 'status.active' est introuvable.");
+        
+        int activeStatusId = activeStatus.Id;
 
         // 7. Statuts des tâches d'impression (PrintJobStatus)
         if (!await _context.PrintJobStatuses.AnyAsync())
@@ -182,27 +198,24 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             var descPro = await CreateTextWithTranslationsAsync("plan.pro.description", proDescEn, new() { { "fr", proDescFr }, { "en", proDescEn } });
             var descEnt = await CreateTextWithTranslationsAsync("plan.enterprise.description", entDescEn, new() { { "fr", entDescFr }, { "en", entDescEn } });
 
-            var activeStatus = await _context.BasicStatuses.OrderBy(s => s.Id).FirstOrDefaultAsync();
-            int statusId = activeStatus?.Id ?? 1;
-
             _context.Plans.AddRange(
                 new Plan
                 {
                     NameTextId = planFreeText.Id,
                     DescriptionJsonTextId = descFree.Id,
-                    BasicStatusId = statusId
+                    BasicStatusId = activeStatusId
                 },
                 new Plan
                 {
                     NameTextId = planProText.Id,
                     DescriptionJsonTextId = descPro.Id,
-                    BasicStatusId = statusId
+                    BasicStatusId = activeStatusId
                 },
                 new Plan
                 {
                     NameTextId = planEnterpriseText.Id,
                     DescriptionJsonTextId = descEnt.Id,
-                    BasicStatusId = statusId
+                    BasicStatusId = activeStatusId
                 }
             );
             await _context.SaveChangesAsync();
@@ -211,158 +224,21 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         // 10. Compte Administrateur par défaut
         if (!await _context.Users.AnyAsync())
         {
-            var activeStatus = await _context.BasicStatuses
-                .OrderBy(s => s.Id)
-                .FirstOrDefaultAsync();
-            int statusId = activeStatus?.Id ?? 1;
-
-            // Récupérer l'ID de la langue française par défaut (ou fallback sur le premier ID disponible)
-            var frenchLanguage = await _context.Languages
-                .FirstOrDefaultAsync(l => l.Code == "fr");
-            int frenchLanguageId = frenchLanguage?.Id ?? await _context.Languages.Select(l => l.Id).FirstOrDefaultAsync();
-
             _passwordHasher ??= new PasswordHasher<User>();
 
             var adminUser = new User
             {
                 Name = _configuration["ADMIN_USER_NAME"] ?? string.Empty,
                 Email = _configuration["ADMIN_USER_EMAIL"] ?? string.Empty,
-                BasicStatusId = statusId,
-                LanguageId = frenchLanguageId,
+                BasicStatusId = activeStatusId,
+                LanguageId = englishLanguageId,
                 CreatedAt = DateTime.UtcNow,
                 IsAdmin = true,
                 IsReseller = false
             };
             adminUser.PasswordHash = _passwordHasher.HashPassword(adminUser, _configuration["ADMIN_USER_PASSWORD"] ?? string.Empty);
 
-            var regularUser = new User
-            {
-                Name = _configuration["TEST_USER_NAME"] ?? string.Empty,
-                Email = _configuration["TEST_USER_EMAIL"] ?? string.Empty,
-                BasicStatusId = statusId,
-                LanguageId = frenchLanguageId,
-                CreatedAt = DateTime.UtcNow,
-                IsAdmin = false,
-                IsReseller = false
-            };
-            regularUser.PasswordHash = _passwordHasher.HashPassword(regularUser, _configuration["TEST_USER_PASSWORD"] ?? string.Empty);
-
-            var resellerUser = new User
-            {
-                Name = _configuration["TEST_RESELLER_NAME"] ?? string.Empty,
-                Email = _configuration["TEST_RESELLER_EMAIL"] ?? string.Empty,
-                BasicStatusId = statusId,
-                LanguageId = frenchLanguageId,
-                CreatedAt = DateTime.UtcNow,
-                IsAdmin = false,
-                IsReseller = true
-            };
-            resellerUser.PasswordHash = _passwordHasher.HashPassword(resellerUser, _configuration["TEST_RESELLER_PASSWORD"] ?? string.Empty);
-
-            _context.Users.AddRange(adminUser, regularUser, resellerUser);
-            await _context.SaveChangesAsync();
-        }
-
-        // 11. Agent Windows par défaut pour chaque utilisateur
-        if (!await _context.Agents.AnyAsync())
-        {
-            var textId = await _context.Texts
-            .Where(t => t.Tag == "agenttype.windows")
-            .Select(t => (int?)t.Id)
-            .FirstOrDefaultAsync();
-
-            var windowsAgentType = await _context.AgentTypes
-                .FirstOrDefaultAsync(at => at.NameTextId == textId);
-
-            int agentTypeId = windowsAgentType?.Id ?? 1;
-
-            var users = await _context.Users.ToListAsync();
-            foreach (var user in users)
-            {
-                _context.Agents.Add(new Agent
-                {
-                    UserId = user.Id,
-                    AgentTypeId = agentTypeId,
-                    ApiKey = Guid.NewGuid().ToString("N"),
-                    CreatedAt = DateTime.UtcNow
-                });
-            }
-            await _context.SaveChangesAsync();
-        }
-
-        // 12. Imprimante par défaut ("Test Printer") pour chaque utilisateur
-        if (!await _context.Printers.AnyAsync())
-        {
-            // A. Récupérer le protocole "Rasterized ZPL" via son tag
-            var protoTextId = await _context.Texts
-                .Where(t => t.Tag == "protocol.rasterized_zpl")
-                .Select(t => (int?)t.Id)
-                .FirstOrDefaultAsync();
-
-            var protocol = await _context.Protocols
-                .FirstOrDefaultAsync(p => p.NameTextId == protoTextId);
-            int protocolId = protocol?.Id ?? 1;
-
-            // B. Récupérer la résolution 300 DPI
-            var resolution = await _context.ResolutionDpis
-                .FirstOrDefaultAsync(r => r.Value == 300);
-            int resolutionId = resolution?.Id ?? 1;
-
-            // C. Récupérer le statut "Actif" via son tag "status.active"
-            var statusTextId = await _context.Texts
-                .Where(t => t.Tag == "status.active")
-                .Select(t => (int?)t.Id)
-                .FirstOrDefaultAsync();
-
-            var activeStatus = await _context.BasicStatuses
-                .FirstOrDefaultAsync(s => s.NameTextId == statusTextId);
-            int statusId = activeStatus?.Id ?? 1;
-
-            // D. Assurer l'association pour chaque utilisateur
-            var users = await _context.Users.ToListAsync();
-            foreach (var user in users)
-            {
-                _context.Printers.Add(new Printer
-                {
-                    UserId = user.Id,
-                    Name = "Test Printer",
-                    Location = "Room 1",
-                    IP = "192.168.1.25",
-                    Port = 9100,
-                    ProtocolId = protocolId,
-                    ResolutionDpiId = resolutionId,
-                    BasicStatusId = statusId,
-                    CreatedAt = DateTime.UtcNow
-                });
-            }
-            await _context.SaveChangesAsync();
-        }
-
-        // 13. Modèle d'étiquette par défaut ("Label Test") pour chaque utilisateur
-        if (!await _context.Templates.AnyAsync())
-        {
-            var statusTextId = await _context.Texts
-                .Where(t => t.Tag == "status.active")
-                .Select(t => (int?)t.Id)
-                .FirstOrDefaultAsync();
-
-            var activeStatus = await _context.BasicStatuses
-                .FirstOrDefaultAsync(s => s.NameTextId == statusTextId);
-            int statusId = activeStatus?.Id ?? 1;
-
-            var users = await _context.Users.ToListAsync();
-            foreach (var user in users)
-            {
-                _context.Templates.Add(new Template
-                {
-                    UserId = user.Id,
-                    Name = "Label Test",
-                    BasicStatusId = statusId,
-                    JsonData = "{}",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                });
-            }
+            _context.Users.AddRange(adminUser);
             await _context.SaveChangesAsync();
         }
     }

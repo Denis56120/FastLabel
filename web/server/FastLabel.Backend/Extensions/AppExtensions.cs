@@ -17,6 +17,12 @@ public static class AppExtensions
 
                 var initializer = new DbInitializer(dbContext, configuration, passwordHasher);
                 await initializer.InitializeAsync();
+
+                if (app.Environment.IsDevelopment())
+                {
+                    var dataseeder = new DevelopmentDataSeeder(dbContext, passwordHasher);
+                    await dataseeder.SeedAsync();                
+                }
             }
             catch (Exception ex)
             {

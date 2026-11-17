@@ -4,7 +4,7 @@ namespace FastLabel.Backend.Services
     {
         // Cache statique pour éviter de recharger les fichiers .ttf en mémoire à chaque rendu
         private static readonly Dictionary<string, SKTypeface?> _typefaces = new(StringComparer.OrdinalIgnoreCase);
-        private static readonly object _lock = new();
+        private static readonly Lock _lock = new();
 
         private static SKTypeface GetTypeface(string fontFamily, bool isBold, bool isItalic, float fontSize)
         {
