@@ -2,6 +2,8 @@
 > Finir le render + Faire l'API Print
 > Gérer le paiement et les souscriptions + Suppression subscriptiontype ?
 > Faire le style de FastLabel (Dépendance boostrap à voir) + Mettre en forme les mails de communication utilisateur
+> Fiabiliser : Dans CustomAuthenticationStateProvider.cs, la méthode GetAuthenticationStateAsync effectue un appel HTTP (api/users/me) à chaque vérification d'état. En Blazor WebAssembly, cela peut générer une sur-sollicitation du serveur et ralentir l'expérience utilisateur si l'état est rafraîchi trop souvent.
+> Ajouter des logs partout ou il y a des catch{} avec ILogger et ToastService
 
 - Agent -
 > Ajouter proxy côté agent
