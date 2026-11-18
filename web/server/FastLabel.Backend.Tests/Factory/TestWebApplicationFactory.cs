@@ -1,4 +1,4 @@
-namespace FastLabel.Backend.Tests.Extensions;
+namespace FastLabel.Backend.Tests.Factory;
 
 public class TestWebApplicationFactory : WebApplicationFactory<Program>
 {

@@ -1,4 +1,4 @@
-namespace FastLabel.Backend.Tests.Extensions;
+namespace FastLabel.Backend.Tests.Factory;
 
 [CollectionDefinition("FastLabel Test Collection")]
 public class DatabaseCollection : ICollectionFixture<TestWebApplicationFactory>

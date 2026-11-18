@@ -2,7 +2,7 @@ global using DotNetEnv;
 global using FastLabel.Backend.Data;
 global using FastLabel.Backend.Models;
 global using FastLabel.Backend.Services;
-global using FastLabel.Backend.Tests.Extensions;
+global using FastLabel.Backend.Tests.Factory;
 global using FastLabel.Shared.DTOs;
 global using System.Text.Json;
 global using Microsoft.AspNetCore.Hosting;
