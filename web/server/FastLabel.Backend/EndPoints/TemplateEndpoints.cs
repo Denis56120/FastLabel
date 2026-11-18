@@ -6,18 +6,6 @@ public static class TemplateEndpoints
     {
         var group = routes.MapGroup("/api/templates").RequireAuthorization();
 
-        static (int userId, bool isAdmin) GetUserInfo(ClaimsPrincipal user)
-        {
-            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value 
-                           ?? user.FindFirst("nameid")?.Value 
-                           ?? user.FindFirst("unique_name")?.Value;
-
-            int.TryParse(userIdClaim, out var userId);
-            bool isAdmin = user.IsInRole("Admin");
-
-            return (userId, isAdmin);
-        }
-
         group.MapGet("/", async (
             int page, 
             int pageSize, 
@@ -29,7 +17,7 @@ public static class TemplateEndpoints
             AppDbContext db, 
             ClaimsPrincipal claimsUser) =>
         {
-            var (userId, isAdmin) = GetUserInfo(claimsUser);
+            var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
             // Valeurs par défaut de sécurité
@@ -77,26 +65,15 @@ public static class TemplateEndpoints
                     .Contains(filterByStatus));
             }
 
-            // 2. Calcul du nombre total d'éléments après filtrage et avant pagination
-            var totalCount = await query.CountAsync();
+            var naturalComparer = new NaturalStringComparer();
 
-            // 3. Application du tri dynamique (basé sur les en-têtes cliqués)
-            bool ascending = sortAscending ?? true;
-            query = sortBy?.ToLower() switch
-            {
-                "username" => ascending ? query.OrderBy(t => t.User != null ? t.User.Name : string.Empty) : query.OrderByDescending(t => t.User != null ? t.User.Name : string.Empty),
-                "name" => ascending ? query.OrderBy(t => t.Name) : query.OrderByDescending(t => t.Name),
-                "basicstatusname" => ascending ? query.OrderBy(t => t.BasicStatus.Name.DefaultTranslation) : query.OrderByDescending(t => t.BasicStatus.Name.DefaultTranslation),
-                "createdat" => ascending ? query.OrderBy(t => t.CreatedAt) : query.OrderByDescending(t => t.CreatedAt),
-                "updatedat" => ascending ? query.OrderBy(t => t.UpdatedAt) : query.OrderByDescending(t => t.UpdatedAt),
-                _ => query.OrderByDescending(t => t.UpdatedAt) // Tri par défaut
-            };
-
-            // 4. Application de la pagination (Skip & Take)
-            var templates = await query
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(t => new TemplateDto
+            // 2. Utilisation de l'extension ToPagedResultAsync pour la pagination et le tri naturel
+            var result = await query.ToPagedResultAsync(
+                page,
+                pageSize,
+                sortBy,
+                sortAscending,
+                t => new TemplateDto
                 {
                     Id = t.Id,
                     Name = t.Name ?? string.Empty,
@@ -111,24 +88,24 @@ public static class TemplateEndpoints
                     JsonData = t.JsonData ?? string.Empty,
                     CreatedAt = t.CreatedAt,
                     UpdatedAt = t.UpdatedAt
-                })
-                .ToListAsync();
-
-            // 5. Encapsulation dans le PagedResultDto
-            var result = new PagedResultDto<TemplateDto>
-            {
-                Items = templates,
-                TotalCount = totalCount,
-                Page = page,
-                PageSize = pageSize
-            };
+                },
+                (items, sortField, ascending) => sortField?.ToLower() switch
+                {
+                    "username" => ascending ? items.OrderBy(x => x.UserName, naturalComparer) : items.OrderByDescending(x => x.UserName, naturalComparer),
+                    "name" => ascending ? items.OrderBy(x => x.Name, naturalComparer) : items.OrderByDescending(x => x.Name, naturalComparer),
+                    "basicstatusname" => ascending ? items.OrderBy(x => x.BasicStatusName, naturalComparer) : items.OrderByDescending(x => x.BasicStatusName, naturalComparer),
+                    "createdat" => ascending ? items.OrderBy(x => x.CreatedAt) : items.OrderByDescending(x => x.CreatedAt),
+                    "updatedat" => ascending ? items.OrderBy(x => x.UpdatedAt) : items.OrderByDescending(x => x.UpdatedAt),
+                    _ => items.OrderByDescending(x => x.UpdatedAt) // Tri par défaut
+                }
+            );
 
             return Results.Ok(result);
         });
 
         group.MapGet("/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
-            var (userId, isAdmin) = GetUserInfo(claimsUser);
+            var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
             // Récupère la langue de l'utilisateur connecté pour traduire les statuts
@@ -182,7 +159,7 @@ public static class TemplateEndpoints
                 return errorResult!;
             }
 
-            var (userId, _) = GetUserInfo(claimsUser);
+            var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
             var now = DateTime.UtcNow;
@@ -212,7 +189,7 @@ public static class TemplateEndpoints
                 return errorResult!;
             }
 
-            var (userId, isAdmin) = GetUserInfo(claimsUser);
+            var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
             var template = await db.Templates.FindAsync(id);
@@ -236,7 +213,7 @@ public static class TemplateEndpoints
 
         group.MapDelete("/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
-            var (userId, isAdmin) = GetUserInfo(claimsUser);
+            var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
             var template = await db.Templates.FindAsync(id);

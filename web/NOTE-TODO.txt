@@ -1,7 +1,6 @@
 - Web -
 > Finir le render + Faire l'API Print
 > Gérer le paiement et les souscriptions + Suppression subscriptiontype ?
-> Corriger le tri (alpha, numérique)
 > Dépendance boostrap à voir - Faire le style de FastLabel
 
 - Agent -

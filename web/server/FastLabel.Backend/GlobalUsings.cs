@@ -1,5 +1,6 @@
 global using DotNetEnv;
 global using FastLabel.Backend.Data;
+global using FastLabel.Backend.Helpers;
 global using FastLabel.Backend.Models;
 global using FastLabel.Backend.Services;
 global using FastLabel.Backend.Endpoints;
@@ -22,6 +23,7 @@ global using System.Collections.Concurrent;
 global using System.ComponentModel.DataAnnotations;
 global using System.ComponentModel.DataAnnotations.Schema;
 global using System.Net.WebSockets;
+global using System.Text.RegularExpressions;
 global using System.Security.Claims;
 global using System.Text;
 global using System.Text.Json;

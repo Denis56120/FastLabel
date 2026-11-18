@@ -6,11 +6,8 @@ public static class UserEndpoints
     {
         routes.MapGet("/api/users/me", async (AppDbContext db, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
         {
-            var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier)
-                                    ?? claimsUser.FindFirstValue("nameid");
-
-            if (!int.TryParse(userIdString, out var userId))
-                return Results.Unauthorized();
+            var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
+            if (userId == 0) return Results.Unauthorized();
 
             var userInfo = await db.Users
                 .Where(u => u.Id == userId)
@@ -63,11 +60,8 @@ public static class UserEndpoints
                 return errorResult!;
             }
 
-            var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier)
-                                    ?? claimsUser.FindFirstValue("nameid");
-
-            if (!int.TryParse(userIdString, out var userId))
-                return Results.Unauthorized();
+            var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
+            if (userId == 0) return Results.Unauthorized();
 
             var user = await db.Users.FindAsync(userId);
             if (user == null)
@@ -157,7 +151,7 @@ public static class UserEndpoints
         }).RequireAuthorization();
 
         // ==========================================
-        // ENDPOINTS ADMIN (AVEC FILTRES & TRI)
+        // ENDPOINTS ADMIN (AVEC FILTRES & TRI NATUREL)
         // ==========================================
         var adminGroup = routes.MapGroup("/api/users").RequireAuthorization("AdminOnly");
 
@@ -172,11 +166,8 @@ public static class UserEndpoints
             AppDbContext db, 
             ClaimsPrincipal claimsUser) =>
         {
-            var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier) 
-                                    ?? claimsUser.FindFirstValue("nameid");
-
-            if (!int.TryParse(userIdString, out var adminId))
-                return Results.Unauthorized();
+            var (adminId, isAdmin, isReseller) = claimsUser.GetUserInfo();
+            if (adminId == 0) return Results.Unauthorized();
 
             if (page < 1) page = 1;
             if (pageSize < 1) pageSize = 10;
@@ -211,25 +202,15 @@ public static class UserEndpoints
                 query = query.Where(u => u.Reseller != null && u.Reseller.Name != null && u.Reseller.Name.Contains(filterByReseller));
             }
 
-            var totalCount = await query.CountAsync();
+            var naturalComparer = new NaturalStringComparer();
 
-            // 2. Application du tri dynamique
-            bool ascending = sortAscending ?? true;
-            query = sortBy?.ToLower() switch
-            {
-                "name" => ascending ? query.OrderBy(u => u.Name) : query.OrderByDescending(u => u.Name),
-                "email" => ascending ? query.OrderBy(u => u.Email) : query.OrderByDescending(u => u.Email),
-                "role" => ascending ? query.OrderBy(u => u.IsAdmin).ThenBy(u => u.IsReseller) : query.OrderByDescending(u => u.IsAdmin).ThenByDescending(u => u.IsReseller),
-                "resellername" => ascending ? query.OrderBy(u => u.Reseller != null ? u.Reseller.Name : string.Empty) : query.OrderByDescending(u => u.Reseller != null ? u.Reseller.Name : string.Empty),
-                "basicstatusname" => ascending ? query.OrderBy(u => u.BasicStatus.Name.DefaultTranslation) : query.OrderByDescending(u => u.BasicStatus.Name.DefaultTranslation),
-                "createdat" => ascending ? query.OrderBy(u => u.CreatedAt) : query.OrderByDescending(u => u.CreatedAt),
-                _ => query.OrderBy(u => u.Id) // Tri par défaut
-            };
-
-            var users = await query
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(u => new UserDto
+            // 2. Utilisation de l'extension ToPagedResultAsync pour la pagination et le tri naturel
+            var result = await query.ToPagedResultAsync(
+                page,
+                pageSize,
+                sortBy,
+                sortAscending,
+                u => new UserDto
                 {
                     Id = u.Id,
                     Name = u.Name,
@@ -247,27 +228,26 @@ public static class UserEndpoints
                         ?? u.BasicStatus.Name.DefaultTranslation)
                         : string.Empty,
                     CreatedAt = u.CreatedAt
-                })
-                .ToListAsync();
-
-            var result = new PagedResultDto<UserDto>
-            {
-                Items = users,
-                TotalCount = totalCount,
-                Page = page,
-                PageSize = pageSize
-            };
+                },
+                (items, sortField, ascending) => sortField?.ToLower() switch
+                {
+                    "name" => ascending ? items.OrderBy(x => x.Name, naturalComparer) : items.OrderByDescending(x => x.Name, naturalComparer),
+                    "email" => ascending ? items.OrderBy(x => x.Email, naturalComparer) : items.OrderByDescending(x => x.Email, naturalComparer),
+                    "role" => ascending ? items.OrderBy(x => x.IsAdmin).ThenBy(x => x.IsReseller) : items.OrderByDescending(x => x.IsAdmin).ThenByDescending(x => x.IsReseller),
+                    "resellername" => ascending ? items.OrderBy(x => x.ResellerName, naturalComparer) : items.OrderByDescending(x => x.ResellerName, naturalComparer),
+                    "basicstatusname" => ascending ? items.OrderBy(x => x.BasicStatusName, naturalComparer) : items.OrderByDescending(x => x.BasicStatusName, naturalComparer),
+                    "createdat" => ascending ? items.OrderBy(x => x.CreatedAt) : items.OrderByDescending(x => x.CreatedAt),
+                    _ => items.OrderBy(x => x.Id) // Tri par défaut
+                }
+            );
 
             return Results.Ok(result);
         });
 
         adminGroup.MapGet("/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
-            var adminIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier) 
-                                ?? claimsUser.FindFirstValue("nameid");
-
-            if (!int.TryParse(adminIdString, out var adminId))
-                return Results.Unauthorized();
+            var (adminId, isAdmin, isReseller) = claimsUser.GetUserInfo();
+            if (adminId == 0) return Results.Unauthorized();
 
             var adminLang = await db.Users
                 .Where(u => u.Id == adminId)

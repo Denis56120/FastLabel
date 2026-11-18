@@ -6,18 +6,6 @@ public static class AgentEndpoints
     {
         var group = routes.MapGroup("/api/agents").RequireAuthorization();
 
-        static (int userId, bool isAdmin) GetUserInfo(ClaimsPrincipal user)
-        {
-            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value 
-                           ?? user.FindFirst("nameid")?.Value 
-                           ?? user.FindFirst("unique_name")?.Value;
-
-            int.TryParse(userIdClaim, out var userId);
-            bool isAdmin = user.IsInRole("Admin");
-
-            return (userId, isAdmin);
-        }
-
         group.MapGet("/", async (
             int page, 
             int pageSize, 
@@ -28,14 +16,12 @@ public static class AgentEndpoints
             AppDbContext db, 
             ClaimsPrincipal claimsUser) =>
         {
-            var (userId, isAdmin) = GetUserInfo(claimsUser);
+            var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
-            // Valeurs par défaut de sécurité si non fournies par le client
             if (page < 1) page = 1;
             if (pageSize < 1) pageSize = 10;
 
-            // Récupère la langue de l'utilisateur connecté en base
             var lang = await db.Users
                 .Where(u => u.Id == userId)
                 .Select(u => u.Language != null ? u.Language.Code : HttpContextExtensions.DefaultLanguage)
@@ -54,7 +40,7 @@ public static class AgentEndpoints
                 query = query.Where(a => a.UserId == userId);
             }
 
-            // 1. Application des filtres textuels reçus du front
+            // Filtres textuels
             if (!string.IsNullOrWhiteSpace(filterByUser))
             {
                 query = query.Where(a => a.User != null && a.User.Name.Contains(filterByUser));
@@ -62,7 +48,6 @@ public static class AgentEndpoints
 
             if (!string.IsNullOrWhiteSpace(filterByType))
             {
-                // Filtrage sur le nom traduit ou la valeur par défaut du type d'agent
                 query = query.Where(a => a.AgentType != null && a.AgentType.Name != null &&
                     (a.AgentType.Name.Translations
                         .Where(tr => tr.Language.Code == lang)
@@ -71,25 +56,14 @@ public static class AgentEndpoints
                     .Contains(filterByType));
             }
 
-            // 2. Calcul du nombre total d'éléments après filtrage et avant pagination
-            var totalCount = await query.CountAsync();
+            var naturalComparer = new NaturalStringComparer();
 
-            // 3. Application du tri dynamique (basé sur les en-têtes cliqués)
-            bool ascending = sortAscending ?? true;
-            query = sortBy?.ToLower() switch
-            {
-                "username" => ascending ? query.OrderBy(a => a.User != null ? a.User.Name : string.Empty) : query.OrderByDescending(a => a.User != null ? a.User.Name : string.Empty),
-                "agenttypename" => ascending ? query.OrderBy(a => a.AgentType.Name.DefaultTranslation) : query.OrderByDescending(a => a.AgentType.Name.DefaultTranslation),
-                "createdat" => ascending ? query.OrderBy(a => a.CreatedAt) : query.OrderByDescending(a => a.CreatedAt),
-                "lastseenat" => ascending ? query.OrderBy(a => a.LastSeenAt) : query.OrderByDescending(a => a.LastSeenAt),
-                _ => query.OrderBy(a => a.Id) // Tri par défaut
-            };
-
-            // 4. Application de la pagination (Skip & Take)
-            var items = await query
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(a => new AgentDto
+            var result = await query.ToPagedResultAsync(
+                page,
+                pageSize,
+                sortBy,
+                sortAscending,
+                a => new AgentDto
                 {
                     Id = a.Id,
                     AgentTypeId = a.AgentTypeId,
@@ -104,24 +78,23 @@ public static class AgentEndpoints
                     ApiKey = a.ApiKey, 
                     CreatedAt = a.CreatedAt,
                     LastSeenAt = a.LastSeenAt
-                })
-                .ToListAsync();
-
-            // 5. Encapsulation dans le PagedResultDto
-            var result = new PagedResultDto<AgentDto>
-            {
-                Items = items,
-                TotalCount = totalCount,
-                Page = page,
-                PageSize = pageSize
-            };
+                },
+                (items, sortField, ascending) => sortField?.ToLower() switch
+                {
+                    "username" => ascending ? items.OrderBy(x => x.UserName, naturalComparer) : items.OrderByDescending(x => x.UserName, naturalComparer),
+                    "agenttypename" => ascending ? items.OrderBy(x => x.AgentTypeName, naturalComparer) : items.OrderByDescending(x => x.AgentTypeName, naturalComparer),
+                    "createdat" => ascending ? items.OrderBy(x => x.CreatedAt) : items.OrderByDescending(x => x.CreatedAt),
+                    "lastseenat" => ascending ? items.OrderBy(x => x.LastSeenAt) : items.OrderByDescending(x => x.LastSeenAt),
+                    _ => items.OrderBy(x => x.Id)
+                }
+            );
 
             return Results.Ok(result);
         });
 
         group.MapPost("/", async (AgentDto dto, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
-            var (userId, _) = GetUserInfo(claimsUser);
+            var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
             var typeExists = await db.AgentTypes.AnyAsync(at => at.Id == dto.AgentTypeId);
@@ -153,7 +126,7 @@ public static class AgentEndpoints
 
         group.MapPut("/{id:int}", async (int id, AgentDto updatedDto, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
-            var (userId, isAdmin) = GetUserInfo(claimsUser);
+            var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
             var agent = await db.Agents.FindAsync(id);
@@ -182,7 +155,7 @@ public static class AgentEndpoints
 
         group.MapDelete("/{id:int}", async (int id, AppDbContext db, PrintBrokerService broker, ClaimsPrincipal claimsUser) =>
         {
-            var (userId, isAdmin) = GetUserInfo(claimsUser);
+            var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
             var agent = await db.Agents.FindAsync(id);

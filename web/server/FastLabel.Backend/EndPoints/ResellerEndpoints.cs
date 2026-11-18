@@ -6,7 +6,7 @@ public static class ResellerEndpoints
     {
         var resellerGroup = routes.MapGroup("/api/reseller").RequireAuthorization();
 
-        // 1. Lister les clients finaux gérés par le revendeur connecté (avec support du tri et des filtres)
+        // 1. Lister les clients finaux gérés par le revendeur connecté (avec support du tri naturel et des filtres)
         resellerGroup.MapGet("/clients", async (
             int? page, 
             int? pageSize, 
@@ -17,20 +17,17 @@ public static class ResellerEndpoints
             AppDbContext db, 
             ClaimsPrincipal claimsUser) =>
         {
-            var resellerIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier)
-                                ?? claimsUser.FindFirstValue("nameid");
+            var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
+            if (userId == 0) return Results.Unauthorized();
 
-            if (!int.TryParse(resellerIdString, out var resellerId))
-                return Results.Unauthorized();
-
-            var reseller = await db.Users.FindAsync(resellerId);
+            var reseller = await db.Users.FindAsync(userId);
             if (reseller == null || !reseller.IsReseller)
                 return Results.Forbid();
 
             int currentPage = page ?? 1;
             int size = pageSize ?? 10;
 
-            var query = db.Users.Where(u => u.ResellerId == resellerId).AsQueryable();
+            var query = db.Users.Where(u => u.ResellerId == userId).AsQueryable();
 
             // Application des filtres textuels
             if (!string.IsNullOrWhiteSpace(filterByName))
@@ -43,22 +40,15 @@ public static class ResellerEndpoints
                 query = query.Where(u => u.Email != null && u.Email.Contains(filterByEmail));
             }
 
-            int totalCount = await query.CountAsync();
+            var naturalComparer = new NaturalStringComparer();
 
-            // Application du tri dynamique
-            bool ascending = sortAscending ?? true;
-            query = sortBy?.ToLower() switch
-            {
-                "name" => ascending ? query.OrderBy(u => u.Name) : query.OrderByDescending(u => u.Name),
-                "email" => ascending ? query.OrderBy(u => u.Email) : query.OrderByDescending(u => u.Email),
-                "createdat" => ascending ? query.OrderBy(u => u.CreatedAt) : query.OrderByDescending(u => u.CreatedAt),
-                _ => query.OrderBy(u => u.Id) // Tri par défaut
-            };
-
-            var items = await query
-                .Skip((currentPage - 1) * size)
-                .Take(size)
-                .Select(u => new UserDto
+            // Utilisation de l'extension ToPagedResultAsync pour la pagination et le tri naturel
+            var result = await query.ToPagedResultAsync(
+                currentPage,
+                size,
+                sortBy,
+                sortAscending,
+                u => new UserDto
                 {
                     Id = u.Id,
                     Name = u.Name,
@@ -68,32 +58,28 @@ public static class ResellerEndpoints
                     ResellerId = u.ResellerId,
                     LanguageId = u.LanguageId,
                     CreatedAt = u.CreatedAt
-                })
-                .ToListAsync();
+                },
+                (items, sortField, ascending) => sortField?.ToLower() switch
+                {
+                    "name" => ascending ? items.OrderBy(x => x.Name, naturalComparer) : items.OrderByDescending(x => x.Name, naturalComparer),
+                    "email" => ascending ? items.OrderBy(x => x.Email, naturalComparer) : items.OrderByDescending(x => x.Email, naturalComparer),
+                    "createdat" => ascending ? items.OrderBy(x => x.CreatedAt) : items.OrderByDescending(x => x.CreatedAt),
+                    _ => items.OrderBy(x => x.Id)
+                }
+            );
 
-            var pagedResult = new PagedResultDto<UserDto>
-            {
-                Items = items,
-                TotalCount = totalCount,
-                Page = currentPage,
-                PageSize = size
-            };
-
-            return Results.Ok(pagedResult);
+            return Results.Ok(result);
         });
 
         // 2. Ajouter un client final (Incrémente Stripe + Crée le compte inactif + Envoie l'e-mail d'activation multilingue)
         resellerGroup.MapPost("/clients", async (UserDto clientDto, AppDbContext db, IEmailService emailService, IConfiguration configuration, IStripeService stripeService, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
         {
-            var resellerIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier)
-                                ?? claimsUser.FindFirstValue("nameid");
-
-            if (!int.TryParse(resellerIdString, out var resellerId))
-                return Results.Unauthorized();
+            var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
+            if (userId == 0) return Results.Unauthorized();
 
             var reseller = await db.Users
                 .Include(u => u.StripeRecord)
-                .FirstOrDefaultAsync(u => u.Id == resellerId);
+                .FirstOrDefaultAsync(u => u.Id == userId);
 
             if (reseller == null || !reseller.IsReseller)
                 return Results.Forbid();
@@ -138,7 +124,7 @@ public static class ResellerEndpoints
                 Email = clientDto.Email,
                 LanguageId = reseller.LanguageId,
                 BasicStatusId = inactiveStatus?.Id ?? 1,
-                ResellerId = resellerId,
+                ResellerId = userId,
                 IsReseller = false,
                 EmailVerificationToken = activationToken,
                 CreatedAt = DateTime.UtcNow
@@ -189,21 +175,18 @@ public static class ResellerEndpoints
         // 3. Supprimer un client final (Décrémente Stripe + Supprime le User)
         resellerGroup.MapDelete("/clients/{id:int}", async (int id, AppDbContext db, IStripeService stripeService, ClaimsPrincipal claimsUser) =>
         {
-            var resellerIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier)
-                                ?? claimsUser.FindFirstValue("nameid");
-
-            if (!int.TryParse(resellerIdString, out var resellerId))
-                return Results.Unauthorized();
+            var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
+            if (userId == 0) return Results.Unauthorized();
 
             var reseller = await db.Users
                 .Include(u => u.StripeRecord)
-                .FirstOrDefaultAsync(u => u.Id == resellerId);
+                .FirstOrDefaultAsync(u => u.Id == userId);
 
             if (reseller == null || !reseller.IsReseller)
                 return Results.Forbid();
 
             var clientToDelete = await db.Users
-                .FirstOrDefaultAsync(u => u.Id == id && u.ResellerId == resellerId);
+                .FirstOrDefaultAsync(u => u.Id == id && u.ResellerId == userId);
 
             if (clientToDelete == null)
                 return Results.NotFound(new ErrorResponseDto { Message = "user.error.not_found" });

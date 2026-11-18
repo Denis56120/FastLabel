@@ -6,18 +6,6 @@ public static class PrinterEndpoints
     {
         var group = routes.MapGroup("/api/printers").RequireAuthorization();
 
-        static (int userId, bool isAdmin) GetUserInfo(ClaimsPrincipal user)
-        {
-            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                           ?? user.FindFirst("nameid")?.Value
-                           ?? user.FindFirst("unique_name")?.Value;
-
-            int.TryParse(userIdClaim, out var userId);
-            bool isAdmin = user.IsInRole("Admin");
-
-            return (userId, isAdmin);
-        }
-
         group.MapGet("/", async (
             int page, 
             int pageSize, 
@@ -29,7 +17,7 @@ public static class PrinterEndpoints
             AppDbContext db, 
             ClaimsPrincipal claimsUser) =>
         {
-            var (userId, isAdmin) = GetUserInfo(claimsUser);
+            var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
             // Valeurs par défaut de sécurité si non fournies
@@ -76,28 +64,15 @@ public static class PrinterEndpoints
                 query = query.Where(p => p.Location != null && p.Location.Contains(filterByLocation));
             }
 
-            // 2. Calcul du nombre total d'éléments après filtrage et avant pagination
-            var totalCount = await query.CountAsync();
+            var naturalComparer = new NaturalStringComparer();
 
-            // 3. Application du tri dynamique (basé sur les en-têtes cliqués)
-            bool ascending = sortAscending ?? true;
-            query = sortBy?.ToLower() switch
-            {
-                "username" => ascending ? query.OrderBy(p => p.User != null ? p.User.Name : string.Empty) : query.OrderByDescending(p => p.User != null ? p.User.Name : string.Empty),
-                "name" => ascending ? query.OrderBy(p => p.Name) : query.OrderByDescending(p => p.Name),
-                "location" => ascending ? query.OrderBy(p => p.Location) : query.OrderByDescending(p => p.Location),
-                "protocolname" => ascending ? query.OrderBy(p => p.Protocol.Name.DefaultTranslation) : query.OrderByDescending(p => p.Protocol.Name.DefaultTranslation),
-                "resolutiondpivalue" => ascending ? query.OrderBy(p => p.ResolutionDpi.Value) : query.OrderByDescending(p => p.ResolutionDpi.Value),
-                "statusname" => ascending ? query.OrderBy(p => p.BasicStatus.Name.DefaultTranslation) : query.OrderByDescending(p => p.BasicStatus.Name.DefaultTranslation),
-                "createdat" => ascending ? query.OrderBy(p => p.CreatedAt) : query.OrderByDescending(p => p.CreatedAt),
-                _ => query.OrderBy(p => p.Id) // Tri par défaut
-            };
-
-            // 4. Application de la pagination (Skip & Take)
-            var printers = await query
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(p => new PrinterDto
+            // 2. Utilisation de l'extension ToPagedResultAsync pour la pagination et le tri naturel
+            var result = await query.ToPagedResultAsync(
+                page,
+                pageSize,
+                sortBy,
+                sortAscending,
+                p => new PrinterDto
                 {
                     Id = p.Id,
                     Name = p.Name ?? string.Empty,
@@ -124,24 +99,26 @@ public static class PrinterEndpoints
                         : string.Empty,
                     UserName = p.User != null ? p.User.Name : string.Empty,
                     CreatedAt = p.CreatedAt
-                })
-                .ToListAsync();
-
-            // 5. Encapsulation dans le PagedResultDto
-            var result = new PagedResultDto<PrinterDto>
-            {
-                Items = printers,
-                TotalCount = totalCount,
-                Page = page,
-                PageSize = pageSize
-            };
+                },
+                (items, sortField, ascending) => sortField?.ToLower() switch
+                {
+                    "username" => ascending ? items.OrderBy(x => x.UserName, naturalComparer) : items.OrderByDescending(x => x.UserName, naturalComparer),
+                    "name" => ascending ? items.OrderBy(x => x.Name, naturalComparer) : items.OrderByDescending(x => x.Name, naturalComparer),
+                    "location" => ascending ? items.OrderBy(x => x.Location, naturalComparer) : items.OrderByDescending(x => x.Location, naturalComparer),
+                    "protocolname" => ascending ? items.OrderBy(x => x.ProtocolName, naturalComparer) : items.OrderByDescending(x => x.ProtocolName, naturalComparer),
+                    "resolutiondpivalue" => ascending ? items.OrderBy(x => x.ResolutionDpiName) : items.OrderByDescending(x => x.ResolutionDpiName),
+                    "statusname" => ascending ? items.OrderBy(x => x.StatusName, naturalComparer) : items.OrderByDescending(x => x.StatusName, naturalComparer),
+                    "createdat" => ascending ? items.OrderBy(x => x.CreatedAt) : items.OrderByDescending(x => x.CreatedAt),
+                    _ => items.OrderBy(x => x.Id)
+                }
+            );
 
             return Results.Ok(result);
         });
 
         group.MapGet("/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
-            var (userId, isAdmin) = GetUserInfo(claimsUser);
+            var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
             // Récupère la langue de l'utilisateur connecté en base
@@ -212,7 +189,7 @@ public static class PrinterEndpoints
                 return errorResult!;
             }
 
-            var (userId, _) = GetUserInfo(claimsUser);
+            var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
             var protocolExists = await db.Protocols.AnyAsync(p => p.Id == dto.ProtocolId);
@@ -249,7 +226,7 @@ public static class PrinterEndpoints
                 return errorResult!;
             }
 
-            var (userId, isAdmin) = GetUserInfo(claimsUser);
+            var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
             var printer = await db.Printers.FindAsync(id);
@@ -279,7 +256,7 @@ public static class PrinterEndpoints
 
         group.MapDelete("/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
-            var (userId, isAdmin) = GetUserInfo(claimsUser);
+            var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
             var printer = await db.Printers.FindAsync(id);

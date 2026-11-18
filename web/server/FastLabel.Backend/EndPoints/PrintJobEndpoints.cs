@@ -6,18 +6,6 @@ public static class PrintJobEndpoints
     {
         var group = routes.MapGroup("/api/printjobs").RequireAuthorization();
 
-        static (int userId, bool isAdmin) GetUserInfo(ClaimsPrincipal user)
-        {
-            var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value 
-                           ?? user.FindFirst("nameid")?.Value 
-                           ?? user.FindFirst("unique_name")?.Value;
-
-            int.TryParse(userIdClaim, out var userId);
-            bool isAdmin = user.IsInRole("Admin");
-
-            return (userId, isAdmin);
-        }
-
         group.MapGet("/", async (
             int page, 
             int pageSize, 
@@ -29,13 +17,13 @@ public static class PrintJobEndpoints
             AppDbContext db, 
             ClaimsPrincipal claimsUser) =>
         {
+            var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
+            if (userId == 0 && !isAdmin) return Results.Unauthorized();
+
             // Valeurs par défaut de sécurité
             if (page < 1) page = 1;
             if (pageSize < 1) pageSize = 10;
             if (pageSize > 500) pageSize = 500; // Limite maximale de sécurité par page
-
-            var (userId, isAdmin) = GetUserInfo(claimsUser);
-            if (userId == 0 && !isAdmin) return Results.Unauthorized();
 
             var query = db.PrintJobs
                 .Include(j => j.Printer)
@@ -64,26 +52,15 @@ public static class PrintJobEndpoints
                 query = query.Where(j => j.LabelTemplate != null && j.LabelTemplate.Name.Contains(filterByTemplate));
             }
 
-            // 2. Calcul du nombre total d'éléments après filtrage et avant la pagination
-            var totalCount = await query.CountAsync();
+            var naturalComparer = new NaturalStringComparer();
 
-            // 3. Application du tri dynamique (basé sur les en-têtes cliqués)
-            bool ascending = sortAscending ?? true;
-            query = sortBy?.ToLower() switch
-            {
-                "username" => ascending ? query.OrderBy(j => j.Printer.User.Name) : query.OrderByDescending(j => j.Printer.User.Name),
-                "printername" => ascending ? query.OrderBy(j => j.Printer.Name) : query.OrderByDescending(j => j.Printer.Name),
-                "templatename" => ascending ? query.OrderBy(j => j.LabelTemplate.Name) : query.OrderByDescending(j => j.LabelTemplate.Name),
-                "quantity" => ascending ? query.OrderBy(j => j.Quantity) : query.OrderByDescending(j => j.Quantity),
-                "createdat" => ascending ? query.OrderBy(j => j.CreatedAt) : query.OrderByDescending(j => j.CreatedAt),
-                _ => query.OrderByDescending(j => j.CreatedAt) // Tri par défaut (du plus récent au plus ancien)
-            };
-
-            // 4. Application de la pagination (Skip & Take)
-            var jobs = await query
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .Select(j => new PrintJobsDto
+            // 2. Utilisation de l'extension ToPagedResultAsync pour la pagination et le tri naturel
+            var result = await query.ToPagedResultAsync(
+                page,
+                pageSize,
+                sortBy,
+                sortAscending,
+                j => new PrintJobsDto
                 {
                     Id = j.Id,
                     PrinterName = j.Printer != null ? j.Printer.Name : string.Empty,
@@ -95,24 +72,24 @@ public static class PrintJobEndpoints
                     UserName = j.Printer != null && j.Printer.User != null ? j.Printer.User.Name : string.Empty, 
                     CreatedAt = j.CreatedAt,
                     ProcessedAt = j.ProcessedAt
-                })
-                .ToListAsync();
-
-            // 5. Encapsulation dans le PagedResultDto
-            var result = new PagedResultDto<PrintJobsDto>
-            {
-                Items = jobs,
-                TotalCount = totalCount,
-                Page = page,
-                PageSize = pageSize
-            };
+                },
+                (items, sortField, ascending) => sortField?.ToLower() switch
+                {
+                    "username" => ascending ? items.OrderBy(x => x.UserName, naturalComparer) : items.OrderByDescending(x => x.UserName, naturalComparer),
+                    "printername" => ascending ? items.OrderBy(x => x.PrinterName, naturalComparer) : items.OrderByDescending(x => x.PrinterName, naturalComparer),
+                    "templatename" => ascending ? items.OrderBy(x => x.TemplateName, naturalComparer) : items.OrderByDescending(x => x.TemplateName, naturalComparer),
+                    "quantity" => ascending ? items.OrderBy(x => x.Quantity) : items.OrderByDescending(x => x.Quantity),
+                    "createdat" => ascending ? items.OrderBy(x => x.CreatedAt) : items.OrderByDescending(x => x.CreatedAt),
+                    _ => items.OrderByDescending(x => x.CreatedAt) // Tri par défaut (du plus récent au plus ancien)
+                }
+            );
 
             return Results.Ok(result);
         });
 
         group.MapGet("/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
-            var (userId, isAdmin) = GetUserInfo(claimsUser);
+            var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0 && !isAdmin) return Results.Unauthorized();
 
             var query = db.PrintJobs
