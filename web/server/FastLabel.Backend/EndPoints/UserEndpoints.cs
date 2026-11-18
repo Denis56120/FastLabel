@@ -108,23 +108,11 @@ public static class UserEndpoints
                 var serverUrl = ConfigurationHelpers.GetServerUrl(configuration);
                 var verificationLink = $"{serverUrl}/api/auth/verify-email?token={user.EmailVerificationToken}";
 
-                var emailTexts = await db.Texts
-                    .Where(t => t.Tag == "email.activation.subject" || t.Tag == "email.activation.body")
-                    .Select(t => new
-                    {
-                        t.Tag,
-                        Value = t.Translations
-                            .Where(tr => tr.Language.Code == language.Code)
-                            .Select(tr => tr.TranslatedValue)
-                            .FirstOrDefault() ?? t.DefaultTranslation
-                    })
-                    .ToListAsync();
+                var emailTexts = await DbHelpers.GetLocalizedTextsAsync(db, language.Code, "email.activation.subject", "email.activation.body");
 
-                var subject = emailTexts.FirstOrDefault(t => t.Tag == "email.activation.subject")?.Value
-                            ?? string.Empty;
+                var subject = emailTexts.GetValueOrDefault("email.activation.subject", string.Empty);
+                var bodyTemplate = emailTexts.GetValueOrDefault("email.activation.body", string.Empty);
 
-                var bodyTemplate = emailTexts.FirstOrDefault(t => t.Tag == "email.activation.body")?.Value
-                                    ?? string.Empty;
                 var message = string.Format(bodyTemplate, updatedDto.Name, verificationLink);
 
                 await emailService.SendEmailAsync(user.Email, subject, message);

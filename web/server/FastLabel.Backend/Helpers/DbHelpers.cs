@@ -56,7 +56,7 @@ public static class DbHelpers
     {
         return await db.Templates.FindAsync(id);
     }
-    
+
     public static async Task<Printer?> GetPrinterByIdAsync(AppDbContext db, int id)
     {
         return await db.Printers.FindAsync(id);
@@ -102,6 +102,52 @@ public static class DbHelpers
         return await db.Languages.FirstOrDefaultAsync(l => l.Code == code);
     }
 
+    public static async Task<int> GetAgentTypeIdByTagAsync(AppDbContext db, string tag)
+    {
+        var agentTypeId = await db.AgentTypes
+            .Join(db.Texts, bs => bs.NameTextId, t => t.Id, (bs, t) => new { bs, t.Tag })
+            .Where(x => x.Tag == tag)
+            .OrderBy(x => x.bs.Id)
+            .Select(x => (int?)x.bs.Id)
+            .FirstOrDefaultAsync();
+
+        if (agentTypeId.HasValue)
+        {
+            return agentTypeId.Value;
+        }
+
+        var fallbackStatus = await db.AgentTypes.OrderBy(s => s.Id).Skip(1).FirstOrDefaultAsync()
+                          ?? await db.AgentTypes.OrderBy(s => s.Id).FirstOrDefaultAsync();
+
+        return fallbackStatus?.Id ?? 1;
+    }
+
+    public static async Task<int> GetProtocolIdByTagAsync(AppDbContext db, string tag)
+    {
+        var protocolId = await db.Protocols
+            .Join(db.Texts, bs => bs.NameTextId, t => t.Id, (bs, t) => new { bs, t.Tag })
+            .Where(x => x.Tag == tag)
+            .OrderBy(x => x.bs.Id)
+            .Select(x => (int?)x.bs.Id)
+            .FirstOrDefaultAsync();
+
+        if (protocolId.HasValue)
+        {
+            return protocolId.Value;
+        }
+
+        var fallbackStatus = await db.Protocols.OrderBy(s => s.Id).Skip(1).FirstOrDefaultAsync()
+                          ?? await db.Protocols.OrderBy(s => s.Id).FirstOrDefaultAsync();
+
+        return fallbackStatus?.Id ?? 1;
+    }
+
+    public static async Task<int> GetResolutionDpiIdByValueAsync(AppDbContext db, int value)
+    {
+        var resolutiondpi = await db.ResolutionDpis.FirstOrDefaultAsync(l => l.Value == value);
+        return resolutiondpi?.Id ?? 1;
+    }
+
     public static async Task<User?> GetUserByEmailAsync(AppDbContext db, string email)
     {
         return await db.Users
@@ -134,7 +180,7 @@ public static class DbHelpers
 
         return await GetLanguageAsync(httpContext, db);
     }
-    
+
     public static async Task<(int Id, string Code)> GetUserLanguageByUserIdAsync(HttpContext httpContext, AppDbContext db, int id)
     {
         var langInfo = await db.Users
@@ -163,5 +209,106 @@ public static class DbHelpers
                           ?? await db.Languages.OrderBy(l => l.Id).FirstOrDefaultAsync();
 
         return (targetLanguage?.Id ?? 1, targetLanguage?.Code ?? HttpContextHelpers.DefaultLanguage);
+    }
+
+    public static async Task<Agent> CreateAgent(AppDbContext db, int userid, string agenttypetag)
+    {
+        int agentTypeId = await GetAgentTypeIdByTagAsync(db, agenttypetag);
+
+        return new Agent
+        {
+            UserId = userid,
+            AgentTypeId = agentTypeId,
+            ApiKey = $"fl_{Guid.NewGuid():N}{Guid.NewGuid():N}",
+            CreatedAt = DateTime.UtcNow
+        };
+    }
+
+    public static async Task<Printer> CreatePrinter(AppDbContext db, int userid, string name = "Test", string location = "", string ip = "192.168.1.1", int port = 9100, string templatetag = "protocol.rasterized_zpl", int resolutiondpivalue = 300)
+    {
+        int statusId = await GetStatusIdByTagAsync(db, "status.active");
+        int protocolId = await GetProtocolIdByTagAsync(db, templatetag);
+        int resolutionDpiId = await GetResolutionDpiIdByValueAsync(db, resolutiondpivalue);
+
+        return new Printer
+        {
+            UserId = userid,
+            Name = name,
+            Location = location,
+            IP = ip,
+            Port = port,
+            ProtocolId = protocolId,
+            ResolutionDpiId = resolutionDpiId,
+            BasicStatusId = statusId,
+            CreatedAt = DateTime.UtcNow
+        };
+    }
+
+    public static async Task<Template> CreateTemplate(AppDbContext db, int userid, string name = "Test")
+    {
+        int statusId = await GetStatusIdByTagAsync(db, "status.active");
+
+        return new Template
+        {
+            UserId = userid,
+            Name = name,
+            BasicStatusId = statusId,
+            JsonData = "{}",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+    }
+
+    public static async Task<Dictionary<string, string>> GetLocalizedTextsAsync(AppDbContext db, string languageCode, params string[] tags)
+    {
+        return await db.Texts
+            .Where(t => tags.Contains(t.Tag))
+            .Select(t => new
+            {
+                t.Tag,
+                Value = t.Translations
+                    .Where(tr => tr.Language.Code == languageCode)
+                    .Select(tr => tr.TranslatedValue)
+                    .FirstOrDefault() ?? t.DefaultTranslation
+            })
+            .ToDictionaryAsync(t => t.Tag, t => t.Value);
+    }
+
+    public static async Task CreateUserAndSendActivationEmailAsync(
+        AppDbContext db,
+        IEmailService emailService,
+        IConfiguration configuration,
+        User user,
+        string languageCode)
+    {
+        var activationTexts = await GetLocalizedTextsAsync(db, languageCode, "template.activation.name", "printer.activation.name", "email.activation.subject", "email.activation.body");
+
+        db.Users.Add(user);
+        await db.SaveChangesAsync();
+
+        var windowsAgent = await CreateAgent(db, user.Id, "agenttype.windows");
+        var linuxAgent = await CreateAgent(db, user.Id, "agenttype.linux");
+        db.Agents.AddRange(windowsAgent, linuxAgent);
+
+        var templateName = activationTexts.GetValueOrDefault("templates.activation.name", string.Empty);
+        var printerName = activationTexts.GetValueOrDefault("printers.activation.name", string.Empty);
+
+        var testprinter = await CreatePrinter(db, user.Id, printerName);
+        db.Printers.AddRange(testprinter);
+
+        var testlabel = await CreateTemplate(db, user.Id, templateName);
+        db.Templates.AddRange(testlabel);
+
+        await db.SaveChangesAsync();
+
+        var serverUrl = ConfigurationHelpers.GetServerUrl(configuration);
+        var verificationLink = $"{serverUrl}/api/auth/verify-email?token={user.EmailVerificationToken}";
+
+        var subject = activationTexts.GetValueOrDefault("email.activation.subject", string.Empty);
+        var bodyTemplate = activationTexts.GetValueOrDefault("email.activation.body", string.Empty);
+
+        var message = string.Format(bodyTemplate, user.Name, verificationLink);
+
+        await emailService.SendEmailAsync(user.Email, subject, message);
     }
 }

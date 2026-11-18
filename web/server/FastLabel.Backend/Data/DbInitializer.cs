@@ -318,6 +318,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         await CreateTextWithTranslationsAsync("agents.add_title", "Add Agent", new() { { "fr", "Ajouter un agent" }, { "en", "Add Agent" } });
         await CreateTextWithTranslationsAsync("agents.edit_title", "Edit Agent", new() { { "fr", "Modifier l'agent" }, { "en", "Edit Agent" } });
 
+        await CreateTextWithTranslationsAsync("printers.activation.name", "My first printer", new() { { "fr", "Ma première imprimante" }, { "en", "My first printer" } });
         await CreateTextWithTranslationsAsync("printers.user", "User", new() { { "fr", "Utilisateur" }, { "en", "User" } });
         await CreateTextWithTranslationsAsync("printers.select_protocol", "Select a protocol...", new() { { "fr", "Sélectionner un protocole..." }, { "en", "Select a protocol..." } });
         await CreateTextWithTranslationsAsync("printers.select_resolution", "Select a resolution...", new() { { "fr", "Sélectionner une résolution..." }, { "en", "Select a resolution..." } });
@@ -336,6 +337,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         await CreateTextWithTranslationsAsync("printers.port", "Port", new() { { "fr", "Port" }, { "en", "Port" } });
         await CreateTextWithTranslationsAsync("printers.status", "Status", new() { { "fr", "Statut" }, { "en", "Status" } });
 
+        await CreateTextWithTranslationsAsync("template.activation.name", "My first label", new() { { "fr", "Ma première étiquette" }, { "en", "My first label" } });
         await CreateTextWithTranslationsAsync("templates.user", "User", new() { { "fr", "Utilisateur" }, { "en", "User" } });
         await CreateTextWithTranslationsAsync("templates.render.title", "Label Renderer Editor", new() { { "fr", "Éditeur de rendu d'étiquette" }, { "en", "Label Renderer Editor" } });
         await CreateTextWithTranslationsAsync("templates.render.preview", "Preview", new() { { "fr", "Prévisualisation" }, { "en", "Preview" } });

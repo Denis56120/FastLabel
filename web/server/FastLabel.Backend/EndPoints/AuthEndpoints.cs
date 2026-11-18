@@ -74,23 +74,11 @@ public static class AuthEndpoints
 
             var (languageId, language) = await DbHelpers.GetLanguageAsync(httpContext, db);
 
-            var emailTexts = await db.Texts
-                .Where(t => t.Tag == "email.reset.subject" || t.Tag == "email.reset.body")
-                .Select(t => new
-                {
-                    t.Tag,
-                    Value = t.Translations
-                        .Where(tr => tr.Language.Code == language)
-                        .Select(tr => tr.TranslatedValue)
-                        .FirstOrDefault() ?? t.DefaultTranslation
-                })
-                .ToListAsync();
+            var emailTexts = await DbHelpers.GetLocalizedTextsAsync(db, language, "email.reset.subject", "email.reset.body");
+            
+            var subject = emailTexts.GetValueOrDefault("email.reset.subject", string.Empty);
+            var bodyTemplate = emailTexts.GetValueOrDefault("email.reset.body", string.Empty);
 
-            var subject = emailTexts.FirstOrDefault(t => t.Tag == "email.reset.subject")?.Value
-                        ?? "Reset your FastLabel password";
-
-            var bodyTemplate = emailTexts.FirstOrDefault(t => t.Tag == "email.reset.body")?.Value
-                                    ?? "Hello {0},\n\nPlease click the following link to reset your password:\n{1}";
             var message = string.Format(bodyTemplate, user.Name, resetLink);
 
             await emailService.SendEmailAsync(user.Email, subject, message);
@@ -144,35 +132,9 @@ public static class AuthEndpoints
                 LanguageId = languageId,
                 BasicStatusId = inactiveStatusId
             };
-
             user.PasswordHash = passwordHasher.HashPassword(user, dto.Password);
 
-            db.Users.Add(user);
-            await db.SaveChangesAsync();
-
-            var serverUrl = ConfigurationHelpers.GetServerUrl(configuration);
-            var verificationLink = $"{serverUrl}/api/auth/verify-email?token={user.EmailVerificationToken}";
-
-            var emailTexts = await db.Texts
-                .Where(t => t.Tag == "email.activation.subject" || t.Tag == "email.activation.body")
-                .Select(t => new
-                {
-                    t.Tag,
-                    Value = t.Translations
-                        .Where(tr => tr.Language.Code == language)
-                        .Select(tr => tr.TranslatedValue)
-                        .FirstOrDefault() ?? t.DefaultTranslation
-                })
-                .ToListAsync();
-
-            var subject = emailTexts.FirstOrDefault(t => t.Tag == "email.activation.subject")?.Value
-                        ?? string.Empty;
-
-            var bodyTemplate = emailTexts.FirstOrDefault(t => t.Tag == "email.activation.body")?.Value
-                                    ?? string.Empty;
-            var message = string.Format(bodyTemplate, user.Name, verificationLink);
-
-            await emailService.SendEmailAsync(user.Email, subject, message);
+            await DbHelpers.CreateUserAndSendActivationEmailAsync(db, emailService, configuration, user, language);
 
             return Results.Ok(new { message = "auth.success.registered_check_email" });
         });
