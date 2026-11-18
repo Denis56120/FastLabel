@@ -1,14 +1,10 @@
 namespace FastLabel.Backend.Tests.Tests;
 
 [Collection("FastLabel Test Collection")]
-public class TranslationEndpointsTests(CustomWebApplicationFactory factory)
+public class TranslationEndpointsTests(TestWebApplicationFactory factory)
 {
-    private readonly CustomWebApplicationFactory _factory = factory;
-    private readonly HttpClient _client = factory.CreateClient(new WebApplicationFactoryClientOptions
-    {
-        BaseAddress = new Uri("https://localhost"),
-        AllowAutoRedirect = false
-    });
+    private readonly TestWebApplicationFactory _factory = factory;
+    private readonly HttpClient _client = factory.CreateUnauthenticatedClient();
 
     // =========================================================================
     // TESTS POUR GET /api/translations/{language}

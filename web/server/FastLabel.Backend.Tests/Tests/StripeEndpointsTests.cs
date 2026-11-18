@@ -1,32 +1,10 @@
 namespace FastLabel.Backend.Tests.Tests;
 
 [Collection("FastLabel Test Collection")]
-public class StripeEndpointsTests(CustomWebApplicationFactory factory)
+public class StripeEndpointsTests(TestWebApplicationFactory factory)
 {
-    private readonly CustomWebApplicationFactory _factory = factory;
-
-    private HttpClient CreateClientWithMockedStripe()
-    {
-        return _factory.WithWebHostBuilder(builder =>
-        {
-            builder.ConfigureTestServices(services =>
-            {
-                // Remplace le service Stripe réel par une version de test factice
-                services.AddScoped<IStripeService, FakeStripeService>();
-            });
-            builder.ConfigureAppConfiguration((context, config) =>
-            {
-                config.AddInMemoryCollection(new Dictionary<string, string?>
-                {
-                    ["Stripe:ProMonthly"] = "price_fake_monthly_123"
-                });
-            });
-        }).CreateClient(new WebApplicationFactoryClientOptions
-        {
-            BaseAddress = new Uri("https://localhost"),
-            AllowAutoRedirect = false
-        });
-    }
+    private readonly TestWebApplicationFactory _factory = factory;
+    private readonly HttpClient _client = factory.CreateUnauthenticatedClient();
 
     private class FakeStripeService : IStripeService
     {
@@ -48,14 +26,13 @@ public class StripeEndpointsTests(CustomWebApplicationFactory factory)
     [Fact]
     public async Task CreateCheckoutSession_Fail_WithInvalidInterval_ReturnsBadRequest()
     {
-        var client = CreateClientWithMockedStripe();
         var dto = new StripeDto
         {
             Plan = "Pro",
             BillingInterval = "Daily" // Invalide
         };
 
-        var response = await client.PostAsJsonAsync("/api/stripe/create-checkout-session", dto);
+        var response = await _client.PostAsJsonAsync("/api/stripe/create-checkout-session", dto);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var error = await response.Content.ReadFromJsonAsync<ErrorResponseDto>();
@@ -65,14 +42,13 @@ public class StripeEndpointsTests(CustomWebApplicationFactory factory)
     [Fact]
     public async Task CreateCheckoutSession_Fail_WhenPlanNotFound_ReturnsBadRequest()
     {
-        var client = CreateClientWithMockedStripe();
         var dto = new StripeDto
         {
             Plan = "InexistantPlan",
             BillingInterval = "Monthly"
         };
 
-        var response = await client.PostAsJsonAsync("/api/stripe/create-checkout-session", dto);
+        var response = await _client.PostAsJsonAsync("/api/stripe/create-checkout-session", dto);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var error = await response.Content.ReadFromJsonAsync<ErrorResponseDto>();

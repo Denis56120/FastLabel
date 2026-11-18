@@ -1,6 +1,6 @@
 namespace FastLabel.Backend.Tests.Extensions;
 
-public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyncLifetime
+public class TestWebApplicationFactory : WebApplicationFactory<Program>
 {
     public Mock<IEmailService> EmailServiceMock { get; } = new();
     public Mock<IStripeService> StripeServiceMock { get; } = new();
@@ -13,22 +13,17 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
 
         builder.ConfigureAppConfiguration((context, config) =>
         {
-            ServiceExtensions.AddEnvironmentConfiguration();
-
-            config.AddEnvironmentVariables();
-
+            AddEnvironmentConfiguration(config);  
             configuration = config.Build();
         });
 
         builder.ConfigureLogging(logging =>
         {
-            // Ignore les logs de connexion transitoires [20004] d'EF Core qui polluent la sortie de test
             logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Connection", LogLevel.Critical);
         });
 
         builder.ConfigureTestServices(services =>
         {
-            // 2. Récupération sécurisée de la chaîne de connexion via la configuration
             var connectionString = configuration?.GetConnectionString("DefaultConnection")
                 ?? $"Host=localhost;Port=5432;Database={configuration?["DB_NAME"] ?? string.Empty};Username={configuration?["DB_USER"] ?? string.Empty};Password={configuration?["DB_PASSWORD"] ?? string.Empty}";
 
@@ -38,7 +33,6 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
             services.AddDbContext<AppDbContext>(options =>
                 options.UseNpgsql(connectionString, npgsqlOptions =>
                 {
-                    // Fractionnement des requêtes
                     npgsqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
                 })
                 .ConfigureWarnings(warnings => warnings
@@ -56,22 +50,32 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
         });
     }
 
-    public async Task InitializeAsync()
+    private static IConfigurationBuilder AddEnvironmentConfiguration(IConfigurationBuilder config)
     {
-        using var scope = Services.CreateScope();
-        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var fileName = ".env.test";
+        
+        var envPath = Path.Combine(Directory.GetCurrentDirectory(), fileName);
+        if (File.Exists(envPath))
+        {
+            Env.Load(envPath);
+        }
+        else
+        {
+            var parentDir = Directory.GetParent(Directory.GetCurrentDirectory());
+            while (parentDir != null)
+            {
+                var candidate = Path.Combine(parentDir.FullName, fileName);
+                if (File.Exists(candidate))
+                {
+                    Env.Load(candidate);
+                    break;
+                }
+                parentDir = parentDir.Parent;
+            }
+        }
 
-        await db.Database.EnsureDeletedAsync();
-        await db.Database.MigrateAsync();
+        EnvironmentVariablesExtensions.AddEnvironmentVariables(config);
 
-        var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
-        var configuration = Services.GetRequiredService<IConfiguration>();
-        var initializer = new DbInitializer(db, configuration, passwordHasher);
-        await initializer.InitializeAsync();
-    }
-
-    public new async Task DisposeAsync()
-    {
-        await base.DisposeAsync();
+        return config;
     }
 }

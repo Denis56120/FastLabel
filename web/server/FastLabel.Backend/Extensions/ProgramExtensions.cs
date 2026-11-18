@@ -1,8 +1,8 @@
 namespace FastLabel.Backend.Extensions;
 
-public static class ServiceExtensions
+public static class ProgramExtensions
 {
-    public static IServiceCollection AddEnvironmentConfiguration(this IServiceCollection services)
+    public static void AddEnvironmentConfiguration(WebApplicationBuilder builder)
     {
         var envPath = Path.Combine(Directory.GetCurrentDirectory(), ".env.dev");
 
@@ -11,11 +11,14 @@ public static class ServiceExtensions
             Env.Load(envPath);
         }
 
-        return services;
+        EnvironmentVariablesExtensions.AddEnvironmentVariables(builder.Configuration);
     }
-    
-    public static IServiceCollection AddAppServices(this IServiceCollection services, IConfiguration configuration)
+
+    public static void AddAppServices(WebApplicationBuilder builder)
     {
+        IServiceCollection services = builder.Services;
+        ConfigurationManager configuration = builder.Configuration;
+
         Stripe.StripeConfiguration.ApiKey = configuration["STRIPE_SECRET_KEY"];
 
         var clientUrl = configuration["Url:ClientUrl"] ?? "https://fastlabel.com";
@@ -72,6 +75,8 @@ public static class ServiceExtensions
 
         services.AddScoped<IStripeService, StripeService>();
 
+        services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+
         services.AddSingleton<PrintBrokerService>();
 
         services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
@@ -97,11 +102,97 @@ public static class ServiceExtensions
         services.AddAuthorizationBuilder()
             .AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
 
-        services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
-
         services.AddDbContext<AppDbContext>(options =>
-            options.UseNpgsql(connectionString));
+        {
+            options.UseNpgsql(connectionString, npgsqlOptions =>
+            {
+                npgsqlOptions.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery);
+            });
 
-        return services;
+            if (builder.Environment.IsDevelopment() || builder.Environment.IsEnvironment("Testing"))
+            {
+                options.ConfigureWarnings(warnings => warnings
+                    .Throw(Microsoft.EntityFrameworkCore.Diagnostics.CoreEventId.RowLimitingOperationWithoutOrderByWarning)
+                    .Throw(Microsoft.EntityFrameworkCore.Diagnostics.CoreEventId.FirstWithoutOrderByAndFilterWarning)
+                    .Throw(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.MultipleCollectionIncludeWarning)
+                );
+            }
+        });
+    }
+
+    private static async Task<WebApplication> UseDatabaseMigrationsAsync(this WebApplication app)
+    {
+        using var scope = app.Services.CreateScope();
+        var services = scope.ServiceProvider;
+
+        try
+        {
+            var dbContext = services.GetRequiredService<AppDbContext>();
+            var configuration = services.GetRequiredService<IConfiguration>();
+            var passwordHasher = services.GetRequiredService<IPasswordHasher<User>>();
+
+            if (app.Environment.IsEnvironment("Testing"))
+            {
+                await dbContext.Database.EnsureDeletedAsync();
+            }
+            await dbContext.Database.MigrateAsync();
+
+            var initializer = new DbInitializer(dbContext, configuration, passwordHasher, app.Environment);
+            await initializer.InitializeAsync();
+
+            if (app.Environment.IsDevelopment())
+            {
+                var dataseeder = new DevelopmentDataSeeder(dbContext, passwordHasher);
+                await dataseeder.SeedAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            var logger = services.GetRequiredService<ILogger<Program>>();
+            logger.LogError(ex, "Une erreur s'est produite lors de la migration de la base de données.");
+            throw;
+        }
+
+        return app;
+    }
+
+    public static async Task ConfigurePipelineAsync(WebApplicationBuilder builder)
+    {
+        var app = builder.Build();
+
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseDeveloperExceptionPage();
+        }
+
+        await app.UseDatabaseMigrationsAsync();
+
+        app.UseResponseCompression();
+
+        app.UseCors("AllowBlazorClient");
+        app.UseWebSockets();
+
+        app.UseAuthentication();
+        app.UseAuthorization();
+
+        app.MapAuthEndpoints();
+        app.MapPrinterEndpoints();
+        app.MapTemplateEndpoints();
+        app.MapAgentEndpoints();
+        app.MapPrintJobEndpoints();
+        app.MapAgentWebSocketEndpoints();
+        app.MapPrintEndpoints();
+        app.MapUserEndpoints();
+        app.MapTranslationEndpoints();
+        app.MapLanguageEndpoints();
+        app.MapAgentTypeEndpoints();
+        app.MapProtocolEndpoints();
+        app.MapResolutionDpiEndpoints();
+        app.MapSubscriptionEndpoints();
+        app.MapStripeEndpoints();
+        app.MapResellerEndpoints();
+        app.MapAntiforgeryEndpoints();
+
+        app.Run();
     }
 }

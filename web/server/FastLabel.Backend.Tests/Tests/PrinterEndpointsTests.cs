@@ -1,64 +1,10 @@
 namespace FastLabel.Backend.Tests.Tests;
 
 [Collection("FastLabel Test Collection")]
-public class PrinterEndpointsTests(CustomWebApplicationFactory factory)
+public class PrinterEndpointsTests(TestWebApplicationFactory factory)
 {
-    private readonly CustomWebApplicationFactory _factory = factory;
-    private readonly HttpClient _client = factory.CreateClient(new WebApplicationFactoryClientOptions
-    {
-        BaseAddress = new Uri("https://localhost"),
-        AllowAutoRedirect = false
-    });
-
-    /// <summary>
-    /// Helper : Crée un utilisateur actif en base, effectue un login réel et retourne un HttpClient configuré avec son cookie de session.
-    /// </summary>
-    private async Task<HttpClient> CreateAuthenticatedClientAsync(string email, string password = "ValidPassword123!")
-    {
-        using (var scope = _factory.Services.CreateScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-            var activeStatus = await db.BasicStatuses
-                .Join(db.Texts, bs => bs.NameTextId, t => t.Id, (bs, t) => new { bs, t.Tag })
-                .Where(x => x.Tag == "status.active")
-                .OrderBy(x => x.bs.Id)
-                .Select(x => x.bs)
-                .FirstAsync();
-
-            var user = new User
-            {
-                Name = $"User {email.Split('@')[0]}",
-                Email = email,
-                PasswordHash = new PasswordHasher<User>().HashPassword(null!, password),
-                BasicStatusId = activeStatus.Id,
-                CreatedAt = DateTime.UtcNow,
-                LanguageId = 1
-            };
-
-            db.Users.Add(user);
-            await db.SaveChangesAsync();
-        }
-
-        var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
-        {
-            BaseAddress = new Uri("https://localhost"),
-            AllowAutoRedirect = false
-        });
-
-        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new LoginDto
-        {
-            Email = email,
-            Password = password
-        });
-
-        Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
-        Assert.True(loginResponse.Headers.TryGetValues("Set-Cookie", out var cookies));
-
-        client.DefaultRequestHeaders.Add("Cookie", cookies.First().Split(';')[0]);
-
-        return client;
-    }
+    private readonly TestWebApplicationFactory _factory = factory;
+    private readonly HttpClient _client = factory.CreateUnauthenticatedClient();
 
     /// <summary>
     /// Helper pour récupérer des IDs valides pour les clés étrangères (Protocol et ResolutionDpi).
@@ -83,7 +29,7 @@ public class PrinterEndpointsTests(CustomWebApplicationFactory factory)
     public async Task GetPrinters_EndToEnd_ReturnsPaginatedListForUser()
     {
         var email = "printer.get@exemple.fr";
-        var client = await CreateAuthenticatedClientAsync(email);
+        var client = await _factory.CreateAuthenticatedClientAsync(email);
         var (protocolId, resolutionId, statusId) = await GetValidReferencesAsync();
         var uniqueIp = $"192.168.1.{Guid.NewGuid().GetHashCode() % 255}";
 
@@ -131,7 +77,7 @@ public class PrinterEndpointsTests(CustomWebApplicationFactory factory)
     public async Task GetPrinterById_EndToEnd_ReturnsPrinterSuccessfully()
     {
         var email = "printer.getbyid@exemple.fr";
-        var client = await CreateAuthenticatedClientAsync(email);
+        var client = await _factory.CreateAuthenticatedClientAsync(email);
         var (protocolId, resolutionId, statusId) = await GetValidReferencesAsync();
         int printerId;
 
@@ -169,7 +115,7 @@ public class PrinterEndpointsTests(CustomWebApplicationFactory factory)
     [Fact]
     public async Task GetPrinterById_Fail_WhenNotFound_ReturnsNotFound()
     {
-        var client = await CreateAuthenticatedClientAsync("printer.notfound@exemple.fr");
+        var client = await _factory.CreateAuthenticatedClientAsync("printer.notfound@exemple.fr");
         var response = await client.GetAsync("/api/printers/999999");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -184,7 +130,7 @@ public class PrinterEndpointsTests(CustomWebApplicationFactory factory)
     [Fact]
     public async Task PostPrinter_EndToEnd_CreatesPrinterSuccessfully()
     {
-        var client = await CreateAuthenticatedClientAsync("printer.post@exemple.fr");
+        var client = await _factory.CreateAuthenticatedClientAsync("printer.post@exemple.fr");
         var (protocolId, resolutionId, statusId) = await GetValidReferencesAsync();
 
         var dto = new PrinterDto
@@ -210,7 +156,7 @@ public class PrinterEndpointsTests(CustomWebApplicationFactory factory)
     [Fact]
     public async Task PostPrinter_Fail_WithInvalidProtocol_ReturnsBadRequest()
     {
-        var client = await CreateAuthenticatedClientAsync("printer.badproto@exemple.fr");
+        var client = await _factory.CreateAuthenticatedClientAsync("printer.badproto@exemple.fr");
         var (_, resolutionId, statusId) = await GetValidReferencesAsync();
 
         var dto = new PrinterDto
@@ -234,7 +180,7 @@ public class PrinterEndpointsTests(CustomWebApplicationFactory factory)
     [Fact]
     public async Task PostPrinter_Fail_WithInvalidResolution_ReturnsBadRequest()
     {
-        var client = await CreateAuthenticatedClientAsync("printer.badres@exemple.fr");
+        var client = await _factory.CreateAuthenticatedClientAsync("printer.badres@exemple.fr");
         var (protocolId, _, statusId) = await GetValidReferencesAsync();
 
         var dto = new PrinterDto
@@ -263,7 +209,7 @@ public class PrinterEndpointsTests(CustomWebApplicationFactory factory)
     public async Task PutPrinter_EndToEnd_UpdatesPrinterSuccessfully()
     {
         var email = "printer.put@exemple.fr";
-        var client = await CreateAuthenticatedClientAsync(email);
+        var client = await _factory.CreateAuthenticatedClientAsync(email);
         var (protocolId, resolutionId, statusId) = await GetValidReferencesAsync();
         int printerId;
 
@@ -313,8 +259,8 @@ public class PrinterEndpointsTests(CustomWebApplicationFactory factory)
     [Fact]
     public async Task PutPrinter_Fail_WhenNotOwner_ReturnsForbidden()
     {
-        var ownerClient = await CreateAuthenticatedClientAsync("printer.owner@exemple.fr");
-        var hackerClient = await CreateAuthenticatedClientAsync("printer.hacker@exemple.fr");
+        var ownerClient = await _factory.CreateAuthenticatedClientAsync("printer.owner@exemple.fr");
+        var hackerClient = await _factory.CreateAuthenticatedClientAsync("printer.hacker@exemple.fr");
         var (protocolId, resolutionId, statusId) = await GetValidReferencesAsync();
         int printerId;
 
@@ -364,7 +310,7 @@ public class PrinterEndpointsTests(CustomWebApplicationFactory factory)
     public async Task DeletePrinter_EndToEnd_RemovesPrinterSuccessfully()
     {
         var email = "printer.delete@exemple.fr";
-        var client = await CreateAuthenticatedClientAsync(email);
+        var client = await _factory.CreateAuthenticatedClientAsync(email);
         var (protocolId, resolutionId, statusId) = await GetValidReferencesAsync();
         int printerId;
 
@@ -405,8 +351,8 @@ public class PrinterEndpointsTests(CustomWebApplicationFactory factory)
     [Fact]
     public async Task DeletePrinter_Fail_WhenNotOwner_ReturnsForbidden()
     {
-        var ownerClient = await CreateAuthenticatedClientAsync("printer.delowner@exemple.fr");
-        var hackerClient = await CreateAuthenticatedClientAsync("printer.delhacker@exemple.fr");
+        var ownerClient = await _factory.CreateAuthenticatedClientAsync("printer.delowner@exemple.fr");
+        var hackerClient = await _factory.CreateAuthenticatedClientAsync("printer.delhacker@exemple.fr");
         var (protocolId, resolutionId, statusId) = await GetValidReferencesAsync();
         int printerId;
 

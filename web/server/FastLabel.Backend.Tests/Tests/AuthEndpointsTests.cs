@@ -1,14 +1,10 @@
 namespace FastLabel.Backend.Tests.Tests;
 
 [Collection("FastLabel Test Collection")]
-public class AuthEndpointsTests(CustomWebApplicationFactory factory)
+public class AuthEndpointsTests(TestWebApplicationFactory factory)
 {  
-    private readonly CustomWebApplicationFactory _factory = factory;
-    private readonly HttpClient _client = factory.CreateClient(new WebApplicationFactoryClientOptions
-        {
-            BaseAddress = new Uri("https://localhost"),
-            AllowAutoRedirect = false
-        });
+    private readonly TestWebApplicationFactory _factory = factory;
+    private readonly HttpClient _client = factory.CreateUnauthenticatedClient();
 
     [Fact]
     public async Task VerifyEmail_WithValidToken_ActivatesUserAndClearsToken()

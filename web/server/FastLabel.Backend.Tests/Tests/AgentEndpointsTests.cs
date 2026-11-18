@@ -1,61 +1,10 @@
 namespace FastLabel.Backend.Tests.Tests;
 
 [Collection("FastLabel Test Collection")]
-public class AgentEndpointsTests(CustomWebApplicationFactory factory)
+public class AgentEndpointsTests(TestWebApplicationFactory factory)
 {
-    private readonly CustomWebApplicationFactory _factory = factory;
-    private readonly HttpClient _client = factory.CreateClient(new WebApplicationFactoryClientOptions
-    {
-        BaseAddress = new Uri("https://localhost"),
-        AllowAutoRedirect = false
-    });
-
-    private async Task<HttpClient> CreateAuthenticatedClientAsync(string email, string password = "ValidPassword123!")
-    {
-        using (var scope = _factory.Services.CreateScope())
-        {
-            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-
-            var activeStatus = await db.BasicStatuses
-                .Join(db.Texts, bs => bs.NameTextId, t => t.Id, (bs, t) => new { bs, t.Tag })
-                .Where(x => x.Tag == "status.active")
-                .OrderBy(x => x.bs.Id)
-                .Select(x => x.bs)
-                .FirstAsync();
-
-            var user = new User
-            {
-                Name = $"User {email.Split('@')[0]}",
-                Email = email,
-                PasswordHash = new PasswordHasher<User>().HashPassword(null!, password),
-                BasicStatusId = activeStatus.Id,
-                CreatedAt = DateTime.UtcNow,
-                LanguageId = 1
-            };
-
-            db.Users.Add(user);
-            await db.SaveChangesAsync();
-        }
-
-        var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
-        {
-            BaseAddress = new Uri("https://localhost"),
-            AllowAutoRedirect = false
-        });
-
-        var loginResponse = await client.PostAsJsonAsync("/api/auth/login", new LoginDto
-        {
-            Email = email,
-            Password = password
-        });
-
-        Assert.Equal(HttpStatusCode.OK, loginResponse.StatusCode);
-        Assert.True(loginResponse.Headers.TryGetValues("Set-Cookie", out var cookies));
-
-        client.DefaultRequestHeaders.Add("Cookie", cookies.First().Split(';')[0]);
-
-        return client;
-    }
+    private readonly TestWebApplicationFactory _factory = factory;
+    private readonly HttpClient _client = factory.CreateUnauthenticatedClient();
 
     // =========================================================================
     // 1. TESTS POUR GET /api/agents
@@ -65,7 +14,7 @@ public class AgentEndpointsTests(CustomWebApplicationFactory factory)
     public async Task GetAgents_EndToEnd_ReturnsPaginatedListForUser()
     {
         var email = "get.e2e@exemple.fr";
-        var client = await CreateAuthenticatedClientAsync(email);
+        var client = await _factory.CreateAuthenticatedClientAsync(email);
         var uniqueKey = Guid.NewGuid().ToString("N");
 
         using (var scope = _factory.Services.CreateScope())
@@ -97,8 +46,8 @@ public class AgentEndpointsTests(CustomWebApplicationFactory factory)
     [Fact]
     public async Task GetAgents_Fail_Isolation_RegularUserDoesNotSeeOthers()
     {
-        var client1 = await CreateAuthenticatedClientAsync("get.user1@exemple.fr");
-        var client2 = await CreateAuthenticatedClientAsync("get.user2@exemple.fr");
+        var client1 = await _factory.CreateAuthenticatedClientAsync("get.user1@exemple.fr");
+        var client2 = await _factory.CreateAuthenticatedClientAsync("get.user2@exemple.fr");
         var uniqueKey = Guid.NewGuid().ToString("N");
 
         using (var scope = _factory.Services.CreateScope())
@@ -126,7 +75,7 @@ public class AgentEndpointsTests(CustomWebApplicationFactory factory)
     [Fact]
     public async Task PostAgent_EndToEnd_CreatesAgentSuccessfully()
     {
-        var client = await CreateAuthenticatedClientAsync("post.e2e@exemple.fr");
+        var client = await _factory.CreateAuthenticatedClientAsync("post.e2e@exemple.fr");
         int validTypeId;
 
         using (var scope = _factory.Services.CreateScope())
@@ -156,7 +105,7 @@ public class AgentEndpointsTests(CustomWebApplicationFactory factory)
     [Fact]
     public async Task PostAgent_Fail_WithInvalidType_ReturnsBadRequest()
     {
-        var client = await CreateAuthenticatedClientAsync("post.fail@exemple.fr");
+        var client = await _factory.CreateAuthenticatedClientAsync("post.fail@exemple.fr");
         var dto = new AgentDto { AgentTypeId = 999999 };
 
         var response = await client.PostAsJsonAsync("/api/agents", dto);
@@ -174,7 +123,7 @@ public class AgentEndpointsTests(CustomWebApplicationFactory factory)
     public async Task PutAgent_EndToEnd_UpdatesAgentSuccessfully()
     {
         var email = "put.e2e@exemple.fr";
-        var client = await CreateAuthenticatedClientAsync(email);
+        var client = await _factory.CreateAuthenticatedClientAsync(email);
         int typeId1, typeId2;
         int agentId;
         var uniqueKey = Guid.NewGuid().ToString("N");
@@ -226,7 +175,7 @@ public class AgentEndpointsTests(CustomWebApplicationFactory factory)
     [Fact]
     public async Task PutAgent_Fail_WhenNotFound_ReturnsNotFound()
     {
-        var client = await CreateAuthenticatedClientAsync("put.notfound@exemple.fr");
+        var client = await _factory.CreateAuthenticatedClientAsync("put.notfound@exemple.fr");
         var response = await client.PutAsJsonAsync("/api/agents/999999", new AgentDto { AgentTypeId = 1 });
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -234,8 +183,8 @@ public class AgentEndpointsTests(CustomWebApplicationFactory factory)
     [Fact]
     public async Task PutAgent_Fail_WhenNotOwner_ReturnsForbidden()
     {
-        var ownerClient = await CreateAuthenticatedClientAsync("put.owner@exemple.fr");
-        var hackerClient = await CreateAuthenticatedClientAsync("put.hacker@exemple.fr");
+        var ownerClient = await _factory.CreateAuthenticatedClientAsync("put.owner@exemple.fr");
+        var hackerClient = await _factory.CreateAuthenticatedClientAsync("put.hacker@exemple.fr");
         int agentId, validTypeId;
         var uniqueKey = Guid.NewGuid().ToString("N");
 
@@ -259,7 +208,7 @@ public class AgentEndpointsTests(CustomWebApplicationFactory factory)
     public async Task PutAgent_Fail_WithInvalidType_ReturnsBadRequest()
     {
         var email = "put.badtype@exemple.fr";
-        var client = await CreateAuthenticatedClientAsync(email);
+        var client = await _factory.CreateAuthenticatedClientAsync(email);
         int agentId, validTypeId;
         var uniqueKey = Guid.NewGuid().ToString("N");
 
@@ -289,7 +238,7 @@ public class AgentEndpointsTests(CustomWebApplicationFactory factory)
     public async Task DeleteAgent_EndToEnd_RemovesAgentSuccessfully()
     {
         var email = "delete.e2e@exemple.fr";
-        var client = await CreateAuthenticatedClientAsync(email);
+        var client = await _factory.CreateAuthenticatedClientAsync(email);
         int agentId;
         var uniqueKey = Guid.NewGuid().ToString("N");
 
@@ -327,7 +276,7 @@ public class AgentEndpointsTests(CustomWebApplicationFactory factory)
     [Fact]
     public async Task DeleteAgent_Fail_WhenNotFound_ReturnsNotFound()
     {
-        var client = await CreateAuthenticatedClientAsync("delete.notfound@exemple.fr");
+        var client = await _factory.CreateAuthenticatedClientAsync("delete.notfound@exemple.fr");
         var response = await client.DeleteAsync("/api/agents/999999");
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -335,8 +284,8 @@ public class AgentEndpointsTests(CustomWebApplicationFactory factory)
     [Fact]
     public async Task DeleteAgent_Fail_WhenNotOwner_ReturnsForbidden()
     {
-        var ownerClient = await CreateAuthenticatedClientAsync("delete.owner@exemple.fr");
-        var hackerClient = await CreateAuthenticatedClientAsync("delete.hacker@exemple.fr");
+        var ownerClient = await _factory.CreateAuthenticatedClientAsync("delete.owner@exemple.fr");
+        var hackerClient = await _factory.CreateAuthenticatedClientAsync("delete.hacker@exemple.fr");
         int agentId;
         var uniqueKey = Guid.NewGuid().ToString("N");
 
