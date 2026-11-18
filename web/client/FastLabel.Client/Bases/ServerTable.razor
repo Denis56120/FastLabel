@@ -181,9 +181,8 @@
                 await ItemsChanged.InvokeAsync(_items);
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Erreur chargement tableau : {ex.Message}");
         }
         finally
         {

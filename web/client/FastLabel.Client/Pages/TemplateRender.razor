@@ -235,9 +235,8 @@
                 _editorInstance = await _module.InvokeAsync<IJSObjectReference>(
                     "initEditor", _dotNetRef, "label-canvas", _template.JsonData, _canvasWidth, _canvasHeight);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Erreur initialisation éditeur JS: {ex.Message}");
             }
         }
     }
@@ -264,9 +263,8 @@
                 ToastService.ShowError(Translation.GetString("template.error.not_found"));
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Erreur chargement template: {ex.Message}");
             ToastService.ShowError(Translation.GetString("app.error.unknown"));
         }
         finally
@@ -322,9 +320,8 @@
                 var dataUrl = $"data:{file.ContentType};base64,{base64Data}";
                 await CallEditor("addImage", dataUrl);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                Console.WriteLine($"Erreur chargement image: {ex.Message}");
                 ToastService.ShowError(Translation.GetString("app.error.unknown"));
             }
         }
@@ -368,9 +365,8 @@
                 ToastService.ShowError(Translation.GetString(response.Item2 ?? "app.error.unknown"));
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Erreur sauvegarde template: {ex.Message}");
             ToastService.ShowError(Translation.GetString("app.error.unknown"));
         }
         finally

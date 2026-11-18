@@ -159,9 +159,8 @@
             _protocols = await ApiClient.GetFromJsonAsync<List<ProtocolDto>>("api/protocols") ?? new();
             _resolutions = await ApiClient.GetFromJsonAsync<List<ResolutionDpiDto>>("api/resolutions") ?? new();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Erreur chargement listes: {ex.Message}");
         }
     }
 

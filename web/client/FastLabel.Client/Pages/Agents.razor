@@ -112,9 +112,8 @@
         {
             _agentTypes = await ApiClient.GetFromJsonAsync<List<AgentTypeDto>>("api/agenttypes") ?? new();
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Erreur chargement AgentTypes: {ex.Message}");
         }
     }
 
