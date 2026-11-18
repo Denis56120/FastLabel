@@ -14,7 +14,8 @@ public static class AgentEndpoints
             string? filterByUser,
             string? filterByType,
             AppDbContext db, 
-            ClaimsPrincipal claimsUser) =>
+            ClaimsPrincipal claimsUser,
+            HttpContext httpContext) =>
         {
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
@@ -22,10 +23,7 @@ public static class AgentEndpoints
             if (page < 1) page = 1;
             if (pageSize < 1) pageSize = 10;
 
-            var lang = await db.Users
-                .Where(u => u.Id == userId)
-                .Select(u => u.Language != null ? u.Language.Code : HttpContextHelpers.DefaultLanguage)
-                .FirstOrDefaultAsync() ?? HttpContextHelpers.DefaultLanguage;
+            var (languageId, language) = await DbHelpers.GetUserLanguageByUserIdAsync(httpContext, db, userId);
 
             var query = db.Agents
                 .Include(a => a.AgentType)
@@ -40,7 +38,6 @@ public static class AgentEndpoints
                 query = query.Where(a => a.UserId == userId);
             }
 
-            // Filtres textuels
             if (!string.IsNullOrWhiteSpace(filterByUser))
             {
                 query = query.Where(a => a.User != null && a.User.Name.Contains(filterByUser));
@@ -50,7 +47,7 @@ public static class AgentEndpoints
             {
                 query = query.Where(a => a.AgentType != null && a.AgentType.Name != null &&
                     (a.AgentType.Name.Translations
-                        .Where(tr => tr.Language.Code == lang)
+                        .Where(tr => tr.Language.Code == language)
                         .Select(tr => tr.TranslatedValue)
                         .FirstOrDefault() ?? a.AgentType.Name.DefaultTranslation)
                     .Contains(filterByType));
@@ -69,7 +66,7 @@ public static class AgentEndpoints
                     AgentTypeId = a.AgentTypeId,
                     AgentTypeName = a.AgentType != null && a.AgentType.Name != null
                         ? (a.AgentType.Name.Translations
-                            .Where(tr => tr.Language.Code == lang)
+                            .Where(tr => tr.Language.Code == language)
                             .Select(tr => tr.TranslatedValue)
                             .FirstOrDefault()
                            ?? a.AgentType.Name.DefaultTranslation)
@@ -97,20 +94,18 @@ public static class AgentEndpoints
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
-            var typeExists = await db.AgentTypes.AnyAsync(at => at.Id == dto.AgentTypeId);
-            if (!typeExists)
+            var agenttype = await DbHelpers.GetAgentTypeByIdAsync(db, dto.AgentTypeId);  
+            if (agenttype == null)
             {
                 return Results.BadRequest(new { message = "agents.error.invalid_type" });
             }
 
-            // Génération sécurisée côté serveur d'une clé d'API unique
             var secureApiKey = $"fl_{Guid.NewGuid():N}{Guid.NewGuid():N}";
-
             var agent = new Agent
             {
                 AgentTypeId = dto.AgentTypeId,
                 UserId = userId,
-                ApiKey = secureApiKey, // Stockée en base
+                ApiKey = secureApiKey,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -129,7 +124,7 @@ public static class AgentEndpoints
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
-            var agent = await db.Agents.FindAsync(id);
+            var agent = await DbHelpers.GetAgentByIdAsync(db, id);  
             if (agent is null) return Results.NotFound();
 
             if (!isAdmin && agent.UserId != userId)
@@ -137,16 +132,13 @@ public static class AgentEndpoints
                 return Results.Forbid();
             }
 
-            var typeExists = await db.AgentTypes.AnyAsync(at => at.Id == updatedDto.AgentTypeId);
-            if (!typeExists)
+            var agenttype = await DbHelpers.GetAgentTypeByIdAsync(db, updatedDto.AgentTypeId); 
+            if (agenttype == null)
             {
                 return Results.BadRequest(new { message = "agents.error.invalid_type" });
             }
 
-            // On met à jour uniquement les champs autorisés (ex: le type d'agent)
             agent.AgentTypeId = updatedDto.AgentTypeId;
-            
-            // On s'assure de renvoyer la clé existante (masquée ou non modifiée) dans le DTO de retour
             updatedDto.ApiKey = agent.ApiKey;
 
             await db.SaveChangesAsync();
@@ -158,7 +150,7 @@ public static class AgentEndpoints
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
-            var agent = await db.Agents.FindAsync(id);
+            var agent = await DbHelpers.GetAgentByIdAsync(db, id);  
             if (agent is null) return Results.NotFound();
 
             if (!isAdmin && agent.UserId != userId)

@@ -6,19 +6,14 @@ public static class AgentTypeEndpoints
     {
         var group = routes.MapGroup("/api/agenttypes").RequireAuthorization();
 
-        group.MapGet("/", async (AppDbContext db, ClaimsPrincipal claimsUser) =>
+        group.MapGet("/", async (AppDbContext db, ClaimsPrincipal claimsUser, HttpContext httpContext) =>
         {
-            var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier) 
-                                ?? claimsUser.FindFirstValue("nameid");
+            var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (!int.TryParse(userIdString, out var userId))
                 return Results.Unauthorized();
 
-            // Récupère la langue de l'utilisateur connecté en base
-            var lang = await db.Users
-                .Where(u => u.Id == userId)
-                .Select(u => u.Language != null ? u.Language.Code : HttpContextHelpers.DefaultLanguage) // Utilise la langue par défaut si l'utilisateur n'a pas de langue définie
-                .FirstOrDefaultAsync() ?? HttpContextHelpers.DefaultLanguage;
+            var (languageId, language) = await DbHelpers.GetUserLanguageByUserIdAsync(httpContext, db, userId);
 
             var agentTypes = await db.AgentTypes
                 .Include(at => at.Name)
@@ -30,7 +25,7 @@ public static class AgentTypeEndpoints
                     Id = at.Id,
                     Name = at.Name != null
                         ? (at.Name.Translations
-                            .Where(tr => tr.Language.Code == lang)
+                            .Where(tr => tr.Language.Code == language)
                             .Select(tr => tr.TranslatedValue)
                             .FirstOrDefault()
                            ?? at.Name.DefaultTranslation)

@@ -16,7 +16,6 @@ public static class DbHelpers
             return statusId.Value;
         }
 
-        // Repli de sécurité
         var fallbackStatus = await db.BasicStatuses.OrderBy(s => s.Id).Skip(1).FirstOrDefaultAsync()
                           ?? await db.BasicStatuses.OrderBy(s => s.Id).FirstOrDefaultAsync();
 
@@ -33,42 +32,81 @@ public static class DbHelpers
                 .FirstOrDefaultAsync() ?? string.Empty;
     }
 
+    public static async Task<AgentType?> GetAgentTypeByIdAsync(AppDbContext db, int id)
+    {
+        return await db.AgentTypes.FindAsync(id);
+    }
+
+    public static async Task<Agent?> GetAgentByIdAsync(AppDbContext db, int id)
+    {
+        return await db.Agents.FindAsync(id);
+    }
+
+    public static async Task<Language?> GetLanguageByCodeAsync(AppDbContext db, string code)
+    {
+        return await db.Languages.FirstOrDefaultAsync(l => l.Code == code);
+    }
+
     public static async Task<User?> GetUserByEmailAsync(AppDbContext db, string email)
     {
         return await db.Users
-                .OrderBy(u => u.Id) 
+                .OrderBy(u => u.Id)
                 .FirstOrDefaultAsync(u => u.Email == email);
     }
 
     public static async Task<User?> GetUserByPasswordResetTokenAsync(AppDbContext db, string token)
     {
         return await db.Users
-                .OrderBy(u => u.Id) 
+                .OrderBy(u => u.Id)
                 .FirstOrDefaultAsync(u => u.PasswordResetToken == token);
     }
 
     public static async Task<User?> GetUserByEmailVerificationTokenAsync(AppDbContext db, string token)
     {
         return await db.Users
-                .OrderBy(u => u.Id) 
+                .OrderBy(u => u.Id)
                 .FirstOrDefaultAsync(u => u.EmailVerificationToken == token);
     }
 
-    public static async Task<(int Id, string Code)> GetLanguageInfoAsync(HttpContext httpContext, AppDbContext db)
+    public static async Task<(int Id, string Code)> GetUserLanguageByUserClaimAsync(HttpContext httpContext, AppDbContext db, ClaimsPrincipal claim)
     {
-        // 1. Récupération de la langue depuis le cookie (ou valeur par défaut)
+        var userIdString = claim.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (!string.IsNullOrEmpty(userIdString) && int.TryParse(userIdString, out var userId))
+        {
+            return await GetUserLanguageByUserIdAsync(httpContext, db, userId);
+        }
+
+        return await GetLanguageAsync(httpContext, db);
+    }
+    
+    public static async Task<(int Id, string Code)> GetUserLanguageByUserIdAsync(HttpContext httpContext, AppDbContext db, int id)
+    {
+        var langInfo = await db.Users
+            .Where(u => u.Id == id)
+            .Select(u => u.Language != null ? new { u.Language.Id, u.Language.Code } : null)
+            .FirstOrDefaultAsync();
+
+        if (langInfo != null)
+        {
+            return (langInfo.Id, langInfo.Code);
+        }
+
+        return await GetLanguageAsync(httpContext, db);
+    }
+
+    public static async Task<(int Id, string Code)> GetLanguageAsync(HttpContext httpContext, AppDbContext db)
+    {
         string language = HttpContextHelpers.DefaultLanguage;
         if (httpContext.Request.Cookies.TryGetValue("language", out var cookieLang) && !string.IsNullOrEmpty(cookieLang))
         {
             language = cookieLang;
         }
 
-        // 2. Recherche de la langue correspondante en base
         var targetLanguage = await db.Languages.FirstOrDefaultAsync(l => l.Code == language)
                           ?? await db.Languages.FirstOrDefaultAsync(l => l.Code == HttpContextHelpers.DefaultLanguage)
                           ?? await db.Languages.OrderBy(l => l.Id).FirstOrDefaultAsync();
 
-        // 3. Retourne le tuple (Id, Code) avec des valeurs de repli de sécurité
         return (targetLanguage?.Id ?? 1, targetLanguage?.Code ?? HttpContextHelpers.DefaultLanguage);
     }
 }

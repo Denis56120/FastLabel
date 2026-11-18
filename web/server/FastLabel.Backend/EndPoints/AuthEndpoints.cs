@@ -72,7 +72,7 @@ public static class AuthEndpoints
             var clientUrl = ConfigurationHelpers.GetClientUrl(configuration);
             var resetLink = $"{clientUrl}/reset-password?token={user.PasswordResetToken}";
 
-            var (languageId, language) = await DbHelpers.GetLanguageInfoAsync(httpContext, db);
+            var (languageId, language) = await DbHelpers.GetLanguageAsync(httpContext, db);
 
             var emailTexts = await db.Texts
                 .Where(t => t.Tag == "email.reset.subject" || t.Tag == "email.reset.body")
@@ -132,7 +132,7 @@ public static class AuthEndpoints
                 return Results.BadRequest(new ErrorResponseDto { Message = "auth.error.email_already_taken" });
             }
 
-            var (languageId, language) = await DbHelpers.GetLanguageInfoAsync(httpContext, db);
+            var (languageId, language) = await DbHelpers.GetLanguageAsync(httpContext, db);
             int inactiveStatusId = await DbHelpers.GetStatusIdByTagAsync(db, "status.inactive");
 
             var user = new User

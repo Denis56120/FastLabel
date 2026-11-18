@@ -8,24 +8,7 @@ public static class LanguageEndpoints
         
         group.MapGet("/", async (AppDbContext db, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
         {
-            string lang = HttpContextHelpers.GetLanguageCookie(httpContext);
-
-            // 1. Si l'utilisateur est connecté, on cherche sa langue en base en priorité
-            var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier) 
-                                    ?? claimsUser.FindFirstValue("nameid");
-
-            if (!string.IsNullOrEmpty(userIdString) && int.TryParse(userIdString, out var userId))
-            {
-                var userLang = await db.Users
-                    .Where(u => u.Id == userId)
-                    .Select(u => u.Language != null ? u.Language.Code : null)
-                    .FirstOrDefaultAsync();
-
-                if (!string.IsNullOrEmpty(userLang))
-                {
-                    lang = userLang;
-                }
-            }
+            var (languageId, language) = await DbHelpers.GetUserLanguageByUserClaimAsync(httpContext, db, claimsUser);
 
             var languages = await db.Languages
                 .Include(l => l.Description)
@@ -37,7 +20,7 @@ public static class LanguageEndpoints
                     Code = l.Code,
                     Description = l.Description != null
                         ? (l.Description.Translations
-                            .Where(tr => tr.Language.Code == lang)
+                            .Where(tr => tr.Language.Code == language)
                             .Select(tr => tr.TranslatedValue)
                             .FirstOrDefault()
                            ?? l.Description.DefaultTranslation)
@@ -56,14 +39,12 @@ public static class LanguageEndpoints
                 return Results.BadRequest(new ErrorResponseDto { Message = "language.error.invalid" });
             }
 
-            // Vérifie dynamiquement dans la table Language si le code existe en base
-            var languageExists = await db.Languages.AnyAsync(l => l.Code == language);
-            if (!languageExists)
+            var lang = await DbHelpers.GetLanguageByCodeAsync(db, language);  
+            if (lang == null)
             {
                 return Results.BadRequest(new ErrorResponseDto { Message = "language.error.invalid" });
             }
 
-            // Pose le cookie proprement via l'extension HttpContext
             httpContext.SetLanguageCookie(language);
 
             return Results.Ok();
