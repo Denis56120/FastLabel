@@ -40,7 +40,7 @@ public static class ResellerEndpoints
                 query = query.Where(u => u.Email != null && u.Email.Contains(filterByEmail));
             }
 
-            var naturalComparer = new NaturalStringComparer();
+            var naturalComparer = new NaturalStringHelpers();
 
             // Utilisation de l'extension ToPagedResultAsync pour la pagination et le tri naturel
             var result = await query.ToPagedResultAsync(
@@ -84,7 +84,7 @@ public static class ResellerEndpoints
             if (reseller == null || !reseller.IsReseller)
                 return Results.Forbid();
 
-            if (!ValidationExtensions.TryValidateModel(clientDto, out var errorResult))
+            if (!ValidationHelpers.TryValidateModel(clientDto, out var errorResult))
             {
                 return errorResult!;
             }
@@ -138,11 +138,7 @@ public static class ResellerEndpoints
             var verificationLink = $"{serverUrl}/api/auth/verify-email?token={activationToken}";
 
             // Récupération de la langue (via le cookie ou celle du revendeur)
-            string language = HttpContextExtensions.DefaultLanguage;
-            if (httpContext.Request.Cookies.TryGetValue("language", out var cookieLang) && !string.IsNullOrEmpty(cookieLang))
-            {
-                language = cookieLang;
-            }
+            string language = HttpContextHelpers.GetLanguageCookie(httpContext);
 
             var emailTexts = await db.Texts
                 .Where(t => t.Tag == "email.activation.subject" || t.Tag == "email.activation.body")

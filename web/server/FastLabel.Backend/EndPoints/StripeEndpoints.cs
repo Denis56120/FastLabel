@@ -33,7 +33,7 @@ public static class StripeEndpoints
                 return Results.BadRequest(new ErrorResponseDto { Message = "stripe.error.price_not_configured" });
             }
 
-            string clientUrl = configuration["Url:ClientUrl"] ?? "https://fastlabel.com";
+            var clientUrl = ConfigurationHelpers.GetClientUrl(configuration);
 
             var options = new Stripe.Checkout.SessionCreateOptions
             {

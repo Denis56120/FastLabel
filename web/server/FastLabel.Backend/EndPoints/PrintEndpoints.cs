@@ -6,7 +6,7 @@ public static class PrintEndpoints
     {
         app.MapPost("/api/print", async (PrintDto request, AppDbContext db, PrintBrokerService broker) =>
         {
-            if (!ValidationExtensions.TryValidateModel(request, out var errorResult))
+            if (!ValidationHelpers.TryValidateModel(request, out var errorResult))
             {
                 return errorResult!;
             }

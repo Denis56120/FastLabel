@@ -1,6 +1,6 @@
-namespace FastLabel.Backend.Extensions;
+namespace FastLabel.Backend.Helpers;
 
-public static class ValidationExtensions
+public static class ValidationHelpers
 {
     public static bool TryValidateModel<T>(T model, out IResult? errorResult) where T : class
     {

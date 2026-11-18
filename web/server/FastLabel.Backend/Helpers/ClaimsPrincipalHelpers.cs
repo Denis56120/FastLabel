@@ -1,6 +1,6 @@
-namespace FastLabel.Backend.Extensions;
+namespace FastLabel.Backend.Helpers;
 
-public static class ClaimsPrincipalExtensions
+public static class ClaimsPrincipalHelpers
 {
     public static (int UserId, bool IsAdmin, bool IsReseller) GetUserInfo(this ClaimsPrincipal user)
     {

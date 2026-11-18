@@ -18,14 +18,14 @@ public class DevelopmentDataSeeder(AppDbContext context, IPasswordHasher<User> p
 
         int activeStatusId = activeStatus.Id;
 
-        // Trouve la langue anglaise
-        var englishLanguage = await _context.Languages
-            .FirstOrDefaultAsync(l => l.Code == "en") ?? throw new InvalidOperationException("La langue anglaise ne peut pas être trouvée");
-        int englishLanguageId = englishLanguage.Id;
-
         // 1. Création des utilisateurs par défaut (Regular, Reseller)
         if (!await _context.Users.AnyAsync())
         {
+            // Trouve la langue anglaise
+            var englishLanguage = await _context.Languages
+                .FirstOrDefaultAsync(l => l.Code == "en") ?? throw new InvalidOperationException("La langue anglaise ne peut pas être trouvée");
+            int englishLanguageId = englishLanguage.Id;
+
             var adminUser = new User
             {
                 Name = "Test Admin",
@@ -79,16 +79,36 @@ public class DevelopmentDataSeeder(AppDbContext context, IPasswordHasher<User> p
 
             int windowsAgentTypeId = windowsAgentType.Id;
 
+            textId = await _context.Texts
+                .Where(t => t.Tag == "agenttype.linux")
+                .Select(t => (int?)t.Id)
+                .FirstOrDefaultAsync() ?? throw new InvalidOperationException("Le texte de l'agent windows n'a pas été trouvé");
+
+            var linuxAgentType = await _context.AgentTypes
+                .FirstOrDefaultAsync(at => at.NameTextId == textId) ?? throw new InvalidOperationException("L'agent linux n'a pas été trouvé");
+
+            int linuxAgentTypeId = linuxAgentType.Id;
+
             var users = await _context.Users.ToListAsync();
             foreach (var user in users)
             {
-                _context.Agents.Add(new Agent
+                var windowsAgent = new Agent
                 {
                     UserId = user.Id,
                     AgentTypeId = windowsAgentTypeId,
                     ApiKey = $"fl_{Guid.NewGuid():N}{Guid.NewGuid():N}",
                     CreatedAt = DateTime.UtcNow
-                });
+                };
+
+                var linuxAgent = new Agent
+                {
+                    UserId = user.Id,
+                    AgentTypeId = linuxAgentTypeId,
+                    ApiKey = $"fl_{Guid.NewGuid():N}{Guid.NewGuid():N}",
+                    CreatedAt = DateTime.UtcNow
+                };
+                
+                _context.Agents.AddRange(windowsAgent, linuxAgent);
             }
             await _context.SaveChangesAsync();
         }
@@ -139,15 +159,18 @@ public class DevelopmentDataSeeder(AppDbContext context, IPasswordHasher<User> p
             var users = await _context.Users.ToListAsync();
             foreach (var user in users)
             {
-                _context.Templates.Add(new Template
+                for (int i = 1; i <= 100; i++)
                 {
-                    UserId = user.Id,
-                    Name = "Label Test",
-                    BasicStatusId = activeStatusId,
-                    JsonData = "{}",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow
-                });
+                    _context.Templates.Add(new Template
+                    {
+                        UserId = user.Id,
+                        Name = $"Test Label #{i}",
+                        BasicStatusId = activeStatusId,
+                        JsonData = "{}",
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    });
+                }
             }
             await _context.SaveChangesAsync();
         }

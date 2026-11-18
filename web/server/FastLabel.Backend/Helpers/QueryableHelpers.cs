@@ -1,6 +1,6 @@
-namespace FastLabel.Backend.Extensions;
+namespace FastLabel.Backend.Helpers;
 
-public static class QueryableExtensions
+public static class QueryableHelpers
 {
     public static async Task<PagedResultDto<TResult>> ToPagedResultAsync<TEntity, TResult>(
         this IQueryable<TEntity> query,

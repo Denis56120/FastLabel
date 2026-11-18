@@ -4,7 +4,6 @@ global using FastLabel.Backend.Helpers;
 global using FastLabel.Backend.Models;
 global using FastLabel.Backend.Services;
 global using FastLabel.Backend.Endpoints;
-global using FastLabel.Backend.Extensions;
 global using FastLabel.Shared.DTOs;
 global using MailKit;
 global using MailKit.Net.Smtp;

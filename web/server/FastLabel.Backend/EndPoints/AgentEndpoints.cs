@@ -24,8 +24,8 @@ public static class AgentEndpoints
 
             var lang = await db.Users
                 .Where(u => u.Id == userId)
-                .Select(u => u.Language != null ? u.Language.Code : HttpContextExtensions.DefaultLanguage)
-                .FirstOrDefaultAsync() ?? HttpContextExtensions.DefaultLanguage;
+                .Select(u => u.Language != null ? u.Language.Code : HttpContextHelpers.DefaultLanguage)
+                .FirstOrDefaultAsync() ?? HttpContextHelpers.DefaultLanguage;
 
             var query = db.Agents
                 .Include(a => a.AgentType)
@@ -56,7 +56,7 @@ public static class AgentEndpoints
                     .Contains(filterByType));
             }
 
-            var naturalComparer = new NaturalStringComparer();
+            var naturalComparer = new NaturalStringHelpers();
 
             var result = await query.ToPagedResultAsync(
                 page,

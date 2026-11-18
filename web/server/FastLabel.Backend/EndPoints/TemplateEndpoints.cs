@@ -28,8 +28,8 @@ public static class TemplateEndpoints
             // Récupère la langue de l'utilisateur connecté pour traduire les statuts
             var lang = await db.Users
                 .Where(u => u.Id == userId)
-                .Select(u => u.Language != null ? u.Language.Code : HttpContextExtensions.DefaultLanguage)
-                .FirstOrDefaultAsync() ?? HttpContextExtensions.DefaultLanguage;
+                .Select(u => u.Language != null ? u.Language.Code : HttpContextHelpers.DefaultLanguage)
+                .FirstOrDefaultAsync() ?? HttpContextHelpers.DefaultLanguage;
 
             var query = db.Templates
                 .Include(t => t.BasicStatus)
@@ -65,7 +65,7 @@ public static class TemplateEndpoints
                     .Contains(filterByStatus));
             }
 
-            var naturalComparer = new NaturalStringComparer();
+            var naturalComparer = new NaturalStringHelpers();
 
             // 2. Utilisation de l'extension ToPagedResultAsync pour la pagination et le tri naturel
             var result = await query.ToPagedResultAsync(
@@ -111,8 +111,8 @@ public static class TemplateEndpoints
             // Récupère la langue de l'utilisateur connecté pour traduire les statuts
             var lang = await db.Users
                 .Where(u => u.Id == userId)
-                .Select(u => u.Language != null ? u.Language.Code : HttpContextExtensions.DefaultLanguage)
-                .FirstOrDefaultAsync() ?? HttpContextExtensions.DefaultLanguage;
+                .Select(u => u.Language != null ? u.Language.Code : HttpContextHelpers.DefaultLanguage)
+                .FirstOrDefaultAsync() ?? HttpContextHelpers.DefaultLanguage;
 
             var query = db.Templates
                 .Include(t => t.BasicStatus)
@@ -154,7 +154,7 @@ public static class TemplateEndpoints
 
         group.MapPost("/", async (TemplateDto dto, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
-            if (!ValidationExtensions.TryValidateModel(dto, out var errorResult))
+            if (!ValidationHelpers.TryValidateModel(dto, out var errorResult))
             {
                 return errorResult!;
             }
@@ -184,7 +184,7 @@ public static class TemplateEndpoints
 
         group.MapPut("/{id:int}", async (int id, TemplateDto updatedDto, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
-            if (!ValidationExtensions.TryValidateModel(updatedDto, out var errorResult))
+            if (!ValidationHelpers.TryValidateModel(updatedDto, out var errorResult))
             {
                 return errorResult!;
             }

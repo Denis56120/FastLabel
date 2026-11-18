@@ -17,8 +17,8 @@ public static class ProtocolEndpoints
             // Récupère la langue de l'utilisateur connecté en base
             var lang = await db.Users
                 .Where(u => u.Id == userId)
-                .Select(u => u.Language != null ? u.Language.Code : HttpContextExtensions.DefaultLanguage)
-                .FirstOrDefaultAsync() ?? HttpContextExtensions.DefaultLanguage;
+                .Select(u => u.Language != null ? u.Language.Code : HttpContextHelpers.DefaultLanguage)
+                .FirstOrDefaultAsync() ?? HttpContextHelpers.DefaultLanguage;
 
             var protocols = await db.Protocols
                 .Include(p => p.Name)

@@ -52,7 +52,7 @@ public static class PrintJobEndpoints
                 query = query.Where(j => j.LabelTemplate != null && j.LabelTemplate.Name.Contains(filterByTemplate));
             }
 
-            var naturalComparer = new NaturalStringComparer();
+            var naturalComparer = new NaturalStringHelpers();
 
             // 2. Utilisation de l'extension ToPagedResultAsync pour la pagination et le tri naturel
             var result = await query.ToPagedResultAsync(

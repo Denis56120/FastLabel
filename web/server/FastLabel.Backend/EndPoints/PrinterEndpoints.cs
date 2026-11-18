@@ -27,8 +27,8 @@ public static class PrinterEndpoints
             // Récupère la langue de l'utilisateur connecté en base
             var lang = await db.Users
                 .Where(u => u.Id == userId)
-                .Select(u => u.Language != null ? u.Language.Code : HttpContextExtensions.DefaultLanguage)
-                .FirstOrDefaultAsync() ?? HttpContextExtensions.DefaultLanguage;
+                .Select(u => u.Language != null ? u.Language.Code : HttpContextHelpers.DefaultLanguage)
+                .FirstOrDefaultAsync() ?? HttpContextHelpers.DefaultLanguage;
 
             var query = db.Printers
                 .Include(p => p.Protocol)
@@ -64,7 +64,7 @@ public static class PrinterEndpoints
                 query = query.Where(p => p.Location != null && p.Location.Contains(filterByLocation));
             }
 
-            var naturalComparer = new NaturalStringComparer();
+            var naturalComparer = new NaturalStringHelpers();
 
             // 2. Utilisation de l'extension ToPagedResultAsync pour la pagination et le tri naturel
             var result = await query.ToPagedResultAsync(
@@ -124,8 +124,8 @@ public static class PrinterEndpoints
             // Récupère la langue de l'utilisateur connecté en base
             var lang = await db.Users
                 .Where(u => u.Id == userId)
-                .Select(u => u.Language != null ? u.Language.Code : HttpContextExtensions.DefaultLanguage)
-                .FirstOrDefaultAsync() ?? HttpContextExtensions.DefaultLanguage;
+                .Select(u => u.Language != null ? u.Language.Code : HttpContextHelpers.DefaultLanguage)
+                .FirstOrDefaultAsync() ?? HttpContextHelpers.DefaultLanguage;
 
             var query = db.Printers
                 .Include(p => p.Protocol)
@@ -184,7 +184,7 @@ public static class PrinterEndpoints
 
         group.MapPost("/", async (PrinterDto dto, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
-            if (!ValidationExtensions.TryValidateModel(dto, out var errorResult))
+            if (!ValidationHelpers.TryValidateModel(dto, out var errorResult))
             {
                 return errorResult!;
             }
@@ -221,7 +221,7 @@ public static class PrinterEndpoints
 
         group.MapPut("/{id:int}", async (int id, PrinterDto updatedDto, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
-            if (!ValidationExtensions.TryValidateModel(updatedDto, out var errorResult))
+            if (!ValidationHelpers.TryValidateModel(updatedDto, out var errorResult))
             {
                 return errorResult!;
             }

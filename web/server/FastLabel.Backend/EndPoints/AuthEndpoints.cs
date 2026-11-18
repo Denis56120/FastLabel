@@ -8,35 +8,24 @@ public static class AuthEndpoints
 
         authGroup.MapPost("/login", async (LoginDto request, HttpContext httpContext, AppDbContext db, IPasswordHasher<User> passwordHasher) =>
         {
-            if (!ValidationExtensions.TryValidateModel(request, out var errorResult))
+            if (!ValidationHelpers.TryValidateModel(request, out var errorResult))
             {
                 return errorResult!;
             }
 
-            var user = await db.Users
-                .OrderBy(u => u.Id) 
-                .FirstOrDefaultAsync(u => u.Email == request.Email);
-            
+            var user = await DbHelpers.GetUserByEmailAsync(db, request.Email);            
             if (user == null || passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password) == PasswordVerificationResult.Failed)
             {
                 return Results.BadRequest(new ErrorResponseDto { Message = "auth.error.invalid_credentials" });
             }
 
-            var statusTag = await db.Texts
-                .Join(db.BasicStatuses, t => t.Id, bs => bs.NameTextId, (t, bs) => new { bs.Id, t.Tag })
-                .Where(x => x.Id == user.BasicStatusId)
-                .OrderBy(x => x.Id)
-                .Select(x => x.Tag)
-                .FirstOrDefaultAsync();
-
+            var statusTag = await DbHelpers.GetStatusTagByIdAsync(db, user.BasicStatusId);
             if (statusTag == "status.inactive")
             {
                 return Results.BadRequest(new ErrorResponseDto { Message = "auth.error.account_inactive" });
             }
 
-            // Détermination du rôle selon les flags de l'entité User
             var role = user.IsAdmin ? "Admin" : (user.IsReseller ? "Reseller" : "User");
-
             var claims = new List<Claim>
             {
                 new(ClaimTypes.NameIdentifier, user.Id.ToString()),
@@ -44,9 +33,7 @@ public static class AuthEndpoints
                 new(ClaimTypes.Email, user.Email ?? string.Empty),
                 new(ClaimTypes.Role, role)
             };
-
             var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-
             await httpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), new AuthenticationProperties
             {
                 IsPersistent = true,
@@ -67,15 +54,12 @@ public static class AuthEndpoints
 
         authGroup.MapPost("/forgot-password", async (ForgotPasswordDto dto, HttpContext httpContext, AppDbContext db, IEmailService emailService, IConfiguration configuration) =>
         {
-            if (!ValidationExtensions.TryValidateModel(dto, out var errorResult))
+            if (!ValidationHelpers.TryValidateModel(dto, out var errorResult))
             {
                 return errorResult!;
             }
 
-            var user = await db.Users
-                .OrderBy(u => u.Id)
-                .FirstOrDefaultAsync(u => u.Email == dto.Email);
-
+            var user = await DbHelpers.GetUserByEmailAsync(db, dto.Email); 
             if (user == null)
             {
                 return Results.Ok(new { message = "auth.success.forgot_password" });
@@ -85,15 +69,10 @@ public static class AuthEndpoints
             user.ResetTokenExpired = DateTime.UtcNow.AddHours(2);
             await db.SaveChangesAsync();
 
-            var clientUrl = configuration["Url:ClientUrl"] ?? "https://fastlabel.com";
+            var clientUrl = ConfigurationHelpers.GetClientUrl(configuration);
             var resetLink = $"{clientUrl}/reset-password?token={user.PasswordResetToken}";
 
-            // Récupération de la langue via le cookie du navigateur (ou 'en' par défaut)
-            string language = HttpContextExtensions.DefaultLanguage;
-            if (httpContext.Request.Cookies.TryGetValue("language", out var cookieLang) && !string.IsNullOrEmpty(cookieLang))
-            {
-                language = cookieLang;
-            }
+            var (languageId, language) = await DbHelpers.GetLanguageInfoAsync(httpContext, db);
 
             var emailTexts = await db.Texts
                 .Where(t => t.Tag == "email.reset.subject" || t.Tag == "email.reset.body")
@@ -112,7 +91,6 @@ public static class AuthEndpoints
 
             var bodyTemplate = emailTexts.FirstOrDefault(t => t.Tag == "email.reset.body")?.Value
                                     ?? "Hello {0},\n\nPlease click the following link to reset your password:\n{1}";
-
             var message = string.Format(bodyTemplate, user.Name, resetLink);
 
             await emailService.SendEmailAsync(user.Email, subject, message);
@@ -122,15 +100,12 @@ public static class AuthEndpoints
 
         authGroup.MapPost("/reset-password", async (ResetPasswordDto dto, AppDbContext db, IPasswordHasher<User> passwordHasher) =>
         {
-            if (!ValidationExtensions.TryValidateModel(dto, out var errorResult))
+            if (!ValidationHelpers.TryValidateModel(dto, out var errorResult))
             {
                 return errorResult!;
             }
 
-            var user = await db.Users
-                .OrderBy(u => u.Id) 
-                .FirstOrDefaultAsync(u => u.PasswordResetToken == dto.Token);
-
+            var user = await DbHelpers.GetUserByPasswordResetTokenAsync(db, dto.Token);
             if (user == null || user.ResetTokenExpired < DateTime.UtcNow)
             {
                 return Results.BadRequest(new ErrorResponseDto { Message = "auth.error.invalid_or_expired_token" });
@@ -147,7 +122,7 @@ public static class AuthEndpoints
 
         authGroup.MapPost("/register", async (RegisterDto dto, HttpContext httpContext, AppDbContext db, IPasswordHasher<User> passwordHasher, IEmailService emailService, IConfiguration configuration) =>
         {
-            if (!ValidationExtensions.TryValidateModel(dto, out var errorResult))
+            if (!ValidationHelpers.TryValidateModel(dto, out var errorResult))
             {
                 return errorResult!;
             }
@@ -157,8 +132,8 @@ public static class AuthEndpoints
                 return Results.BadRequest(new ErrorResponseDto { Message = "auth.error.email_already_taken" });
             }
 
-            var englishLanguage = await db.Languages.FirstOrDefaultAsync(l => l.Code == HttpContextExtensions.DefaultLanguage);
-            int defaultLanguageId = englishLanguage?.Id ?? await db.Languages.Select(l => l.Id).FirstOrDefaultAsync();
+            var (languageId, language) = await DbHelpers.GetLanguageInfoAsync(httpContext, db);
+            int inactiveStatusId = await DbHelpers.GetStatusIdByTagAsync(db, "status.inactive");
 
             var user = new User
             {
@@ -166,43 +141,17 @@ public static class AuthEndpoints
                 Email = dto.Email,
                 CreatedAt = DateTime.UtcNow,
                 EmailVerificationToken = Guid.NewGuid().ToString(),
-                LanguageId = defaultLanguageId
+                LanguageId = languageId,
+                BasicStatusId = inactiveStatusId
             };
 
             user.PasswordHash = passwordHasher.HashPassword(user, dto.Password);
-
-            var inactiveStatus = await db.BasicStatuses
-                .Join(db.Texts, bs => bs.NameTextId, t => t.Id, (bs, t) => new { bs, t.Tag })
-                .Where(x => x.Tag == "status.inactive")
-                .OrderBy(x => x.bs.Id)
-                .Select(x => x.bs)
-                .FirstOrDefaultAsync();
-
-            if (inactiveStatus != null)
-            {
-                user.BasicStatusId = inactiveStatus.Id;
-            }
-            else
-            {
-                var fallbackStatus = await db.BasicStatuses.OrderBy(s => s.Id).Skip(1).FirstOrDefaultAsync();
-                if (fallbackStatus != null)
-                {
-                    user.BasicStatusId = fallbackStatus.Id;
-                }
-            }
 
             db.Users.Add(user);
             await db.SaveChangesAsync();
 
             var serverUrl = configuration["Url:ServerUrl"] ?? "https://fastlabel.com";
             var verificationLink = $"{serverUrl}/api/auth/verify-email?token={user.EmailVerificationToken}";
-
-            // Récupération de la langue via le cookie du navigateur (ou 'en' par défaut)
-            string language = HttpContextExtensions.DefaultLanguage;
-            if (httpContext.Request.Cookies.TryGetValue("language", out var cookieLang) && !string.IsNullOrEmpty(cookieLang))
-            {
-                language = cookieLang;
-            }
 
             var emailTexts = await db.Texts
                 .Where(t => t.Tag == "email.activation.subject" || t.Tag == "email.activation.body")
@@ -221,7 +170,6 @@ public static class AuthEndpoints
 
             var bodyTemplate = emailTexts.FirstOrDefault(t => t.Tag == "email.activation.body")?.Value
                                     ?? string.Empty;
-
             var message = string.Format(bodyTemplate, user.Name, verificationLink);
 
             await emailService.SendEmailAsync(user.Email, subject, message);
@@ -236,30 +184,17 @@ public static class AuthEndpoints
                 return Results.BadRequest(new ErrorResponseDto { Message = "auth.error.invalid_token" });
             }
 
-            var user = await db.Users
-                .OrderBy(u => u.Id) 
-                .FirstOrDefaultAsync(u => u.EmailVerificationToken == token);
+            var user = await DbHelpers.GetUserByEmailVerificationTokenAsync(db, token);
             if (user == null)
             {
                 return Results.BadRequest(new ErrorResponseDto { Message = "auth.error.invalid_or_expired_token" });
             }
 
-            var activeStatus = await db.BasicStatuses
-                .Join(db.Texts, bs => bs.NameTextId, t => t.Id, (bs, t) => new { bs, t.Tag })
-                .Where(x => x.Tag == "status.active")
-                .OrderBy(x => x.bs.Id)
-                .Select(x => x.bs)
-                .FirstOrDefaultAsync();
-
-            if (activeStatus != null)
-            {
-                user.BasicStatusId = activeStatus.Id;
-            }
-
+            user.BasicStatusId = await DbHelpers.GetStatusIdByTagAsync(db, "status.active");
             user.EmailVerificationToken = null;
             await db.SaveChangesAsync();
 
-            var clientUrl = configuration["Url:ClientUrl"] ?? "https://fastlabel.com";
+            var clientUrl = ConfigurationHelpers.GetClientUrl(configuration);
             return Results.Redirect($"{clientUrl}/?activated=true");
         }).DisableAntiforgery();
     }

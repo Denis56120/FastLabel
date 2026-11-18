@@ -8,7 +8,7 @@ public static class LanguageEndpoints
         
         group.MapGet("/", async (AppDbContext db, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
         {
-            string lang = HttpContextExtensions.DefaultLanguage;
+            string lang = HttpContextHelpers.GetLanguageCookie(httpContext);
 
             // 1. Si l'utilisateur est connecté, on cherche sa langue en base en priorité
             var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier) 
@@ -25,11 +25,6 @@ public static class LanguageEndpoints
                 {
                     lang = userLang;
                 }
-            }
-            // 2. Sinon, on se replie directement sur le cookie du navigateur
-            else if (httpContext.Request.Cookies.TryGetValue("language", out var cookieLang) && !string.IsNullOrEmpty(cookieLang))
-            {
-                lang = cookieLang;
             }
 
             var languages = await db.Languages

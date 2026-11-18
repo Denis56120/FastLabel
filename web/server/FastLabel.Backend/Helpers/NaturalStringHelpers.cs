@@ -1,8 +1,6 @@
-using System.Text.RegularExpressions;
-
 namespace FastLabel.Backend.Helpers;
 
-public class NaturalStringComparer : IComparer<string?>
+public class NaturalStringHelpers : IComparer<string?>
 {
     private static readonly Regex NumericRegex = new("([0-9]+)", RegexOptions.Compiled);
 

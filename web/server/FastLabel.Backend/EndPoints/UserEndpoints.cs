@@ -14,7 +14,7 @@ public static class UserEndpoints
                 .Select(u => new
                 {
                     User = u,
-                    LangCode = u.Language != null ? u.Language.Code : HttpContextExtensions.DefaultLanguage
+                    LangCode = u.Language != null ? u.Language.Code : HttpContextHelpers.DefaultLanguage
                 })
                 .FirstOrDefaultAsync();
 
@@ -55,7 +55,7 @@ public static class UserEndpoints
 
         routes.MapPut("/api/users/me", async (UserDto updatedDto, AppDbContext db, IPasswordHasher<User> passwordHasher, IEmailService emailService, IConfiguration configuration, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
         {
-            if (!ValidationExtensions.TryValidateModel(updatedDto, out var errorResult))
+            if (!ValidationHelpers.TryValidateModel(updatedDto, out var errorResult))
             {
                 return errorResult!;
             }
@@ -175,8 +175,8 @@ public static class UserEndpoints
 
             var adminLang = await db.Users
                 .Where(u => u.Id == adminId)
-                .Select(u => u.Language != null ? u.Language.Code : HttpContextExtensions.DefaultLanguage)
-                .FirstOrDefaultAsync() ?? HttpContextExtensions.DefaultLanguage;
+                .Select(u => u.Language != null ? u.Language.Code : HttpContextHelpers.DefaultLanguage)
+                .FirstOrDefaultAsync() ?? HttpContextHelpers.DefaultLanguage;
 
             var query = db.Users
                 .Include(u => u.BasicStatus)
@@ -202,7 +202,7 @@ public static class UserEndpoints
                 query = query.Where(u => u.Reseller != null && u.Reseller.Name != null && u.Reseller.Name.Contains(filterByReseller));
             }
 
-            var naturalComparer = new NaturalStringComparer();
+            var naturalComparer = new NaturalStringHelpers();
 
             // 2. Utilisation de l'extension ToPagedResultAsync pour la pagination et le tri naturel
             var result = await query.ToPagedResultAsync(
@@ -251,8 +251,8 @@ public static class UserEndpoints
 
             var adminLang = await db.Users
                 .Where(u => u.Id == adminId)
-                .Select(u => u.Language != null ? u.Language.Code : HttpContextExtensions.DefaultLanguage)
-                .FirstOrDefaultAsync() ?? HttpContextExtensions.DefaultLanguage;
+                .Select(u => u.Language != null ? u.Language.Code : HttpContextHelpers.DefaultLanguage)
+                .FirstOrDefaultAsync() ?? HttpContextHelpers.DefaultLanguage;
 
             var dto = await db.Users
                 .Include(u => u.BasicStatus)
@@ -290,7 +290,7 @@ public static class UserEndpoints
 
         adminGroup.MapPost("/", async (UserDto dto, AppDbContext db, IPasswordHasher<User> passwordHasher) =>
         {
-            if (!ValidationExtensions.TryValidateModel(dto, out var errorResult))
+            if (!ValidationHelpers.TryValidateModel(dto, out var errorResult))
             {
                 return errorResult!;
             }
@@ -327,7 +327,7 @@ public static class UserEndpoints
 
         adminGroup.MapPut("/{id:int}", async (int id, UserDto updatedDto, AppDbContext db, IPasswordHasher<User> passwordHasher) =>
         {
-            if (!ValidationExtensions.TryValidateModel(updatedDto, out var errorResult))
+            if (!ValidationHelpers.TryValidateModel(updatedDto, out var errorResult))
             {
                 return errorResult!;
             }
