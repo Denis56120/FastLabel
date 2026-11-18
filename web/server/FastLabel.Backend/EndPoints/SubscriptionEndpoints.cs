@@ -6,21 +6,16 @@ public static class SubscriptionEndpoints
     {
         var group = routes.MapGroup("/api/account/subscriptions").RequireAuthorization();
         
-        group.MapGet("/", async (AppDbContext db, ClaimsPrincipal claimsUser) =>
+        group.MapGet("/", async (AppDbContext db, ClaimsPrincipal claimsUser, HttpContext httpContext) =>
         {
-            var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier) 
-                                ?? claimsUser.FindFirstValue("nameid");
+            var userIdString = ClaimsPrincipalHelpers.GetUserIdByClaimPrincipal(claimsUser);
 
             if (!int.TryParse(userIdString, out var userId))
                 return Results.Unauthorized(); 
 
             bool isAdmin = claimsUser.IsInRole("Admin");
 
-            // Récupère la langue de l'utilisateur connecté en base
-            var lang = await db.Users
-                .Where(u => u.Id == userId)
-                .Select(u => u.Language != null ? u.Language.Code : HttpContextHelpers.DefaultLanguage)
-                .FirstOrDefaultAsync() ?? HttpContextHelpers.DefaultLanguage;
+            var (languageId, language) = await DbHelpers.GetUserLanguageByUserIdAsync(httpContext, db, userId);
 
             var query = db.Subscriptions
                 .Include(s => s.Plan)
@@ -45,14 +40,14 @@ public static class SubscriptionEndpoints
                     Id = s.Id,
                     PlanName = s.Plan != null && s.Plan.Name != null
                         ? (s.Plan.Name.Translations
-                            .Where(tr => tr.Language.Code == lang)
+                            .Where(tr => tr.Language.Code == language)
                             .Select(tr => tr.TranslatedValue)
                             .FirstOrDefault()
                            ?? s.Plan.Name.DefaultTranslation)
                         : string.Empty,
                     SubscriptionTypeName = s.SubscriptionType != null && s.SubscriptionType.Name != null
                         ? (s.SubscriptionType.Name.Translations
-                            .Where(tr => tr.Language.Code == lang)
+                            .Where(tr => tr.Language.Code == language)
                             .Select(tr => tr.TranslatedValue)
                             .FirstOrDefault()
                            ?? s.SubscriptionType.Name.DefaultTranslation)
@@ -65,19 +60,14 @@ public static class SubscriptionEndpoints
             return Results.Ok(subscriptions);
         });
 
-        group.MapGet("/current", async (AppDbContext db, ClaimsPrincipal claimsUser) =>
+        group.MapGet("/current", async (AppDbContext db, ClaimsPrincipal claimsUser, HttpContext httpContext) =>
         {
-            var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier) 
-                                ?? claimsUser.FindFirstValue("nameid");
+            var userIdString = ClaimsPrincipalHelpers.GetUserIdByClaimPrincipal(claimsUser);
 
             if (!int.TryParse(userIdString, out var userId))
                 return Results.Unauthorized(); 
 
-            // Récupère la langue de l'utilisateur connecté en base
-            var lang = await db.Users
-                .Where(u => u.Id == userId)
-                .Select(u => u.Language != null ? u.Language.Code : HttpContextHelpers.DefaultLanguage)
-                .FirstOrDefaultAsync() ?? HttpContextHelpers.DefaultLanguage;
+            var (languageId, language) = await DbHelpers.GetUserLanguageByUserIdAsync(httpContext, db, userId);
 
             var now = DateTime.UtcNow;
 
@@ -104,14 +94,14 @@ public static class SubscriptionEndpoints
                 Id = currentSub.Id,
                 PlanName = currentSub.Plan != null && currentSub.Plan.Name != null
                     ? (currentSub.Plan.Name.Translations
-                        .Where(tr => tr.Language.Code == lang)
+                        .Where(tr => tr.Language.Code == language)
                         .Select(tr => tr.TranslatedValue)
                         .FirstOrDefault()
                        ?? currentSub.Plan.Name.DefaultTranslation)
                     : string.Empty,
                 SubscriptionTypeName = currentSub.SubscriptionType != null && currentSub.SubscriptionType.Name != null
                     ? (currentSub.SubscriptionType.Name.Translations
-                        .Where(tr => tr.Language.Code == lang)
+                        .Where(tr => tr.Language.Code == language)
                         .Select(tr => tr.TranslatedValue)
                         .FirstOrDefault()
                        ?? currentSub.SubscriptionType.Name.DefaultTranslation)

@@ -6,7 +6,6 @@ public static class ResellerEndpoints
     {
         var resellerGroup = routes.MapGroup("/api/reseller").RequireAuthorization();
 
-        // 1. Lister les clients finaux gérés par le revendeur connecté (avec support du tri naturel et des filtres)
         resellerGroup.MapGet("/clients", async (
             int? page, 
             int? pageSize, 
@@ -20,7 +19,7 @@ public static class ResellerEndpoints
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
-            var reseller = await db.Users.FindAsync(userId);
+            var reseller = await DbHelpers.GetUserByIdAsync(db, userId);  
             if (reseller == null || !reseller.IsReseller)
                 return Results.Forbid();
 
@@ -29,7 +28,6 @@ public static class ResellerEndpoints
 
             var query = db.Users.Where(u => u.ResellerId == userId).AsQueryable();
 
-            // Application des filtres textuels
             if (!string.IsNullOrWhiteSpace(filterByName))
             {
                 query = query.Where(u => u.Name != null && u.Name.Contains(filterByName));
@@ -42,7 +40,6 @@ public static class ResellerEndpoints
 
             var naturalComparer = new NaturalStringHelpers();
 
-            // Utilisation de l'extension ToPagedResultAsync pour la pagination et le tri naturel
             var result = await query.ToPagedResultAsync(
                 currentPage,
                 size,
@@ -71,15 +68,12 @@ public static class ResellerEndpoints
             return Results.Ok(result);
         });
 
-        // 2. Ajouter un client final (Incrémente Stripe + Crée le compte inactif + Envoie l'e-mail d'activation multilingue)
         resellerGroup.MapPost("/clients", async (UserDto clientDto, AppDbContext db, IEmailService emailService, IConfiguration configuration, IStripeService stripeService, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
         {
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
-            var reseller = await db.Users
-                .Include(u => u.StripeRecord)
-                .FirstOrDefaultAsync(u => u.Id == userId);
+            var reseller = await DbHelpers.GetUserByIdWithStripeRecordAsync(db, userId);  
 
             if (reseller == null || !reseller.IsReseller)
                 return Results.Forbid();
@@ -89,13 +83,12 @@ public static class ResellerEndpoints
                 return errorResult!;
             }
 
-            bool emailExists = await db.Users.AnyAsync(u => u.Email == clientDto.Email);
-            if (emailExists)
+            var user = await DbHelpers.GetUserByEmailAsync(db, clientDto.Email); 
+            if (user != null)
             {
                 return Results.BadRequest(new ErrorResponseDto { Message = "user.error.email_already_taken" });
             }
 
-            // Mettre à jour l'abonnement Stripe du revendeur (+1 quantité)
             if (reseller.StripeRecord != null && !string.IsNullOrEmpty(reseller.StripeRecord.StripeSubscriptionId))
             {
                 try
@@ -108,13 +101,7 @@ public static class ResellerEndpoints
                 }
             }
 
-            // Récupérer le statut "inactive" par défaut pour l'invitation
-            var inactiveStatus = await db.BasicStatuses
-                .Join(db.Texts, bs => bs.NameTextId, t => t.Id, (bs, t) => new { bs, t.Tag })
-                .Where(x => x.Tag == "status.inactive")
-                .OrderBy(x => x.bs.Id)
-                .Select(x => x.bs)
-                .FirstOrDefaultAsync();
+            int inactiveStatusId = await DbHelpers.GetStatusIdByTagAsync(db, "status.inactive");
 
             var activationToken = Guid.NewGuid().ToString();
 
@@ -123,7 +110,7 @@ public static class ResellerEndpoints
                 Name = clientDto.Name,
                 Email = clientDto.Email,
                 LanguageId = reseller.LanguageId,
-                BasicStatusId = inactiveStatus?.Id ?? 1,
+                BasicStatusId = inactiveStatusId,
                 ResellerId = userId,
                 IsReseller = false,
                 EmailVerificationToken = activationToken,
@@ -133,12 +120,10 @@ public static class ResellerEndpoints
             db.Users.Add(newClient);
             await db.SaveChangesAsync();
 
-            // Construction du lien d'activation (identique au register)
-            var serverUrl = configuration["Url:ServerUrl"] ?? "https://fastlabel.com";
+            var serverUrl = ConfigurationHelpers.GetServerUrl(configuration);
             var verificationLink = $"{serverUrl}/api/auth/verify-email?token={activationToken}";
 
-            // Récupération de la langue (via le cookie ou celle du revendeur)
-            string language = HttpContextHelpers.GetLanguageCookie(httpContext);
+            var (languageId, language) = await DbHelpers.GetLanguageAsync(httpContext, db);
 
             var emailTexts = await db.Texts
                 .Where(t => t.Tag == "email.activation.subject" || t.Tag == "email.activation.body")
@@ -157,7 +142,6 @@ public static class ResellerEndpoints
 
             var bodyTemplate = emailTexts.FirstOrDefault(t => t.Tag == "email.activation.body")?.Value
                             ?? "Hello {0},\n\nPlease click the following link to activate your account:\n{1}";
-
             var message = string.Format(bodyTemplate, newClient.Name, verificationLink);
 
             await emailService.SendEmailAsync(newClient.Email, subject, message);
@@ -168,26 +152,20 @@ public static class ResellerEndpoints
             return Results.Created($"/api/reseller/clients/{newClient.Id}", clientDto);
         });
 
-        // 3. Supprimer un client final (Décrémente Stripe + Supprime le User)
         resellerGroup.MapDelete("/clients/{id:int}", async (int id, AppDbContext db, IStripeService stripeService, ClaimsPrincipal claimsUser) =>
         {
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
-            var reseller = await db.Users
-                .Include(u => u.StripeRecord)
-                .FirstOrDefaultAsync(u => u.Id == userId);
+            var reseller = await DbHelpers.GetUserByIdWithStripeRecordAsync(db, userId);  
 
             if (reseller == null || !reseller.IsReseller)
                 return Results.Forbid();
 
-            var clientToDelete = await db.Users
-                .FirstOrDefaultAsync(u => u.Id == id && u.ResellerId == userId);
-
+            var clientToDelete = await DbHelpers.GetUserByIdAndResellerIdAsync(db, id, userId);  
             if (clientToDelete == null)
                 return Results.NotFound(new ErrorResponseDto { Message = "user.error.not_found" });
 
-            // Mettre à jour l'abonnement Stripe du revendeur (-1 quantité)
             if (reseller.StripeRecord != null && !string.IsNullOrEmpty(reseller.StripeRecord.StripeSubscriptionId))
             {
                 try

@@ -11,9 +11,7 @@ public static class PrintEndpoints
                 return errorResult!;
             }
 
-            var agent = await db.Agents
-                .OrderBy(a => a.Id)
-                .FirstOrDefaultAsync(a => a.ApiKey == request.ApiKey);
+            var agent = await DbHelpers.GetAgentByApiKeyAsync(db, request.ApiKey);
             if (agent == null) return Results.Unauthorized();
 
             if (!broker.ActiveAgents.TryGetValue(agent.Id, out var ws) || ws.State != WebSocketState.Open)
@@ -21,7 +19,7 @@ public static class PrintEndpoints
                 return Results.BadRequest(new ErrorResponseDto { Message = "print.error.agent_not_connected" });
             }
 
-            var printer = await db.Printers.FindAsync(request.PrinterId);
+            var printer = await DbHelpers.GetPrinterByIdAsync(db, request.PrinterId);  
             if (printer == null)
             {
                 return Results.BadRequest(new ErrorResponseDto { Message = "printer.error.not_found" });
@@ -30,7 +28,7 @@ public static class PrintEndpoints
             string zplData = request.RawData ?? string.Empty;
             if (request.TemplateId.HasValue)
             {
-                var template = await db.Templates.FindAsync(request.TemplateId.Value);
+                var template = await DbHelpers.GetTemplateByIdAsync(db, request.TemplateId.Value);
                 if (template == null) 
                 {
                     return Results.BadRequest(new ErrorResponseDto { Message = "print.error.template_not_found" });

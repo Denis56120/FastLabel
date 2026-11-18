@@ -8,7 +8,7 @@ public static class AgentTypeEndpoints
 
         group.MapGet("/", async (AppDbContext db, ClaimsPrincipal claimsUser, HttpContext httpContext) =>
         {
-            var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userIdString = ClaimsPrincipalHelpers.GetUserIdByClaimPrincipal(claimsUser);
 
             if (!int.TryParse(userIdString, out var userId))
                 return Results.Unauthorized();

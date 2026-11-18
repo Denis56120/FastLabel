@@ -11,8 +11,8 @@ public static class TranslationEndpoints
                 return Results.BadRequest(new ErrorResponseDto { Message = "language.error.invalid" });
             }
 
-            var languageExists = await db.Languages.AnyAsync(l => l.Code == language);
-            if (!languageExists)
+            var lang = await DbHelpers.GetLanguageByCodeAsync(db, language);  
+            if (lang == null)
             {
                 return Results.BadRequest(new ErrorResponseDto { Message = "language.error.invalid" });
             }

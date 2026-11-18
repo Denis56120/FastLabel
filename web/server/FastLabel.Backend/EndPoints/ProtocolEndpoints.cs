@@ -6,19 +6,14 @@ public static class ProtocolEndpoints
     {
         var group = routes.MapGroup("/api/protocols").RequireAuthorization();
 
-        group.MapGet("/", async (AppDbContext db, ClaimsPrincipal claimsUser) =>
+        group.MapGet("/", async (AppDbContext db, ClaimsPrincipal claimsUser, HttpContext httpContext) =>
         {
-            var userIdString = claimsUser.FindFirstValue(ClaimTypes.NameIdentifier) 
-                                ?? claimsUser.FindFirstValue("nameid");
+            var userIdString = ClaimsPrincipalHelpers.GetUserIdByClaimPrincipal(claimsUser);
 
             if (!int.TryParse(userIdString, out var userId))
                 return Results.Unauthorized();
 
-            // Récupère la langue de l'utilisateur connecté en base
-            var lang = await db.Users
-                .Where(u => u.Id == userId)
-                .Select(u => u.Language != null ? u.Language.Code : HttpContextHelpers.DefaultLanguage)
-                .FirstOrDefaultAsync() ?? HttpContextHelpers.DefaultLanguage;
+            var (languageId, language) = await DbHelpers.GetUserLanguageByUserIdAsync(httpContext, db, userId);
 
             var protocols = await db.Protocols
                 .Include(p => p.Name)
@@ -29,7 +24,7 @@ public static class ProtocolEndpoints
                     Id = p.Id,
                     Name = p.Name != null && p.Name.Translations != null
                         ? (p.Name.Translations
-                            .Where(tr => tr.Language.Code == lang)
+                            .Where(tr => tr.Language.Code == language)
                             .Select(tr => tr.TranslatedValue)
                             .FirstOrDefault()
                            ?? p.Name.DefaultTranslation)

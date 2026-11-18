@@ -15,21 +15,17 @@ public static class TemplateEndpoints
             string? filterByName,
             string? filterByStatus,
             AppDbContext db, 
-            ClaimsPrincipal claimsUser) =>
+            ClaimsPrincipal claimsUser, 
+            HttpContext httpContext) =>
         {
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
-            // Valeurs par défaut de sécurité
             if (page < 1) page = 1;
             if (pageSize < 1) pageSize = 10;
             if (pageSize > 500) pageSize = 500;
 
-            // Récupère la langue de l'utilisateur connecté pour traduire les statuts
-            var lang = await db.Users
-                .Where(u => u.Id == userId)
-                .Select(u => u.Language != null ? u.Language.Code : HttpContextHelpers.DefaultLanguage)
-                .FirstOrDefaultAsync() ?? HttpContextHelpers.DefaultLanguage;
+            var (languageId, language) = await DbHelpers.GetUserLanguageByUserIdAsync(httpContext, db, userId);
 
             var query = db.Templates
                 .Include(t => t.BasicStatus)
@@ -44,7 +40,6 @@ public static class TemplateEndpoints
                 query = query.Where(t => t.UserId == userId);
             }
 
-            // 1. Application des filtres textuels reçus du front
             if (!string.IsNullOrWhiteSpace(filterByUser))
             {
                 query = query.Where(t => t.User != null && t.User.Name.Contains(filterByUser));
@@ -59,7 +54,7 @@ public static class TemplateEndpoints
             {
                 query = query.Where(t => t.BasicStatus != null && t.BasicStatus.Name != null &&
                     (t.BasicStatus.Name.Translations
-                        .Where(tr => tr.Language.Code == lang)
+                        .Where(tr => tr.Language.Code == language)
                         .Select(tr => tr.TranslatedValue)
                         .FirstOrDefault() ?? t.BasicStatus.Name.DefaultTranslation)
                     .Contains(filterByStatus));
@@ -67,7 +62,6 @@ public static class TemplateEndpoints
 
             var naturalComparer = new NaturalStringHelpers();
 
-            // 2. Utilisation de l'extension ToPagedResultAsync pour la pagination et le tri naturel
             var result = await query.ToPagedResultAsync(
                 page,
                 pageSize,
@@ -79,7 +73,7 @@ public static class TemplateEndpoints
                     Name = t.Name ?? string.Empty,
                     BasicStatusName = t.BasicStatus != null && t.BasicStatus.Name != null 
                         ? (t.BasicStatus.Name.Translations
-                            .Where(tr => tr.Language.Code == lang)
+                            .Where(tr => tr.Language.Code == language)
                             .Select(tr => tr.TranslatedValue)
                             .FirstOrDefault() 
                            ?? t.BasicStatus.Name.DefaultTranslation) 
@@ -103,16 +97,12 @@ public static class TemplateEndpoints
             return Results.Ok(result);
         });
 
-        group.MapGet("/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal claimsUser) =>
+        group.MapGet("/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal claimsUser, HttpContext httpContext) =>
         {
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
-            // Récupère la langue de l'utilisateur connecté pour traduire les statuts
-            var lang = await db.Users
-                .Where(u => u.Id == userId)
-                .Select(u => u.Language != null ? u.Language.Code : HttpContextHelpers.DefaultLanguage)
-                .FirstOrDefaultAsync() ?? HttpContextHelpers.DefaultLanguage;
+            var (languageId, language) = await DbHelpers.GetUserLanguageByUserIdAsync(httpContext, db, userId);
 
             var query = db.Templates
                 .Include(t => t.BasicStatus)
@@ -135,7 +125,7 @@ public static class TemplateEndpoints
                     Name = t.Name ?? string.Empty,
                     BasicStatusName = t.BasicStatus != null && t.BasicStatus.Name != null 
                         ? (t.BasicStatus.Name.Translations
-                            .Where(tr => tr.Language.Code == lang)
+                            .Where(tr => tr.Language.Code == language)
                             .Select(tr => tr.TranslatedValue)
                             .FirstOrDefault() 
                            ?? t.BasicStatus.Name.DefaultTranslation) 
@@ -192,7 +182,7 @@ public static class TemplateEndpoints
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
-            var template = await db.Templates.FindAsync(id);
+            var template = await DbHelpers.GetTemplateByIdAsync(db, id);
             if (template is null) return Results.NotFound(new ErrorResponseDto { Message = "template.error.not_found" });
 
             if (!isAdmin && template.UserId != userId)
@@ -216,7 +206,7 @@ public static class TemplateEndpoints
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
-            var template = await db.Templates.FindAsync(id);
+            var template = await DbHelpers.GetTemplateByIdAsync(db, id);
             if (template is null) return Results.NotFound(new ErrorResponseDto { Message = "template.error.not_found" });
 
             if (!isAdmin && template.UserId != userId)

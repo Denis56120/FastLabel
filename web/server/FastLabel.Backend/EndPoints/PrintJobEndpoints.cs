@@ -20,10 +20,9 @@ public static class PrintJobEndpoints
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0 && !isAdmin) return Results.Unauthorized();
 
-            // Valeurs par défaut de sécurité
             if (page < 1) page = 1;
             if (pageSize < 1) pageSize = 10;
-            if (pageSize > 500) pageSize = 500; // Limite maximale de sécurité par page
+            if (pageSize > 500) pageSize = 500;
 
             var query = db.PrintJobs
                 .Include(j => j.Printer)
@@ -54,7 +53,6 @@ public static class PrintJobEndpoints
 
             var naturalComparer = new NaturalStringHelpers();
 
-            // 2. Utilisation de l'extension ToPagedResultAsync pour la pagination et le tri naturel
             var result = await query.ToPagedResultAsync(
                 page,
                 pageSize,

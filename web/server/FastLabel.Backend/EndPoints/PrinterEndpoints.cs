@@ -15,20 +15,16 @@ public static class PrinterEndpoints
             string? filterByName,
             string? filterByLocation,
             AppDbContext db, 
-            ClaimsPrincipal claimsUser) =>
+            ClaimsPrincipal claimsUser, 
+            HttpContext httpContext) =>
         {
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
-            // Valeurs par défaut de sécurité si non fournies
             if (page < 1) page = 1;
             if (pageSize < 1) pageSize = 10;
 
-            // Récupère la langue de l'utilisateur connecté en base
-            var lang = await db.Users
-                .Where(u => u.Id == userId)
-                .Select(u => u.Language != null ? u.Language.Code : HttpContextHelpers.DefaultLanguage)
-                .FirstOrDefaultAsync() ?? HttpContextHelpers.DefaultLanguage;
+            var (languageId, language) = await DbHelpers.GetUserLanguageByUserIdAsync(httpContext, db, userId);
 
             var query = db.Printers
                 .Include(p => p.Protocol)
@@ -48,7 +44,6 @@ public static class PrinterEndpoints
                 query = query.Where(p => p.UserId == userId);
             }
 
-            // 1. Application des filtres textuels reçus du front
             if (!string.IsNullOrWhiteSpace(filterByUser))
             {
                 query = query.Where(p => p.User != null && p.User.Name.Contains(filterByUser));
@@ -66,7 +61,6 @@ public static class PrinterEndpoints
 
             var naturalComparer = new NaturalStringHelpers();
 
-            // 2. Utilisation de l'extension ToPagedResultAsync pour la pagination et le tri naturel
             var result = await query.ToPagedResultAsync(
                 page,
                 pageSize,
@@ -82,7 +76,7 @@ public static class PrinterEndpoints
                     ProtocolId = p.ProtocolId,
                     ProtocolName = p.Protocol != null && p.Protocol.Name != null
                         ? (p.Protocol.Name.Translations
-                            .Where(tr => tr.Language.Code == lang)
+                            .Where(tr => tr.Language.Code == language)
                             .Select(tr => tr.TranslatedValue)
                             .FirstOrDefault()
                            ?? p.Protocol.Name.DefaultTranslation)
@@ -92,7 +86,7 @@ public static class PrinterEndpoints
                     BasicStatusId = p.BasicStatusId,
                     StatusName = p.BasicStatus != null && p.BasicStatus.Name != null 
                         ? (p.BasicStatus.Name.Translations
-                            .Where(tr => tr.Language.Code == lang)
+                            .Where(tr => tr.Language.Code == language)
                             .Select(tr => tr.TranslatedValue)
                             .FirstOrDefault() 
                            ?? p.BasicStatus.Name.DefaultTranslation) 
@@ -116,16 +110,12 @@ public static class PrinterEndpoints
             return Results.Ok(result);
         });
 
-        group.MapGet("/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal claimsUser) =>
+        group.MapGet("/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal claimsUser, HttpContext httpContext) =>
         {
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
-            // Récupère la langue de l'utilisateur connecté en base
-            var lang = await db.Users
-                .Where(u => u.Id == userId)
-                .Select(u => u.Language != null ? u.Language.Code : HttpContextHelpers.DefaultLanguage)
-                .FirstOrDefaultAsync() ?? HttpContextHelpers.DefaultLanguage;
+            var (languageId, language) = await DbHelpers.GetUserLanguageByUserIdAsync(httpContext, db, userId);
 
             var query = db.Printers
                 .Include(p => p.Protocol)
@@ -157,7 +147,7 @@ public static class PrinterEndpoints
                     ProtocolId = p.ProtocolId,
                     ProtocolName = p.Protocol != null && p.Protocol.Name != null
                         ? (p.Protocol.Name.Translations
-                            .Where(tr => tr.Language.Code == lang)
+                            .Where(tr => tr.Language.Code == language)
                             .Select(tr => tr.TranslatedValue)
                             .FirstOrDefault()
                            ?? p.Protocol.Name.DefaultTranslation)
@@ -167,7 +157,7 @@ public static class PrinterEndpoints
                     BasicStatusId = p.BasicStatusId,
                     StatusName = p.BasicStatus != null && p.BasicStatus.Name != null 
                         ? (p.BasicStatus.Name.Translations
-                            .Where(tr => tr.Language.Code == lang)
+                            .Where(tr => tr.Language.Code == language)
                             .Select(tr => tr.TranslatedValue)
                             .FirstOrDefault() 
                            ?? p.BasicStatus.Name.DefaultTranslation) 
@@ -192,11 +182,11 @@ public static class PrinterEndpoints
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
-            var protocolExists = await db.Protocols.AnyAsync(p => p.Id == dto.ProtocolId);
-            if (!protocolExists) return Results.BadRequest(new ErrorResponseDto { Message = "printer.error.invalid_protocol" });
+            var protocol = await DbHelpers.GetProtocolByIdAsync(db, dto.ProtocolId); 
+            if (protocol == null) return Results.BadRequest(new ErrorResponseDto { Message = "printer.error.invalid_protocol" });
 
-            var resolutionExists = await db.ResolutionDpis.AnyAsync(r => r.Id == dto.ResolutionDpiId);
-            if (!resolutionExists) return Results.BadRequest(new ErrorResponseDto { Message = "printer.error.invalid_resolution" });
+            var resolutiondpi = await DbHelpers.GetResolutionDpiByIdAsync(db, dto.ResolutionDpiId); 
+            if (resolutiondpi == null) return Results.BadRequest(new ErrorResponseDto { Message = "printer.error.invalid_resolution" });
 
             var printer = new Printer
             {
@@ -229,19 +219,19 @@ public static class PrinterEndpoints
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
-            var printer = await db.Printers.FindAsync(id);
-            if (printer is null) return Results.NotFound(new ErrorResponseDto { Message = "printer.error.not_found" });
+            var printer = await DbHelpers.GetPrinterByIdAsync(db, id);  
+            if (printer == null) return Results.NotFound(new ErrorResponseDto { Message = "printer.error.not_found" });
 
             if (!isAdmin && printer.UserId != userId)
             {
                 return Results.Forbid();
             }
 
-            var protocolExists = await db.Protocols.AnyAsync(p => p.Id == updatedDto.ProtocolId);
-            if (!protocolExists) return Results.BadRequest(new ErrorResponseDto { Message = "printer.error.invalid_protocol" });
+            var protocol = await DbHelpers.GetProtocolByIdAsync(db, updatedDto.ProtocolId); 
+            if (protocol == null) return Results.BadRequest(new ErrorResponseDto { Message = "printer.error.invalid_protocol" });
 
-            var resolutionExists = await db.ResolutionDpis.AnyAsync(r => r.Id == updatedDto.ResolutionDpiId);
-            if (!resolutionExists) return Results.BadRequest(new ErrorResponseDto { Message = "printer.error.invalid_resolution" });
+            var resolutiondpi = await DbHelpers.GetResolutionDpiByIdAsync(db, updatedDto.ResolutionDpiId); 
+            if (resolutiondpi == null) return Results.BadRequest(new ErrorResponseDto { Message = "printer.error.invalid_resolution" });
 
             printer.Name = updatedDto.Name;
             printer.Location = updatedDto.Location;
@@ -259,8 +249,8 @@ public static class PrinterEndpoints
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
-            var printer = await db.Printers.FindAsync(id);
-            if (printer is null) return Results.NotFound(new ErrorResponseDto { Message = "printer.error.not_found" });
+            var printer = await DbHelpers.GetPrinterByIdAsync(db, id);  
+            if (printer == null) return Results.NotFound(new ErrorResponseDto { Message = "printer.error.not_found" });
 
             if (!isAdmin && printer.UserId != userId)
             {

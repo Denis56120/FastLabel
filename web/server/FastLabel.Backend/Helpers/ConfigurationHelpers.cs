@@ -6,4 +6,9 @@ public static class ConfigurationHelpers
     {
         return configuration["Url:ClientUrl"] ?? "https://fastlabel.com";
     }  
+
+    public static string GetServerUrl(IConfiguration configuration)
+    {
+        return configuration["Url:ServerUrl"] ?? "https://fastlabel.com";
+    }  
 }

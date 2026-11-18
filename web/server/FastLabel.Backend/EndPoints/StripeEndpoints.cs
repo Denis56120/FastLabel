@@ -16,11 +16,8 @@ public static class StripeEndpoints
 
             string expectedTextTag = $"plan.{request.Plan.ToLower()}.name";
             
-            var planExists = await db.Plans
-                .Include(p => p.Name)
-                .AnyAsync(p => p.Name.Tag == expectedTextTag);
-
-            if (!planExists)
+            var plan = await DbHelpers.GetPlanByTagAsync(db, expectedTextTag); 
+            if (plan == null)
             {
                 return Results.BadRequest(new ErrorResponseDto { Message = "stripe.error.plan_not_found" });
             }

@@ -150,7 +150,7 @@ public static class AuthEndpoints
             db.Users.Add(user);
             await db.SaveChangesAsync();
 
-            var serverUrl = configuration["Url:ServerUrl"] ?? "https://fastlabel.com";
+            var serverUrl = ConfigurationHelpers.GetServerUrl(configuration);
             var verificationLink = $"{serverUrl}/api/auth/verify-email?token={user.EmailVerificationToken}";
 
             var emailTexts = await db.Texts

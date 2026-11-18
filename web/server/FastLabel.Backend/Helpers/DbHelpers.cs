@@ -42,6 +42,61 @@ public static class DbHelpers
         return await db.Agents.FindAsync(id);
     }
 
+    public static async Task<Protocol?> GetProtocolByIdAsync(AppDbContext db, int id)
+    {
+        return await db.Protocols.FindAsync(id);
+    }
+
+    public static async Task<ResolutionDpi?> GetResolutionDpiByIdAsync(AppDbContext db, int id)
+    {
+        return await db.ResolutionDpis.FindAsync(id);
+    }
+
+    public static async Task<Template?> GetTemplateByIdAsync(AppDbContext db, int id)
+    {
+        return await db.Templates.FindAsync(id);
+    }
+    
+    public static async Task<Printer?> GetPrinterByIdAsync(AppDbContext db, int id)
+    {
+        return await db.Printers.FindAsync(id);
+    }
+
+    public static async Task<User?> GetUserByIdAsync(AppDbContext db, int id)
+    {
+        return await db.Users.FindAsync(id);
+    }
+
+    public static async Task<Language?> GetLanguageByIdAsync(AppDbContext db, int id)
+    {
+        return await db.Languages.FindAsync(id);
+    }
+
+    public static async Task<User?> GetUserByIdWithStripeRecordAsync(AppDbContext db, int id)
+    {
+        return await db.Users
+                .Include(u => u.StripeRecord)
+                .FirstOrDefaultAsync(u => u.Id == id);
+    }
+
+    public static async Task<Plan?> GetPlanByTagAsync(AppDbContext db, string tag)
+    {
+        return await db.Plans
+                .Include(p => p.Name)
+                .FirstOrDefaultAsync(p => p.Name.Tag == tag);
+    }
+
+    public static async Task<User?> GetUserByIdAndResellerIdAsync(AppDbContext db, int id, int resellerId)
+    {
+        return await db.Users
+                .FirstOrDefaultAsync(u => u.Id == id && u.ResellerId == resellerId);
+    }
+
+    public static async Task<Agent?> GetAgentByApiKeyAsync(AppDbContext db, string ApiKey)
+    {
+        return await db.Agents.FirstOrDefaultAsync(l => l.ApiKey == ApiKey);
+    }
+
     public static async Task<Language?> GetLanguageByCodeAsync(AppDbContext db, string code)
     {
         return await db.Languages.FirstOrDefaultAsync(l => l.Code == code);
@@ -70,7 +125,7 @@ public static class DbHelpers
 
     public static async Task<(int Id, string Code)> GetUserLanguageByUserClaimAsync(HttpContext httpContext, AppDbContext db, ClaimsPrincipal claim)
     {
-        var userIdString = claim.FindFirstValue(ClaimTypes.NameIdentifier);
+        var userIdString = ClaimsPrincipalHelpers.GetUserIdByClaimPrincipal(claim);
 
         if (!string.IsNullOrEmpty(userIdString) && int.TryParse(userIdString, out var userId))
         {

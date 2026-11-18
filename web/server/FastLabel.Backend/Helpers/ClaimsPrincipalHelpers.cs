@@ -4,9 +4,7 @@ public static class ClaimsPrincipalHelpers
 {
     public static (int UserId, bool IsAdmin, bool IsReseller) GetUserInfo(this ClaimsPrincipal user)
     {
-        var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value
-                       ?? user.FindFirst("nameid")?.Value
-                       ?? user.FindFirst("unique_name")?.Value;
+        var userIdClaim = GetUserIdByClaimPrincipal(user);
 
         int.TryParse(userIdClaim, out var userId);
         
@@ -14,5 +12,10 @@ public static class ClaimsPrincipalHelpers
         bool isReseller = user.IsInRole("Reseller");
 
         return (userId, isAdmin, isReseller);
+    }
+
+    public static string GetUserIdByClaimPrincipal(this ClaimsPrincipal user)
+    {
+        return user.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? string.Empty;
     }
 }

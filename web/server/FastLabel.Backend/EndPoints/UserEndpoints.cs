@@ -63,16 +63,12 @@ public static class UserEndpoints
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
-            var user = await db.Users.FindAsync(userId);
+            var user = await DbHelpers.GetUserByIdAsync(db, userId);  
             if (user == null)
                 return Results.NotFound(new ErrorResponseDto { Message = "user.error.not_found" });
 
-            var targetLanguageCode = await db.Languages
-                .Where(l => l.Id == updatedDto.LanguageId)
-                .Select(l => l.Code)
-                .FirstOrDefaultAsync();
-
-            if (string.IsNullOrEmpty(targetLanguageCode))
+            var language = await DbHelpers.GetLanguageByIdAsync(db, updatedDto.LanguageId); 
+            if (language == null)
             {
                 return Results.BadRequest(new ErrorResponseDto { Message = "user.error.language_not_found" });
             }
@@ -109,7 +105,7 @@ public static class UserEndpoints
                     }
                 }
 
-                var serverUrl = configuration["Url:ServerUrl"] ?? "https://fastlabel.com";
+                var serverUrl = ConfigurationHelpers.GetServerUrl(configuration);
                 var verificationLink = $"{serverUrl}/api/auth/verify-email?token={user.EmailVerificationToken}";
 
                 var emailTexts = await db.Texts
@@ -118,7 +114,7 @@ public static class UserEndpoints
                     {
                         t.Tag,
                         Value = t.Translations
-                            .Where(tr => tr.Language.Code == targetLanguageCode)
+                            .Where(tr => tr.Language.Code == language.Code)
                             .Select(tr => tr.TranslatedValue)
                             .FirstOrDefault() ?? t.DefaultTranslation
                     })
@@ -129,7 +125,6 @@ public static class UserEndpoints
 
                 var bodyTemplate = emailTexts.FirstOrDefault(t => t.Tag == "email.activation.body")?.Value
                                     ?? string.Empty;
-
                 var message = string.Format(bodyTemplate, updatedDto.Name, verificationLink);
 
                 await emailService.SendEmailAsync(user.Email, subject, message);
@@ -145,14 +140,11 @@ public static class UserEndpoints
 
             await db.SaveChangesAsync();
 
-            httpContext.SetLanguageCookie(targetLanguageCode);
+            httpContext.SetLanguageCookie(language.Code);
 
             return Results.Ok(new { emailChanged });
         }).RequireAuthorization();
 
-        // ==========================================
-        // ENDPOINTS ADMIN (AVEC FILTRES & TRI NATUREL)
-        // ==========================================
         var adminGroup = routes.MapGroup("/api/users").RequireAuthorization("AdminOnly");
 
         adminGroup.MapGet("/", async (
@@ -164,7 +156,8 @@ public static class UserEndpoints
             string? filterByEmail,
             string? filterByReseller,
             AppDbContext db, 
-            ClaimsPrincipal claimsUser) =>
+            ClaimsPrincipal claimsUser, 
+            HttpContext httpContext) =>
         {
             var (adminId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (adminId == 0) return Results.Unauthorized();
@@ -173,10 +166,7 @@ public static class UserEndpoints
             if (pageSize < 1) pageSize = 10;
             if (pageSize > 500) pageSize = 500;
 
-            var adminLang = await db.Users
-                .Where(u => u.Id == adminId)
-                .Select(u => u.Language != null ? u.Language.Code : HttpContextHelpers.DefaultLanguage)
-                .FirstOrDefaultAsync() ?? HttpContextHelpers.DefaultLanguage;
+            var (languageId, language) = await DbHelpers.GetUserLanguageByUserIdAsync(httpContext, db, adminId);
 
             var query = db.Users
                 .Include(u => u.BasicStatus)
@@ -186,7 +176,6 @@ public static class UserEndpoints
                 .Include(u => u.Reseller)
                 .AsQueryable();
 
-            // 1. Application des filtres textuels
             if (!string.IsNullOrWhiteSpace(filterByName))
             {
                 query = query.Where(u => u.Name != null && u.Name.Contains(filterByName));
@@ -204,7 +193,6 @@ public static class UserEndpoints
 
             var naturalComparer = new NaturalStringHelpers();
 
-            // 2. Utilisation de l'extension ToPagedResultAsync pour la pagination et le tri naturel
             var result = await query.ToPagedResultAsync(
                 page,
                 pageSize,
@@ -222,7 +210,7 @@ public static class UserEndpoints
                     LanguageId = u.LanguageId,
                     BasicStatusName = u.BasicStatus != null && u.BasicStatus.Name != null
                         ? (u.BasicStatus.Name.Translations
-                            .Where(tr => tr.Language.Code == adminLang)
+                            .Where(tr => tr.Language.Code == language)
                             .Select(tr => tr.TranslatedValue)
                             .FirstOrDefault()
                         ?? u.BasicStatus.Name.DefaultTranslation)
@@ -237,22 +225,19 @@ public static class UserEndpoints
                     "resellername" => ascending ? items.OrderBy(x => x.ResellerName, naturalComparer) : items.OrderByDescending(x => x.ResellerName, naturalComparer),
                     "basicstatusname" => ascending ? items.OrderBy(x => x.BasicStatusName, naturalComparer) : items.OrderByDescending(x => x.BasicStatusName, naturalComparer),
                     "createdat" => ascending ? items.OrderBy(x => x.CreatedAt) : items.OrderByDescending(x => x.CreatedAt),
-                    _ => items.OrderBy(x => x.Id) // Tri par défaut
+                    _ => items.OrderBy(x => x.Id) 
                 }
             );
 
             return Results.Ok(result);
         });
 
-        adminGroup.MapGet("/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal claimsUser) =>
+        adminGroup.MapGet("/{id:int}", async (int id, AppDbContext db, ClaimsPrincipal claimsUser, HttpContext httpContext) =>
         {
             var (adminId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (adminId == 0) return Results.Unauthorized();
 
-            var adminLang = await db.Users
-                .Where(u => u.Id == adminId)
-                .Select(u => u.Language != null ? u.Language.Code : HttpContextHelpers.DefaultLanguage)
-                .FirstOrDefaultAsync() ?? HttpContextHelpers.DefaultLanguage;
+            var (languageId, language) = await DbHelpers.GetUserLanguageByUserIdAsync(httpContext, db, adminId);
 
             var dto = await db.Users
                 .Include(u => u.BasicStatus)
@@ -274,7 +259,7 @@ public static class UserEndpoints
                     LanguageId = u.LanguageId,
                     BasicStatusName = u.BasicStatus != null && u.BasicStatus.Name != null
                         ? (u.BasicStatus.Name.Translations
-                            .Where(tr => tr.Language.Code == adminLang)
+                            .Where(tr => tr.Language.Code == language)
                             .Select(tr => tr.TranslatedValue)
                             .FirstOrDefault()
                         ?? u.BasicStatus.Name.DefaultTranslation)
@@ -295,8 +280,8 @@ public static class UserEndpoints
                 return errorResult!;
             }
 
-            bool languageExists = await db.Languages.AnyAsync(l => l.Id == dto.LanguageId);
-            if (!languageExists)
+            var language = await DbHelpers.GetLanguageByIdAsync(db, dto.LanguageId); 
+            if (language == null)
             {
                 return Results.BadRequest(new ErrorResponseDto { Message = "user.error.language_not_found" });
             }
@@ -331,12 +316,11 @@ public static class UserEndpoints
             {
                 return errorResult!;
             }
-
-            var user = await db.Users.FindAsync(id);
+            var user = await DbHelpers.GetUserByIdAsync(db, id);
             if (user == null) return Results.NotFound(new ErrorResponseDto { Message = "user.error.not_found" });
 
-            bool languageExists = await db.Languages.AnyAsync(l => l.Id == updatedDto.LanguageId);
-            if (!languageExists)
+            var language = await DbHelpers.GetLanguageByIdAsync(db, updatedDto.LanguageId); 
+            if (language == null)
             {
                 return Results.BadRequest(new ErrorResponseDto { Message = "user.error.language_not_found" });
             }
