@@ -1,7 +1,7 @@
 - Web -
 > Finir le render + Faire l'API Print
 > Gérer le paiement et les souscriptions + Suppression subscriptiontype ?
-> Dépendance boostrap à voir - Faire le style de FastLabel
+> Faire le style de FastLabel (Dépendance boostrap à voir) + Mettre en forme les mails de communication utilisateur
 
 - Agent -
 > Ajouter proxy côté agent
