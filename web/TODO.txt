@@ -4,3 +4,4 @@
 > Reconnexion coupure réseau pour agent
 > Ajouter http-long-polling en secours pour l'agent
 > Dépendance boostrap à voir - Faire le style de FastLabel
+> Corriger le tri (alpha, numérique)
