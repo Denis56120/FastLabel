@@ -43,7 +43,7 @@ public static class AppExtensions
                 var configuration = services.GetRequiredService<IConfiguration>();
                 var passwordHasher = services.GetRequiredService<IPasswordHasher<User>>();
 
-                var initializer = new DbInitializer(dbContext, configuration, passwordHasher);
+                var initializer = new DbInitializer(dbContext, configuration, passwordHasher, app.Environment);
                 await initializer.InitializeAsync();
 
                 if (app.Environment.IsDevelopment())

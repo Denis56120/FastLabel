@@ -1,10 +1,11 @@
 namespace FastLabel.Backend.Data;
 
-public class DbInitializer(AppDbContext context, IConfiguration configuration, IPasswordHasher<User>? passwordHasher = null)
+public class DbInitializer(AppDbContext context, IConfiguration configuration, IPasswordHasher<User>? passwordHasher, IWebHostEnvironment env)
 {
     private readonly AppDbContext _context = context;
     private readonly IConfiguration _configuration = configuration;
-    IPasswordHasher<User>? _passwordHasher = passwordHasher;
+    private IPasswordHasher<User>? _passwordHasher = passwordHasher;
+    private readonly IWebHostEnvironment _env = env;
 
     public async Task InitializeAsync()
     {
@@ -222,7 +223,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         }
 
         // 10. Compte Administrateur par défaut
-        if (!await _context.Users.AnyAsync())
+        if (!await _context.Users.AnyAsync() && !_env.IsDevelopment())
         {
             _passwordHasher ??= new PasswordHasher<User>();
 

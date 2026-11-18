@@ -18,41 +18,53 @@ public class DevelopmentDataSeeder(AppDbContext context, IPasswordHasher<User> p
 
         int activeStatusId = activeStatus.Id;
 
-
-        // 1. Création des utilisateurs par défaut (Regular, Reseller)
-
         // Trouve la langue anglaise
         var englishLanguage = await _context.Languages
             .FirstOrDefaultAsync(l => l.Code == "en") ?? throw new InvalidOperationException("La langue anglaise ne peut pas être trouvée");
         int englishLanguageId = englishLanguage.Id;
 
-        var regularUser = new User
+        // 1. Création des utilisateurs par défaut (Regular, Reseller)
+        if (!await _context.Users.AnyAsync())
         {
-            Name = "Test User",
-            Email = "usertest@yopmail.fr",
-            BasicStatusId = activeStatusId,
-            LanguageId = englishLanguageId,
-            CreatedAt = DateTime.UtcNow,
-            IsAdmin = false,
-            IsReseller = false
-        };
-        regularUser.PasswordHash = _passwordHasher.HashPassword(regularUser, "12345678");
+            var adminUser = new User
+            {
+                Name = "Test Admin",
+                Email = "admintest@yopmail.fr",
+                BasicStatusId = activeStatusId,
+                LanguageId = englishLanguageId,
+                CreatedAt = DateTime.UtcNow,
+                IsAdmin = true,
+                IsReseller = false
+            };
+            adminUser.PasswordHash = _passwordHasher.HashPassword(adminUser, "12345678");
 
-        var resellerUser = new User
-        {
-            Name = "Test Reseller",
-            Email = "resellertest@yopmail.fr",
-            BasicStatusId = activeStatusId,
-            LanguageId = englishLanguageId,
-            CreatedAt = DateTime.UtcNow,
-            IsAdmin = false,
-            IsReseller = true,
-        };
-        resellerUser.PasswordHash = _passwordHasher.HashPassword(resellerUser, "12345678");
+            var regularUser = new User
+            {
+                Name = "Test User",
+                Email = "usertest@yopmail.fr",
+                BasicStatusId = activeStatusId,
+                LanguageId = englishLanguageId,
+                CreatedAt = DateTime.UtcNow,
+                IsAdmin = false,
+                IsReseller = false
+            };
+            regularUser.PasswordHash = _passwordHasher.HashPassword(regularUser, "12345678");
 
-        _context.Users.AddRange(regularUser, resellerUser);
-        await _context.SaveChangesAsync();
+            var resellerUser = new User
+            {
+                Name = "Test Reseller",
+                Email = "resellertest@yopmail.fr",
+                BasicStatusId = activeStatusId,
+                LanguageId = englishLanguageId,
+                CreatedAt = DateTime.UtcNow,
+                IsAdmin = false,
+                IsReseller = true,
+            };
+            resellerUser.PasswordHash = _passwordHasher.HashPassword(resellerUser, "12345678");
 
+            _context.Users.AddRange(adminUser, regularUser, resellerUser);
+            await _context.SaveChangesAsync();
+        }
 
         // 2. Agent Windows par défaut pour chaque utilisateur
         if (!await _context.Agents.AnyAsync())
