@@ -1,7 +1,7 @@
 var builder = WebApplication.CreateBuilder(args);
 
-ProgramExtensions.AddEnvironmentConfiguration(builder);
-ProgramExtensions.AddAppServices(builder);
-await ProgramExtensions.ConfigurePipelineAsync(builder);
+ProgramHelpers.AddEnvironmentConfiguration(builder);
+ProgramHelpers.AddAppServices(builder);
+await ProgramHelpers.ConfigurePipelineAsync(builder);
 
 public partial class Program { }
