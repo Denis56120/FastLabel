@@ -281,7 +281,7 @@ public static class DbHelpers
         User user,
         string languageCode)
     {
-        var activationTexts = await GetLocalizedTextsAsync(db, languageCode, "template.activation.name", "printer.activation.name", "email.activation.subject", "email.activation.body");
+        var activationTexts = await GetLocalizedTextsAsync(db, languageCode, "templates.activation.name", "printers.activation.name", "email.activation.subject", "email.activation.body");
 
         db.Users.Add(user);
         await db.SaveChangesAsync();
