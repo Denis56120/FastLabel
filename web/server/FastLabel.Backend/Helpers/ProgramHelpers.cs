@@ -19,11 +19,11 @@ public static class ProgramHelpers
         IServiceCollection services = builder.Services;
         ConfigurationManager configuration = builder.Configuration;
 
-        Stripe.StripeConfiguration.ApiKey = configuration["STRIPE_SECRET_KEY"];
+        Stripe.StripeConfiguration.ApiKey = ConfigurationHelpers.GetStripeKey(configuration);
 
         var clientUrl = ConfigurationHelpers.GetClientUrl(configuration);
         var connectionString = configuration.GetConnectionString("DefaultConnection")
-                       ?? $"Host=localhost;Port=5432;Database={configuration["DB_NAME"] ?? string.Empty};Username={configuration["DB_USER"] ?? string.Empty};Password={configuration["DB_PASSWORD"]}";
+                       ?? $"Host=localhost;Port=5432;Database={ConfigurationHelpers.GetDBName(configuration)};Username={ConfigurationHelpers.GetDBUser(configuration)};Password={ConfigurationHelpers.GetDBPassword(configuration)}";
 
         services.AddResponseCompression(options =>
         {
@@ -48,7 +48,7 @@ public static class ProgramHelpers
             options.HeaderName = "X-XSRF-TOKEN";
             options.Cookie.Name = "XSRF-TOKEN";
             options.Cookie.HttpOnly = false;
-            options.Cookie.SecurePolicy = Enum.TryParse<CookieSecurePolicy>(configuration["CookieSettings:SecurePolicy"], out var securePolicy) ? securePolicy : CookieSecurePolicy.SameAsRequest;
+            options.Cookie.SecurePolicy = Enum.TryParse<CookieSecurePolicy>(ConfigurationHelpers.GetCookieSecurity(configuration), out var securePolicy) ? securePolicy : CookieSecurePolicy.SameAsRequest;
             options.Cookie.SameSite = SameSiteMode.Strict;
         });
 
@@ -85,7 +85,7 @@ public static class ProgramHelpers
                 options.Cookie.Name = "authentification";
                 options.Cookie.HttpOnly = true;
                 options.Cookie.SameSite = SameSiteMode.Lax;
-                options.Cookie.SecurePolicy = Enum.TryParse<CookieSecurePolicy>(configuration["CookieSettings:SecurePolicy"], out var securePolicy) ? securePolicy : CookieSecurePolicy.SameAsRequest;
+                options.Cookie.SecurePolicy = Enum.TryParse<CookieSecurePolicy>(ConfigurationHelpers.GetCookieSecurity(configuration), out var securePolicy) ? securePolicy : CookieSecurePolicy.SameAsRequest;
 
                 options.Events.OnRedirectToLogin = context =>
                 {
