@@ -294,10 +294,10 @@ public static class DbHelpers
         var printerName = activationTexts.GetValueOrDefault("printers.activation.name", string.Empty);
 
         var testprinter = await CreatePrinter(db, user.Id, printerName);
-        db.Printers.AddRange(testprinter);
+        db.Printers.Add(testprinter);
 
         var testlabel = await CreateTemplate(db, user.Id, templateName);
-        db.Templates.AddRange(testlabel);
+        db.Templates.Add(testlabel);
 
         await db.SaveChangesAsync();
 
