@@ -3,7 +3,6 @@ namespace FastLabel.Backend.Tests.Tests;
 [Collection("FastLabel Test Collection")]
 public class TranslationEndpointsTests(TestWebApplicationFactory factory)
 {
-    private readonly TestWebApplicationFactory _factory = factory;
     private readonly HttpClient _client = factory.CreateUnauthenticatedClient();
 
     // =========================================================================
@@ -15,7 +14,7 @@ public class TranslationEndpointsTests(TestWebApplicationFactory factory)
     {
         // Arrange : Récupérer un code de langue valide existant en base
         string validLangCode;
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             validLangCode = await db.Languages.OrderBy(l => l.Id).Select(l => l.Code).FirstAsync();

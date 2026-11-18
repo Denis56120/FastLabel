@@ -3,7 +3,6 @@ namespace FastLabel.Backend.Tests.Tests;
 [Collection("FastLabel Test Collection")]
 public class AuthEndpointsTests(TestWebApplicationFactory factory)
 {  
-    private readonly TestWebApplicationFactory _factory = factory;
     private readonly HttpClient _client = factory.CreateUnauthenticatedClient();
 
     [Fact]
@@ -12,7 +11,7 @@ public class AuthEndpointsTests(TestWebApplicationFactory factory)
         // Arrange - 1. Créer un utilisateur inactif avec un token de vérification en base
         string verificationToken = Guid.NewGuid().ToString();
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
@@ -39,7 +38,7 @@ public class AuthEndpointsTests(TestWebApplicationFactory factory)
         }
 
         // Act - 2. Appeler l'endpoint de vérification d'e-mail (AllowAutoRedirect = false pour intercepter la redirection HTTP)
-        var client = _factory.CreateClient(new WebApplicationFactoryClientOptions
+        var client = factory.CreateClient(new WebApplicationFactoryClientOptions
         {
             AllowAutoRedirect = false
         });
@@ -51,7 +50,7 @@ public class AuthEndpointsTests(TestWebApplicationFactory factory)
         Assert.Contains("activated=true", response.Headers.Location?.Query);
 
         // Assert - 4. Vérifier en base de données que le user est actif et que le token a été nettoyé
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
@@ -119,7 +118,7 @@ public class AuthEndpointsTests(TestWebApplicationFactory factory)
         var newPassword = "BrandNewPassword123!";
         string resetToken;
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
@@ -143,7 +142,7 @@ public class AuthEndpointsTests(TestWebApplicationFactory factory)
             await db.SaveChangesAsync();
         }
 
-        _factory.EmailServiceMock.Invocations.Clear();
+        factory.EmailServiceMock.Invocations.Clear();
 
         // Act 1 - Demande de réinitialisation (/forgot-password)
         var forgotDto = new ForgotPasswordDto { Email = email };
@@ -152,7 +151,7 @@ public class AuthEndpointsTests(TestWebApplicationFactory factory)
         // Assert 1 - Réponse HTTP 200 et récupération du token en base
         Assert.Equal(HttpStatusCode.OK, forgotResponse.StatusCode);
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var userInDb = await db.Users.FirstOrDefaultAsync(u => u.Email == email);
@@ -164,7 +163,7 @@ public class AuthEndpointsTests(TestWebApplicationFactory factory)
 
             resetToken = userInDb.PasswordResetToken!;
 
-            _factory.EmailServiceMock.Verify(
+            factory.EmailServiceMock.Verify(
                 e => e.SendEmailAsync(
                     email,
                     It.IsAny<string>(),
@@ -184,7 +183,7 @@ public class AuthEndpointsTests(TestWebApplicationFactory factory)
         // Assert 2 - Réponse HTTP 200 et nettoyage du token en base
         Assert.Equal(HttpStatusCode.OK, resetResponse.StatusCode);
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var updatedUser = await db.Users.FirstOrDefaultAsync(u => u.Email == email);
@@ -211,7 +210,7 @@ public class AuthEndpointsTests(TestWebApplicationFactory factory)
     public async Task ForgotPassword_WithNonExistentEmail_ReturnsOkWithoutSendingEmail()
     {
         // Arrange
-        _factory.EmailServiceMock.Invocations.Clear();
+        factory.EmailServiceMock.Invocations.Clear();
         var dto = new ForgotPasswordDto { Email = "inconnu.total@exemple.fr" };
 
         // Act
@@ -221,7 +220,7 @@ public class AuthEndpointsTests(TestWebApplicationFactory factory)
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         // Assert - 2. Aucun e-mail ne doit être envoyé
-        _factory.EmailServiceMock.Verify(
+        factory.EmailServiceMock.Verify(
             e => e.SendEmailAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()),
             Times.Never);
     }
@@ -254,7 +253,7 @@ public class AuthEndpointsTests(TestWebApplicationFactory factory)
         var email = "expired.token@exemple.fr";
         string expiredToken = Guid.NewGuid().ToString();
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var activeStatus = await db.BasicStatuses
@@ -295,7 +294,7 @@ public class AuthEndpointsTests(TestWebApplicationFactory factory)
         Assert.Equal("auth.error.invalid_or_expired_token", errorResponse?.Message);
 
         // Vérifier que le mot de passe n'a pas été modifié et que le token est toujours en base (ou géré selon ta logique)
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var userInDb = await db.Users.FirstOrDefaultAsync(u => u.Email == email);
@@ -313,7 +312,7 @@ public class AuthEndpointsTests(TestWebApplicationFactory factory)
         var oldPassword = "OldPassword123!";
         var newPassword = "BrandNewSecurePassword456!";
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var activeStatus = await db.BasicStatuses
@@ -337,7 +336,7 @@ public class AuthEndpointsTests(TestWebApplicationFactory factory)
             await db.SaveChangesAsync();
         }
 
-        _factory.EmailServiceMock.Invocations.Clear();
+        factory.EmailServiceMock.Invocations.Clear();
 
         // Act - 2. Étape 1 : Demande de réinitialisation (/forgot-password)
         var forgotResponse = await _client.PostAsJsonAsync("/api/auth/forgot-password", new ForgotPasswordDto { Email = email });
@@ -345,7 +344,7 @@ public class AuthEndpointsTests(TestWebApplicationFactory factory)
 
         // Récupérer le token généré en base de données
         string resetToken;
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var userInDb = await db.Users.FirstAsync(u => u.Email == email);
@@ -390,7 +389,7 @@ public class AuthEndpointsTests(TestWebApplicationFactory factory)
         var email = "login.success@exemple.fr";
         var password = "ValidPassword123!";
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var activeStatus = await db.BasicStatuses
@@ -435,7 +434,7 @@ public class AuthEndpointsTests(TestWebApplicationFactory factory)
         var email = "login.badpass@exemple.fr";
         var password = "ValidPassword123!";
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var activeStatus = await db.BasicStatuses
@@ -482,7 +481,7 @@ public class AuthEndpointsTests(TestWebApplicationFactory factory)
         var email = "login.inactive@exemple.fr";
         var password = "ValidPassword123!";
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var inactiveStatus = await db.BasicStatuses
@@ -539,7 +538,7 @@ public class AuthEndpointsTests(TestWebApplicationFactory factory)
         var email = "logout.user@exemple.fr";
         var password = "ValidPassword123!";
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var activeStatus = await db.BasicStatuses

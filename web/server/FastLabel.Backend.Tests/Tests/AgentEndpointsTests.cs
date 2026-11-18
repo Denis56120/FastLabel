@@ -3,7 +3,6 @@ namespace FastLabel.Backend.Tests.Tests;
 [Collection("FastLabel Test Collection")]
 public class AgentEndpointsTests(TestWebApplicationFactory factory)
 {
-    private readonly TestWebApplicationFactory _factory = factory;
     private readonly HttpClient _client = factory.CreateUnauthenticatedClient();
 
     // =========================================================================
@@ -14,10 +13,10 @@ public class AgentEndpointsTests(TestWebApplicationFactory factory)
     public async Task GetAgents_EndToEnd_ReturnsPaginatedListForUser()
     {
         var email = "get.e2e@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(email);
+        var client = await factory.CreateAuthenticatedClientAsync(email);
         var uniqueKey = Guid.NewGuid().ToString("N");
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var user = await db.Users.FirstAsync(u => u.Email == email);
@@ -46,11 +45,11 @@ public class AgentEndpointsTests(TestWebApplicationFactory factory)
     [Fact]
     public async Task GetAgents_Fail_Isolation_RegularUserDoesNotSeeOthers()
     {
-        var client1 = await _factory.CreateAuthenticatedClientAsync("get.user1@exemple.fr");
-        var client2 = await _factory.CreateAuthenticatedClientAsync("get.user2@exemple.fr");
+        var client1 = await factory.CreateAuthenticatedClientAsync("get.user1@exemple.fr");
+        var client2 = await factory.CreateAuthenticatedClientAsync("get.user2@exemple.fr");
         var uniqueKey = Guid.NewGuid().ToString("N");
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var user1 = await db.Users.FirstAsync(u => u.Email == "get.user1@exemple.fr");
@@ -75,10 +74,10 @@ public class AgentEndpointsTests(TestWebApplicationFactory factory)
     [Fact]
     public async Task PostAgent_EndToEnd_CreatesAgentSuccessfully()
     {
-        var client = await _factory.CreateAuthenticatedClientAsync("post.e2e@exemple.fr");
+        var client = await factory.CreateAuthenticatedClientAsync("post.e2e@exemple.fr");
         int validTypeId;
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             validTypeId = await db.AgentTypes.OrderBy(at => at.Id).Select(at => at.Id).FirstAsync();
@@ -105,7 +104,7 @@ public class AgentEndpointsTests(TestWebApplicationFactory factory)
     [Fact]
     public async Task PostAgent_Fail_WithInvalidType_ReturnsBadRequest()
     {
-        var client = await _factory.CreateAuthenticatedClientAsync("post.fail@exemple.fr");
+        var client = await factory.CreateAuthenticatedClientAsync("post.fail@exemple.fr");
         var dto = new AgentDto { AgentTypeId = 999999 };
 
         var response = await client.PostAsJsonAsync("/api/agents", dto);
@@ -123,12 +122,12 @@ public class AgentEndpointsTests(TestWebApplicationFactory factory)
     public async Task PutAgent_EndToEnd_UpdatesAgentSuccessfully()
     {
         var email = "put.e2e@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(email);
+        var client = await factory.CreateAuthenticatedClientAsync(email);
         int typeId1, typeId2;
         int agentId;
         var uniqueKey = Guid.NewGuid().ToString("N");
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var user = await db.Users.FirstAsync(u => u.Email == email);
@@ -175,7 +174,7 @@ public class AgentEndpointsTests(TestWebApplicationFactory factory)
     [Fact]
     public async Task PutAgent_Fail_WhenNotFound_ReturnsNotFound()
     {
-        var client = await _factory.CreateAuthenticatedClientAsync("put.notfound@exemple.fr");
+        var client = await factory.CreateAuthenticatedClientAsync("put.notfound@exemple.fr");
         var response = await client.PutAsJsonAsync("/api/agents/999999", new AgentDto { AgentTypeId = 1 });
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -183,12 +182,12 @@ public class AgentEndpointsTests(TestWebApplicationFactory factory)
     [Fact]
     public async Task PutAgent_Fail_WhenNotOwner_ReturnsForbidden()
     {
-        var ownerClient = await _factory.CreateAuthenticatedClientAsync("put.owner@exemple.fr");
-        var hackerClient = await _factory.CreateAuthenticatedClientAsync("put.hacker@exemple.fr");
+        var ownerClient = await factory.CreateAuthenticatedClientAsync("put.owner@exemple.fr");
+        var hackerClient = await factory.CreateAuthenticatedClientAsync("put.hacker@exemple.fr");
         int agentId, validTypeId;
         var uniqueKey = Guid.NewGuid().ToString("N");
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var owner = await db.Users.FirstAsync(u => u.Email == "put.owner@exemple.fr");
@@ -208,11 +207,11 @@ public class AgentEndpointsTests(TestWebApplicationFactory factory)
     public async Task PutAgent_Fail_WithInvalidType_ReturnsBadRequest()
     {
         var email = "put.badtype@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(email);
+        var client = await factory.CreateAuthenticatedClientAsync(email);
         int agentId, validTypeId;
         var uniqueKey = Guid.NewGuid().ToString("N");
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var user = await db.Users.FirstAsync(u => u.Email == email);
@@ -238,11 +237,11 @@ public class AgentEndpointsTests(TestWebApplicationFactory factory)
     public async Task DeleteAgent_EndToEnd_RemovesAgentSuccessfully()
     {
         var email = "delete.e2e@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(email);
+        var client = await factory.CreateAuthenticatedClientAsync(email);
         int agentId;
         var uniqueKey = Guid.NewGuid().ToString("N");
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var user = await db.Users.FirstAsync(u => u.Email == email);
@@ -258,7 +257,7 @@ public class AgentEndpointsTests(TestWebApplicationFactory factory)
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var deleted = await db.Agents.FindAsync(agentId);
@@ -276,7 +275,7 @@ public class AgentEndpointsTests(TestWebApplicationFactory factory)
     [Fact]
     public async Task DeleteAgent_Fail_WhenNotFound_ReturnsNotFound()
     {
-        var client = await _factory.CreateAuthenticatedClientAsync("delete.notfound@exemple.fr");
+        var client = await factory.CreateAuthenticatedClientAsync("delete.notfound@exemple.fr");
         var response = await client.DeleteAsync("/api/agents/999999");
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
@@ -284,12 +283,12 @@ public class AgentEndpointsTests(TestWebApplicationFactory factory)
     [Fact]
     public async Task DeleteAgent_Fail_WhenNotOwner_ReturnsForbidden()
     {
-        var ownerClient = await _factory.CreateAuthenticatedClientAsync("delete.owner@exemple.fr");
-        var hackerClient = await _factory.CreateAuthenticatedClientAsync("delete.hacker@exemple.fr");
+        var ownerClient = await factory.CreateAuthenticatedClientAsync("delete.owner@exemple.fr");
+        var hackerClient = await factory.CreateAuthenticatedClientAsync("delete.hacker@exemple.fr");
         int agentId;
         var uniqueKey = Guid.NewGuid().ToString("N");
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var owner = await db.Users.FirstAsync(u => u.Email == "delete.owner@exemple.fr");

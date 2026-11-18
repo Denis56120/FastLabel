@@ -3,7 +3,6 @@ namespace FastLabel.Backend.Tests.Tests;
 [Collection("FastLabel Test Collection")]
 public class PrintJobEndpointsTests(TestWebApplicationFactory factory)
 {
-    private readonly TestWebApplicationFactory _factory = factory;
     private readonly HttpClient _client = factory.CreateUnauthenticatedClient();
 
     /// <summary>
@@ -11,7 +10,7 @@ public class PrintJobEndpointsTests(TestWebApplicationFactory factory)
     /// </summary>
     private async Task<(int printerId, int templateId)> GetValidReferencesAsync(int userId)
     {
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         var protocolId = await db.Protocols.OrderBy(p => p.Id).Select(p => p.Id).FirstAsync();
@@ -61,10 +60,10 @@ public class PrintJobEndpointsTests(TestWebApplicationFactory factory)
     public async Task GetPrintJobs_EndToEnd_ReturnsPaginatedListForUser()
     {
         var email = "job.get@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(email);
+        var client = await factory.CreateAuthenticatedClientAsync(email);
         int printJobId;
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var user = await db.Users.FirstAsync(u => u.Email == email);
@@ -107,10 +106,10 @@ public class PrintJobEndpointsTests(TestWebApplicationFactory factory)
     public async Task GetPrintJobById_EndToEnd_ReturnsJobSuccessfully()
     {
         var email = "job.getbyid@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(email);
+        var client = await factory.CreateAuthenticatedClientAsync(email);
         int printJobId;
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var user = await db.Users.FirstAsync(u => u.Email == email);
@@ -141,7 +140,7 @@ public class PrintJobEndpointsTests(TestWebApplicationFactory factory)
     [Fact]
     public async Task GetPrintJobById_Fail_WhenNotFound_ReturnsNotFound()
     {
-        var client = await _factory.CreateAuthenticatedClientAsync("job.notfound@exemple.fr");
+        var client = await factory.CreateAuthenticatedClientAsync("job.notfound@exemple.fr");
         var response = await client.GetAsync("/api/printjobs/999999");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);

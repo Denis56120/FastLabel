@@ -3,7 +3,6 @@ namespace FastLabel.Backend.Tests.Tests;
 [Collection("FastLabel Test Collection")]
 public class AgentTypeEndpointsTests(TestWebApplicationFactory factory)
 {
-    private readonly TestWebApplicationFactory _factory = factory;
     private readonly HttpClient _client = factory.CreateUnauthenticatedClient();
 
     // =========================================================================
@@ -14,7 +13,7 @@ public class AgentTypeEndpointsTests(TestWebApplicationFactory factory)
     public async Task GetAgentTypes_EndToEnd_ReturnsListForUser()
     {
         // Arrange
-        var client = await _factory.CreateAuthenticatedClientAsync("agenttypes.e2e@exemple.fr");
+        var client = await factory.CreateAuthenticatedClientAsync("agenttypes.e2e@exemple.fr");
 
         // Act
         var response = await client.GetAsync("/api/agenttypes");

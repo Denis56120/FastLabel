@@ -3,7 +3,6 @@ namespace FastLabel.Backend.Tests.Tests;
 [Collection("FastLabel Test Collection")]
 public class TemplateEndpointsTests(TestWebApplicationFactory factory)
 {
-    private readonly TestWebApplicationFactory _factory = factory;
     private readonly HttpClient _client = factory.CreateUnauthenticatedClient();
 
     // =========================================================================
@@ -14,10 +13,10 @@ public class TemplateEndpointsTests(TestWebApplicationFactory factory)
     public async Task GetTemplates_EndToEnd_ReturnsPaginatedListForUser()
     {
         var email = "template.get@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(email);
+        var client = await factory.CreateAuthenticatedClientAsync(email);
         var templateName = $"Template {Guid.NewGuid().ToString("N")[..6]}";
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var user = await db.Users.FirstAsync(u => u.Email == email);
@@ -59,11 +58,11 @@ public class TemplateEndpointsTests(TestWebApplicationFactory factory)
     public async Task GetTemplateById_EndToEnd_ReturnsTemplateSuccessfully()
     {
         var email = "template.getbyid@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(email);
+        var client = await factory.CreateAuthenticatedClientAsync(email);
         int templateId;
         var templateName = $"Template ID {Guid.NewGuid().ToString("N")[..6]}";
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var user = await db.Users.FirstAsync(u => u.Email == email);
@@ -95,7 +94,7 @@ public class TemplateEndpointsTests(TestWebApplicationFactory factory)
     [Fact]
     public async Task GetTemplateById_Fail_WhenNotFound_ReturnsNotFound()
     {
-        var client = await _factory.CreateAuthenticatedClientAsync("template.notfound@exemple.fr");
+        var client = await factory.CreateAuthenticatedClientAsync("template.notfound@exemple.fr");
         var response = await client.GetAsync("/api/templates/999999");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -110,7 +109,7 @@ public class TemplateEndpointsTests(TestWebApplicationFactory factory)
     [Fact]
     public async Task PostTemplate_EndToEnd_CreatesTemplateSuccessfully()
     {
-        var client = await _factory.CreateAuthenticatedClientAsync("template.post@exemple.fr");
+        var client = await factory.CreateAuthenticatedClientAsync("template.post@exemple.fr");
 
         var dto = new TemplateDto
         {
@@ -143,10 +142,10 @@ public class TemplateEndpointsTests(TestWebApplicationFactory factory)
     public async Task PutTemplate_EndToEnd_UpdatesTemplateSuccessfully()
     {
         var email = "template.put@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(email);
+        var client = await factory.CreateAuthenticatedClientAsync(email);
         int templateId;
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var user = await db.Users.FirstAsync(u => u.Email == email);
@@ -185,11 +184,11 @@ public class TemplateEndpointsTests(TestWebApplicationFactory factory)
     [Fact]
     public async Task PutTemplate_Fail_WhenNotOwner_ReturnsForbidden()
     {
-        var ownerClient = await _factory.CreateAuthenticatedClientAsync("template.owner@exemple.fr");
-        var hackerClient = await _factory.CreateAuthenticatedClientAsync("template.hacker@exemple.fr");
+        var ownerClient = await factory.CreateAuthenticatedClientAsync("template.owner@exemple.fr");
+        var hackerClient = await factory.CreateAuthenticatedClientAsync("template.hacker@exemple.fr");
         int templateId;
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var owner = await db.Users.FirstAsync(u => u.Email == "template.owner@exemple.fr");
@@ -228,10 +227,10 @@ public class TemplateEndpointsTests(TestWebApplicationFactory factory)
     public async Task DeleteTemplate_EndToEnd_RemovesTemplateSuccessfully()
     {
         var email = "template.delete@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(email);
+        var client = await factory.CreateAuthenticatedClientAsync(email);
         int templateId;
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var user = await db.Users.FirstAsync(u => u.Email == email);
@@ -255,7 +254,7 @@ public class TemplateEndpointsTests(TestWebApplicationFactory factory)
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var deleted = await db.Templates.FindAsync(templateId);
@@ -266,11 +265,11 @@ public class TemplateEndpointsTests(TestWebApplicationFactory factory)
     [Fact]
     public async Task DeleteTemplate_Fail_WhenNotOwner_ReturnsForbidden()
     {
-        var ownerClient = await _factory.CreateAuthenticatedClientAsync("template.delowner@exemple.fr");
-        var hackerClient = await _factory.CreateAuthenticatedClientAsync("template.delhacker@exemple.fr");
+        var ownerClient = await factory.CreateAuthenticatedClientAsync("template.delowner@exemple.fr");
+        var hackerClient = await factory.CreateAuthenticatedClientAsync("template.delhacker@exemple.fr");
         int templateId;
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var owner = await db.Users.FirstAsync(u => u.Email == "template.delowner@exemple.fr");

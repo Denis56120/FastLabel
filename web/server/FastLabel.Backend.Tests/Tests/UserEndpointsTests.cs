@@ -3,14 +3,7 @@ namespace FastLabel.Backend.Tests.Tests;
 [Collection("FastLabel Test Collection")]
 public class UserEndpointsTests(TestWebApplicationFactory factory)
 {
-    private readonly TestWebApplicationFactory _factory = factory;
-
     private readonly HttpClient _client = factory.CreateUnauthenticatedClient();
-
-    private class FakeEmailService : IEmailService
-    {
-        public Task SendEmailAsync(string email, string subject, string message) => Task.CompletedTask;
-    }
 
     // =========================================================================
     // 1. TESTS POUR GET /api/users/me
@@ -20,7 +13,7 @@ public class UserEndpointsTests(TestWebApplicationFactory factory)
     public async Task GetCurrentUser_EndToEnd_ReturnsUserProfileSuccessfully()
     {
         var email = "user.me@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(email);
+        var client = await factory.CreateAuthenticatedClientAsync(email);
 
         var response = await client.GetAsync("/api/users/me");
 
@@ -46,10 +39,10 @@ public class UserEndpointsTests(TestWebApplicationFactory factory)
     public async Task UpdateCurrentUser_EndToEnd_UpdatesProfileSuccessfully()
     {
         var email = "user.update.me@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(email);
+        var client = await factory.CreateAuthenticatedClientAsync(email);
         int langId;
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             langId = await db.Languages.OrderBy(l => l.Id).Select(l => l.Id).FirstAsync();
@@ -74,10 +67,10 @@ public class UserEndpointsTests(TestWebApplicationFactory factory)
     {
         var email1 = "user.one@exemple.fr";
         var email2 = "user.two@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(email1);
+        var client = await factory.CreateAuthenticatedClientAsync(email1);
         int langId;
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             langId = await db.Languages.OrderBy(l => l.Id).Select(l => l.Id).FirstAsync();
@@ -117,7 +110,7 @@ public class UserEndpointsTests(TestWebApplicationFactory factory)
     public async Task AdminGetUsers_EndToEnd_ReturnsPaginatedListForAdmin()
     {
         var adminEmail = "admin.get@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(adminEmail, isAdmin: true);
+        var client = await factory.CreateAuthenticatedClientAsync(adminEmail, isAdmin: true);
 
         var response = await client.GetAsync("/api/users?page=1&pageSize=10");
 
@@ -130,7 +123,7 @@ public class UserEndpointsTests(TestWebApplicationFactory factory)
     [Fact]
     public async Task AdminGetUsers_Fail_WhenRegularUser_ReturnsForbiddenOrUnauthorized()
     {
-        var client = await _factory.CreateAuthenticatedClientAsync("regular.getusers@exemple.fr", isAdmin: false);
+        var client = await factory.CreateAuthenticatedClientAsync("regular.getusers@exemple.fr", isAdmin: false);
 
         var response = await client.GetAsync("/api/users");
 
@@ -146,10 +139,10 @@ public class UserEndpointsTests(TestWebApplicationFactory factory)
     public async Task AdminPostUser_EndToEnd_CreatesUserSuccessfully()
     {
         var adminEmail = "admin.post@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(adminEmail, isAdmin: true);
+        var client = await factory.CreateAuthenticatedClientAsync(adminEmail, isAdmin: true);
         int langId;
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             langId = await db.Languages.OrderBy(l => l.Id).Select(l => l.Id).FirstAsync();
@@ -176,7 +169,7 @@ public class UserEndpointsTests(TestWebApplicationFactory factory)
     public async Task AdminPostUser_Fail_WhenLanguageNotFound_ReturnsBadRequest()
     {
         var adminEmail = "admin.postfail@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(adminEmail, isAdmin: true);
+        var client = await factory.CreateAuthenticatedClientAsync(adminEmail, isAdmin: true);
 
         var newDto = new UserDto
         {
@@ -201,10 +194,10 @@ public class UserEndpointsTests(TestWebApplicationFactory factory)
     public async Task AdminDeleteUser_EndToEnd_RemovesUserSuccessfully()
     {
         var adminEmail = "admin.delete@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(adminEmail, isAdmin: true);
+        var client = await factory.CreateAuthenticatedClientAsync(adminEmail, isAdmin: true);
         int targetUserId;
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var activeStatus = await db.BasicStatuses.OrderBy(s => s.Id).FirstAsync();
@@ -228,7 +221,7 @@ public class UserEndpointsTests(TestWebApplicationFactory factory)
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var deleted = await db.Users.FindAsync(targetUserId);

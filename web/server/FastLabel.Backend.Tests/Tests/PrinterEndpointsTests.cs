@@ -3,7 +3,6 @@ namespace FastLabel.Backend.Tests.Tests;
 [Collection("FastLabel Test Collection")]
 public class PrinterEndpointsTests(TestWebApplicationFactory factory)
 {
-    private readonly TestWebApplicationFactory _factory = factory;
     private readonly HttpClient _client = factory.CreateUnauthenticatedClient();
 
     /// <summary>
@@ -11,7 +10,7 @@ public class PrinterEndpointsTests(TestWebApplicationFactory factory)
     /// </summary>
     private async Task<(int protocolId, int resolutionId, int statusId)> GetValidReferencesAsync()
     {
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         var protocolId = await db.Protocols.OrderBy(p => p.Id).Select(p => p.Id).FirstAsync();
@@ -29,11 +28,11 @@ public class PrinterEndpointsTests(TestWebApplicationFactory factory)
     public async Task GetPrinters_EndToEnd_ReturnsPaginatedListForUser()
     {
         var email = "printer.get@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(email);
+        var client = await factory.CreateAuthenticatedClientAsync(email);
         var (protocolId, resolutionId, statusId) = await GetValidReferencesAsync();
         var uniqueIp = $"192.168.1.{Guid.NewGuid().GetHashCode() % 255}";
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var user = await db.Users.FirstAsync(u => u.Email == email);
@@ -77,11 +76,11 @@ public class PrinterEndpointsTests(TestWebApplicationFactory factory)
     public async Task GetPrinterById_EndToEnd_ReturnsPrinterSuccessfully()
     {
         var email = "printer.getbyid@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(email);
+        var client = await factory.CreateAuthenticatedClientAsync(email);
         var (protocolId, resolutionId, statusId) = await GetValidReferencesAsync();
         int printerId;
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var user = await db.Users.FirstAsync(u => u.Email == email);
@@ -115,7 +114,7 @@ public class PrinterEndpointsTests(TestWebApplicationFactory factory)
     [Fact]
     public async Task GetPrinterById_Fail_WhenNotFound_ReturnsNotFound()
     {
-        var client = await _factory.CreateAuthenticatedClientAsync("printer.notfound@exemple.fr");
+        var client = await factory.CreateAuthenticatedClientAsync("printer.notfound@exemple.fr");
         var response = await client.GetAsync("/api/printers/999999");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -130,7 +129,7 @@ public class PrinterEndpointsTests(TestWebApplicationFactory factory)
     [Fact]
     public async Task PostPrinter_EndToEnd_CreatesPrinterSuccessfully()
     {
-        var client = await _factory.CreateAuthenticatedClientAsync("printer.post@exemple.fr");
+        var client = await factory.CreateAuthenticatedClientAsync("printer.post@exemple.fr");
         var (protocolId, resolutionId, statusId) = await GetValidReferencesAsync();
 
         var dto = new PrinterDto
@@ -156,7 +155,7 @@ public class PrinterEndpointsTests(TestWebApplicationFactory factory)
     [Fact]
     public async Task PostPrinter_Fail_WithInvalidProtocol_ReturnsBadRequest()
     {
-        var client = await _factory.CreateAuthenticatedClientAsync("printer.badproto@exemple.fr");
+        var client = await factory.CreateAuthenticatedClientAsync("printer.badproto@exemple.fr");
         var (_, resolutionId, statusId) = await GetValidReferencesAsync();
 
         var dto = new PrinterDto
@@ -180,7 +179,7 @@ public class PrinterEndpointsTests(TestWebApplicationFactory factory)
     [Fact]
     public async Task PostPrinter_Fail_WithInvalidResolution_ReturnsBadRequest()
     {
-        var client = await _factory.CreateAuthenticatedClientAsync("printer.badres@exemple.fr");
+        var client = await factory.CreateAuthenticatedClientAsync("printer.badres@exemple.fr");
         var (protocolId, _, statusId) = await GetValidReferencesAsync();
 
         var dto = new PrinterDto
@@ -209,11 +208,11 @@ public class PrinterEndpointsTests(TestWebApplicationFactory factory)
     public async Task PutPrinter_EndToEnd_UpdatesPrinterSuccessfully()
     {
         var email = "printer.put@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(email);
+        var client = await factory.CreateAuthenticatedClientAsync(email);
         var (protocolId, resolutionId, statusId) = await GetValidReferencesAsync();
         int printerId;
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var user = await db.Users.FirstAsync(u => u.Email == email);
@@ -259,12 +258,12 @@ public class PrinterEndpointsTests(TestWebApplicationFactory factory)
     [Fact]
     public async Task PutPrinter_Fail_WhenNotOwner_ReturnsForbidden()
     {
-        var ownerClient = await _factory.CreateAuthenticatedClientAsync("printer.owner@exemple.fr");
-        var hackerClient = await _factory.CreateAuthenticatedClientAsync("printer.hacker@exemple.fr");
+        var ownerClient = await factory.CreateAuthenticatedClientAsync("printer.owner@exemple.fr");
+        var hackerClient = await factory.CreateAuthenticatedClientAsync("printer.hacker@exemple.fr");
         var (protocolId, resolutionId, statusId) = await GetValidReferencesAsync();
         int printerId;
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var owner = await db.Users.FirstAsync(u => u.Email == "printer.owner@exemple.fr");
@@ -310,11 +309,11 @@ public class PrinterEndpointsTests(TestWebApplicationFactory factory)
     public async Task DeletePrinter_EndToEnd_RemovesPrinterSuccessfully()
     {
         var email = "printer.delete@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(email);
+        var client = await factory.CreateAuthenticatedClientAsync(email);
         var (protocolId, resolutionId, statusId) = await GetValidReferencesAsync();
         int printerId;
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var user = await db.Users.FirstAsync(u => u.Email == email);
@@ -340,7 +339,7 @@ public class PrinterEndpointsTests(TestWebApplicationFactory factory)
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var deleted = await db.Printers.FindAsync(printerId);
@@ -351,12 +350,12 @@ public class PrinterEndpointsTests(TestWebApplicationFactory factory)
     [Fact]
     public async Task DeletePrinter_Fail_WhenNotOwner_ReturnsForbidden()
     {
-        var ownerClient = await _factory.CreateAuthenticatedClientAsync("printer.delowner@exemple.fr");
-        var hackerClient = await _factory.CreateAuthenticatedClientAsync("printer.delhacker@exemple.fr");
+        var ownerClient = await factory.CreateAuthenticatedClientAsync("printer.delowner@exemple.fr");
+        var hackerClient = await factory.CreateAuthenticatedClientAsync("printer.delhacker@exemple.fr");
         var (protocolId, resolutionId, statusId) = await GetValidReferencesAsync();
         int printerId;
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var owner = await db.Users.FirstAsync(u => u.Email == "printer.delowner@exemple.fr");

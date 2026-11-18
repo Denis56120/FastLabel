@@ -3,7 +3,6 @@ namespace FastLabel.Backend.Tests.Tests;
 [Collection("FastLabel Test Collection")]
 public class LanguageEndpointsTests(TestWebApplicationFactory factory)
 {
-    private readonly TestWebApplicationFactory _factory = factory;
     private readonly HttpClient _client = factory.CreateUnauthenticatedClient();
 
     // =========================================================================
@@ -33,13 +32,13 @@ public class LanguageEndpointsTests(TestWebApplicationFactory factory)
     {
         // Arrange - On crée un utilisateur rattaché à une langue spécifique (ex: Id = 1)
         int langId;
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             langId = await db.Languages.OrderBy(l => l.Id).Select(l => l.Id).FirstAsync();
         }
 
-        var client = await _factory.CreateAuthenticatedClientAsync("lang.user@exemple.fr", languageId: langId);
+        var client = await factory.CreateAuthenticatedClientAsync("lang.user@exemple.fr", languageId: langId);
 
         // Act
         var response = await client.GetAsync("/api/languages");
@@ -60,7 +59,7 @@ public class LanguageEndpointsTests(TestWebApplicationFactory factory)
     {
         // Arrange - Récupérer un code de langue valide existant en base (ex: "fr" ou le premier code dispo)
         string validLangCode;
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             validLangCode = await db.Languages.OrderBy(l => l.Id).Select(l => l.Code).FirstAsync();

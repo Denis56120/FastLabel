@@ -3,7 +3,6 @@ namespace FastLabel.Backend.Tests.Tests;
 [Collection("FastLabel Test Collection")]
 public class ProtocolEndpointsTests(TestWebApplicationFactory factory)
 {
-    private readonly TestWebApplicationFactory _factory = factory;
     private readonly HttpClient _client = factory.CreateUnauthenticatedClient();
 
     // =========================================================================
@@ -14,7 +13,7 @@ public class ProtocolEndpointsTests(TestWebApplicationFactory factory)
     public async Task GetProtocols_EndToEnd_ReturnsListForAuthenticatedUser()
     {
         // Arrange
-        var client = await _factory.CreateAuthenticatedClientAsync("protocol.get@exemple.fr");
+        var client = await factory.CreateAuthenticatedClientAsync("protocol.get@exemple.fr");
 
         // Act
         var response = await client.GetAsync("/api/protocols");

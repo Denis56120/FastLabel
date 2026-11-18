@@ -3,8 +3,6 @@ namespace FastLabel.Backend.Tests.Tests;
 [Collection("FastLabel Test Collection")]
 public class ResellerEndpointsTests(TestWebApplicationFactory factory)
 {
-    private readonly TestWebApplicationFactory _factory = factory;
-
     // =========================================================================
     // 1. TESTS POUR GET /api/reseller/clients
     // =========================================================================
@@ -13,9 +11,9 @@ public class ResellerEndpointsTests(TestWebApplicationFactory factory)
     public async Task GetResellerClients_EndToEnd_ReturnsClientsListForReseller()
     {
         var resellerEmail = "reseller.get@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(resellerEmail, isReseller: true);
+        var client = await factory.CreateAuthenticatedClientAsync(resellerEmail, isReseller: true);
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var reseller = await db.Users.FirstAsync(u => u.Email == resellerEmail);
@@ -46,7 +44,7 @@ public class ResellerEndpointsTests(TestWebApplicationFactory factory)
     [Fact]
     public async Task GetResellerClients_Fail_WhenRegularUser_ReturnsForbidden()
     {
-        var client = await _factory.CreateAuthenticatedClientAsync("regular.user@exemple.fr", isReseller: false);
+        var client = await factory.CreateAuthenticatedClientAsync("regular.user@exemple.fr", isReseller: false);
 
         var response = await client.GetAsync("/api/reseller/clients");
 
@@ -56,7 +54,7 @@ public class ResellerEndpointsTests(TestWebApplicationFactory factory)
     [Fact]
     public async Task GetResellerClients_Fail_WhenUnauthenticated_ReturnsUnauthorized()
     {
-        var client = _factory.CreateUnauthenticatedClient();
+        var client = factory.CreateUnauthenticatedClient();
         var response = await client.GetAsync("/api/reseller/clients");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -70,7 +68,7 @@ public class ResellerEndpointsTests(TestWebApplicationFactory factory)
     public async Task PostResellerClient_EndToEnd_CreatesClientSuccessfully()
     {
         var resellerEmail = "reseller.post@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(resellerEmail, isReseller: true);
+        var client = await factory.CreateAuthenticatedClientAsync(resellerEmail, isReseller: true);
 
         var newClientDto = new UserDto
         {
@@ -91,9 +89,9 @@ public class ResellerEndpointsTests(TestWebApplicationFactory factory)
     public async Task PostResellerClient_Fail_WhenEmailAlreadyTaken_ReturnsBadRequest()
     {
         var resellerEmail = "reseller.postfail@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(resellerEmail, isReseller: true);
+        var client = await factory.CreateAuthenticatedClientAsync(resellerEmail, isReseller: true);
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var inactiveStatus = await db.BasicStatuses.OrderBy(s => s.Id).FirstAsync();
@@ -126,7 +124,7 @@ public class ResellerEndpointsTests(TestWebApplicationFactory factory)
     [Fact]
     public async Task PostResellerClient_Fail_WhenRegularUser_ReturnsForbidden()
     {
-        var client = await _factory.CreateAuthenticatedClientAsync("regular.post@exemple.fr", isReseller: false);
+        var client = await factory.CreateAuthenticatedClientAsync("regular.post@exemple.fr", isReseller: false);
 
         var dto = new UserDto
         {
@@ -147,10 +145,10 @@ public class ResellerEndpointsTests(TestWebApplicationFactory factory)
     public async Task DeleteResellerClient_EndToEnd_RemovesClientSuccessfully()
     {
         var resellerEmail = "reseller.delete@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(resellerEmail, isReseller: true);
+        var client = await factory.CreateAuthenticatedClientAsync(resellerEmail, isReseller: true);
         int clientId;
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var reseller = await db.Users.OrderBy(u => u.Id).FirstAsync(u => u.Email == resellerEmail);
@@ -175,7 +173,7 @@ public class ResellerEndpointsTests(TestWebApplicationFactory factory)
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var deleted = await db.Users.FindAsync(clientId);
@@ -187,7 +185,7 @@ public class ResellerEndpointsTests(TestWebApplicationFactory factory)
     public async Task DeleteResellerClient_Fail_WhenNotFoundOrNotOwner_ReturnsNotFound()
     {
         var resellerEmail = "reseller.delfail@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(resellerEmail, isReseller: true);
+        var client = await factory.CreateAuthenticatedClientAsync(resellerEmail, isReseller: true);
 
         var response = await client.DeleteAsync("/api/reseller/clients/999999");
 
@@ -199,7 +197,7 @@ public class ResellerEndpointsTests(TestWebApplicationFactory factory)
     [Fact]
     public async Task DeleteResellerClient_Fail_WhenRegularUser_ReturnsForbidden()
     {
-        var client = await _factory.CreateAuthenticatedClientAsync("regular.delete@exemple.fr", isReseller: false);
+        var client = await factory.CreateAuthenticatedClientAsync("regular.delete@exemple.fr", isReseller: false);
 
         var response = await client.DeleteAsync("/api/reseller/clients/1");
 

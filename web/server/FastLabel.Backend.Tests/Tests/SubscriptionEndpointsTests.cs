@@ -3,7 +3,6 @@ namespace FastLabel.Backend.Tests.Tests;
 [Collection("FastLabel Test Collection")]
 public class SubscriptionEndpointsTests(TestWebApplicationFactory factory)
 {
-    private readonly TestWebApplicationFactory _factory = factory;
     private readonly HttpClient _client = factory.CreateUnauthenticatedClient();
 
     /// <summary>
@@ -11,7 +10,7 @@ public class SubscriptionEndpointsTests(TestWebApplicationFactory factory)
     /// </summary>
     private async Task<(int planId, int typeId, int stripeId)> GetValidReferencesAsync(int userId)
     {
-        using var scope = _factory.Services.CreateScope();
+        using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
         var planId = await db.Plans.OrderBy(p => p.Id).Select(p => p.Id).FirstAsync();
@@ -38,9 +37,9 @@ public class SubscriptionEndpointsTests(TestWebApplicationFactory factory)
     public async Task GetSubscriptions_EndToEnd_ReturnsListForUser()
     {
         var email = "sub.get@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(email);
+        var client = await factory.CreateAuthenticatedClientAsync(email);
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var user = await db.Users.FirstAsync(u => u.Email == email);
@@ -81,9 +80,9 @@ public class SubscriptionEndpointsTests(TestWebApplicationFactory factory)
     public async Task GetCurrentSubscription_EndToEnd_ReturnsActiveSubscription()
     {
         var email = "sub.current@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(email);
+        var client = await factory.CreateAuthenticatedClientAsync(email);
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var user = await db.Users.FirstAsync(u => u.Email == email);
@@ -114,9 +113,9 @@ public class SubscriptionEndpointsTests(TestWebApplicationFactory factory)
     public async Task GetCurrentSubscription_EndToEnd_ReturnsEmptyDtoWhenNoneActive()
     {
         var email = "sub.empty@exemple.fr";
-        var client = await _factory.CreateAuthenticatedClientAsync(email);
+        var client = await factory.CreateAuthenticatedClientAsync(email);
 
-        using (var scope = _factory.Services.CreateScope())
+        using (var scope = factory.Services.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var user = await db.Users.FirstAsync(u => u.Email == email);

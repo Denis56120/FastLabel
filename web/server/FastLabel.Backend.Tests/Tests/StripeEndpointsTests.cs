@@ -3,25 +3,7 @@ namespace FastLabel.Backend.Tests.Tests;
 [Collection("FastLabel Test Collection")]
 public class StripeEndpointsTests(TestWebApplicationFactory factory)
 {
-    private readonly TestWebApplicationFactory _factory = factory;
     private readonly HttpClient _client = factory.CreateUnauthenticatedClient();
-
-    private class FakeStripeService : IStripeService
-    {
-        public Task<string> CreateCustomerAsync(string email, string name)
-        {
-            return Task.FromResult("cus_fake_123");
-        }
-
-        public Task<string> CreateSubscriptionAsync(string customerId, string priceId, int initialQuantity = 1)
-        {
-            return Task.FromResult("sub_fake_123");
-        }
-
-        public Task IncrementSubscriptionQuantityAsync(string subscriptionId) => Task.CompletedTask;
-
-        public Task DecrementSubscriptionQuantityAsync(string subscriptionId) => Task.CompletedTask;
-    }
 
     [Fact]
     public async Task CreateCheckoutSession_Fail_WithInvalidInterval_ReturnsBadRequest()
