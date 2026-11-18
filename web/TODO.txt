@@ -1,7 +1,10 @@
-> Suppression subscriptiontype ?
-> Gérer le paiement et les souscriptions
+- Web -
+> Finir le render + Faire l'API Print
+> Gérer le paiement et les souscriptions + Suppression subscriptiontype ?
+> Corriger le tri (alpha, numérique)
+> Dépendance boostrap à voir - Faire le style de FastLabel
+
+- Agent -
 > Ajouter proxy côté agent
 > Reconnexion coupure réseau pour agent
 > Ajouter http-long-polling en secours pour l'agent
-> Dépendance boostrap à voir - Faire le style de FastLabel
-> Corriger le tri (alpha, numérique)

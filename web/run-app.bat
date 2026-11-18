@@ -6,7 +6,7 @@ cd /d "%~dp0"
 echo ========================================================
 echo Lancement du Serveur...
 echo ========================================================
-start "FastLabel - Serveur" cmd /k "cd /d server\FastLabel.Backend && dotnet run --launch-profile http"
+start "FastLabel - Serveur" cmd /k "cd /d server\FastLabel.Backend && dotnet watch --launch-profile http"
 
 echo ========================================================
 echo Lancement du Client...
