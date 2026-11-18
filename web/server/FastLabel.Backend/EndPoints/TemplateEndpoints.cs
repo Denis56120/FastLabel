@@ -90,7 +90,7 @@ public static class TemplateEndpoints
                     "basicstatusname" => ascending ? items.OrderBy(x => x.BasicStatusName, naturalComparer) : items.OrderByDescending(x => x.BasicStatusName, naturalComparer),
                     "createdat" => ascending ? items.OrderBy(x => x.CreatedAt) : items.OrderByDescending(x => x.CreatedAt),
                     "updatedat" => ascending ? items.OrderBy(x => x.UpdatedAt) : items.OrderByDescending(x => x.UpdatedAt),
-                    _ => items.OrderByDescending(x => x.UpdatedAt) // Tri par défaut
+                    _ => items.OrderByDescending(x => x.UpdatedAt)
                 }
             );
 

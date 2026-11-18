@@ -78,7 +78,7 @@ public static class PrintJobEndpoints
                     "templatename" => ascending ? items.OrderBy(x => x.TemplateName, naturalComparer) : items.OrderByDescending(x => x.TemplateName, naturalComparer),
                     "quantity" => ascending ? items.OrderBy(x => x.Quantity) : items.OrderByDescending(x => x.Quantity),
                     "createdat" => ascending ? items.OrderBy(x => x.CreatedAt) : items.OrderByDescending(x => x.CreatedAt),
-                    _ => items.OrderByDescending(x => x.CreatedAt) // Tri par défaut (du plus récent au plus ancien)
+                    _ => items.OrderByDescending(x => x.CreatedAt)
                 }
             );
 
