@@ -35,6 +35,7 @@ public static class AppExtensions
         {
             using var scope = app.Services.CreateScope();
             var services = scope.ServiceProvider;
+            await app.UseDatabaseMigrationsAsync();
 
             try
             {
@@ -60,8 +61,6 @@ public static class AppExtensions
                 throw;
             }
         }
-
-        await app.UseDatabaseMigrationsAsync();
 
         app.UseResponseCompression();
 
