@@ -3,7 +3,6 @@
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
-publish/
 
 ## Visual Studio user files and settings
 *.rsuser
@@ -38,8 +37,11 @@ Thumbs.db
 launchSettings.json
 *.exe
 *.db*
+
+## FastLabel
 /agent/FastLabel.DockerAgent/docker/FastLabel.DockerAgent
+/web/client/FastLabel.Client/docker/wwwroot/
 /web/server/FastLabel.Backend/docker/FastLabel.Backend
-fastlabel-package.tar.gz
-web/client/FastLabel.Client/docker/wwwroot/
-dist/fastlabel-package/
+/dist/fastlabel-package.tar.gz
+/dist/fastlabel-package/
+publish/
