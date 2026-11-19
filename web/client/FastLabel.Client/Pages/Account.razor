@@ -6,7 +6,6 @@
 @inject ToastService ToastService
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
-@inject ILogger Logger
 
 <div class="container mt-4 mb-5">
     <h2>@Translation.GetString("account.title")</h2>
@@ -177,7 +176,7 @@
             _languages = new();
 
             string error = Translation.GetString("app.error.unknown");
-            Logger.LogError(ex, error);
+            AppLog.Error(ex, error);
             ToastService.ShowError(error);
         }
     }
@@ -197,7 +196,7 @@
         catch (Exception ex)
         {
             string error = Translation.GetString("app.error.unknown");
-            Logger.LogError(ex, error);
+            AppLog.Error(ex, error);
             ToastService.ShowError(error);
 
             Navigation.NavigateTo("/");
@@ -244,7 +243,7 @@
                         catch (Exception ex)
                         {
                             string error = Translation.GetString("app.error.unknown");
-                            Logger.LogError(ex, error);
+                            AppLog.Error(ex, error);
                             ToastService.ShowError(error);
                         }
                     }
@@ -268,7 +267,7 @@
         catch (Exception ex)
         {
             string error = Translation.GetString("app.error.unknown");
-            Logger.LogError(ex, error);
+            AppLog.Error(ex, error);
             ToastService.ShowError(error);
         }
         finally

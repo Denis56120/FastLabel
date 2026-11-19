@@ -14,8 +14,9 @@ public class CookieService(IServiceProvider serviceProvider)
         {
             return await JsRuntime.InvokeAsync<string?>("appInterop.getCookie", key);
         }
-        catch
+        catch (Exception ex)
         {
+            AppLog.Error(ex, "GetCookie Error");
             return string.Empty;
         }
     }
@@ -26,8 +27,9 @@ public class CookieService(IServiceProvider serviceProvider)
         {
             await JsRuntime.InvokeVoidAsync("appInterop.setCookie", key, value, days);
         }
-        catch
+        catch (Exception ex)
         {
+            AppLog.Error(ex, "SetCookie Error");
         }
     }
 }

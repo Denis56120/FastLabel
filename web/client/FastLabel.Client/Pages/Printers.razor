@@ -3,7 +3,6 @@
 @attribute [Authorize]
 @inject TranslationService Translation
 @inject ToastService ToastService
-@inject ILogger Logger
 @inject ApiClient ApiClient
 
 <CrudTablePage @ref="_crudTable"
@@ -164,7 +163,7 @@
         catch (Exception ex)
         {
             string error = Translation.GetString("auth.error.server_unreachable");
-            Logger.LogError(ex, error);
+            AppLog.Error(ex, error);
             ToastService.ShowError(error);
         }
     }

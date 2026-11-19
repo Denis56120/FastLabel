@@ -3,7 +3,6 @@
 @inject ApiClient ApiClient
 @inject NavigationManager Navigation
 @inject ToastService ToastService
-@inject ILogger Logger
 
 <PageTitle>FastLabel - @GetCurrentPageTitle()</PageTitle>
 
@@ -107,7 +106,7 @@ else
         catch (Exception ex)
         {
             string error = Translation.GetString("app.error.unknown");
-            Logger.LogError(ex, error);
+            AppLog.Error(ex, error);
             ToastService.ShowError(error);
         }
 
@@ -118,7 +117,7 @@ else
         catch (Exception ex)
         {
             string error = Translation.GetString("app.error.unknown");
-            Logger.LogError(ex, error);
+            AppLog.Error(ex, error);
             ToastService.ShowError(error);
         }
         

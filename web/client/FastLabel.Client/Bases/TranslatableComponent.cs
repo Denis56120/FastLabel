@@ -25,8 +25,9 @@ public abstract class TranslatableComponent : LayoutComponentBase, IDisposable
                 await InvokeAsync(StateHasChanged);
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            AppLog.Error(ex, "Impossible loading");
         }
     }
 

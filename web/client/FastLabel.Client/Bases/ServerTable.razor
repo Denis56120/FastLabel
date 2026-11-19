@@ -2,7 +2,6 @@
 @inject ApiClient ApiClient
 @inject TranslationService Translation
 @inject ToastService ToastService
-@inject ILogger Logger
 
 <CascadingValue Value="this" IsFixed="true">
     <div class="card shadow-sm border-0">
@@ -187,7 +186,7 @@
         catch (Exception ex)
         {
             string error = Translation.GetString("app.error.unknown");
-            Logger.LogError(ex, error);
+            AppLog.Error(ex, error);
             ToastService.ShowError(error);
         }
         finally

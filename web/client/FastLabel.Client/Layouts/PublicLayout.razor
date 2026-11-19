@@ -2,7 +2,6 @@
 @inject NavigationManager Navigation
 @inject ApiClient ApiClient
 @inject ToastService ToastService
-@inject ILogger Logger
 
 @if (!_isLoaded)
 {
@@ -96,7 +95,7 @@ else
         catch (Exception ex)
         {
             string error = Translation.GetString("app.error.unknown");
-            Logger.LogError(ex, error);
+            AppLog.Error(ex, error);
             ToastService.ShowError(error);
         }
 
@@ -115,7 +114,7 @@ else
             _languages = new();
 
             string error = Translation.GetString("app.error.unknown");
-            Logger.LogError(ex, error);
+            AppLog.Error(ex, error);
             ToastService.ShowError(error);
         }
     }
@@ -166,7 +165,7 @@ else
         catch (Exception ex)
         {
             string error = Translation.GetString("app.error.unknown");
-            Logger.LogError(ex, error);
+            AppLog.Error(ex, error);
             ToastService.ShowError(error);
         }
 

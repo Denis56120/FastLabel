@@ -4,7 +4,6 @@
 @implements IAsyncDisposable
 @inject TranslationService Translation
 @inject ToastService ToastService
-@inject ILogger Logger
 @inject ApiClient ApiClient
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
@@ -256,7 +255,7 @@
             catch (Exception ex)
             {
                 string error = Translation.GetString("app.error.unknown");
-                Logger.LogError(ex, error);
+                AppLog.Error(ex, error);
                 ToastService.ShowError(error);
             }
         }
@@ -280,7 +279,7 @@
                 catch (Exception ex)
                 {
                     string error = Translation.GetString("app.error.unknown");
-                    Logger.LogError(ex, error);
+                    AppLog.Error(ex, error);
                     ToastService.ShowError(error);
                 }
             }
@@ -292,7 +291,7 @@
         catch (Exception ex)
         {
             string error = Translation.GetString("app.error.unknown");
-            Logger.LogError(ex, error);
+            AppLog.Error(ex, error);
             ToastService.ShowError(error);
         }
         finally
@@ -352,7 +351,7 @@
             catch (Exception ex)
             {
                 string error = Translation.GetString("app.error.unknown");
-                Logger.LogError(ex, error);
+                AppLog.Error(ex, error);
                 ToastService.ShowError(error);
             }
         }
@@ -400,7 +399,7 @@
         catch (Exception ex)
         {
             string error = Translation.GetString("app.error.unknown");
-            Logger.LogError(ex, error);
+            AppLog.Error(ex, error);
             ToastService.ShowError(error);
         }
         finally
@@ -420,7 +419,7 @@
             catch (Exception ex)
             {
                 string error = Translation.GetString("app.error.unknown");
-                Logger.LogError(ex, error);
+                AppLog.Error(ex, error);
                 ToastService.ShowError(error);
             }
         }
@@ -430,7 +429,7 @@
             catch (Exception ex)
             {
                 string error = Translation.GetString("app.error.unknown");
-                Logger.LogError(ex, error);
+                AppLog.Error(ex, error);
                 ToastService.ShowError(error);
             }
         }

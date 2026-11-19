@@ -2,7 +2,6 @@
 @inject TranslationService Translation
 @inject ToastService ToastService
 @inject NavigationManager Navigation
-@inject ILogger Logger
 
 @if (IsVisible)
 {
@@ -182,9 +181,9 @@
         catch (Exception ex)
         {
             _plans = new();
-            
+
             string error = Translation.GetString("app.error.unknown");
-            Logger.LogError(ex, error);
+            AppLog.Error(ex, error);
             ToastService.ShowError(error);
         }
         finally
@@ -245,7 +244,7 @@
         catch (Exception ex)
         {
             string error = Translation.GetString("app.error.unknown");
-            Logger.LogError(ex, error);
+            AppLog.Error(ex, error);
             ToastService.ShowError(error);
         }
         finally

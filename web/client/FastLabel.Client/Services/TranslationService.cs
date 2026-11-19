@@ -69,9 +69,10 @@ public class TranslationService(IHttpClientFactory httpClientFactory, CookieServ
                 }
             }
         }
-        catch
+        catch (Exception ex)
         {
             targetLanguage = DefaultLanguage;
+            AppLog.Error(ex, "Unknown error");
         }
 
         await SetLanguageAsync(targetLanguage);
@@ -113,10 +114,11 @@ public class TranslationService(IHttpClientFactory httpClientFactory, CookieServ
                 _loadedLanguage = null;
             }
         }
-        catch
+        catch (Exception ex)
         {
             _translations = [];
             _loadedLanguage = null;
+            AppLog.Error(ex, "Unknown error");
         }
 
         OnChange?.Invoke();
@@ -137,12 +139,18 @@ public class TranslationService(IHttpClientFactory httpClientFactory, CookieServ
         {
             await _cookieService.SetCookieAsync("language", language, days: 365);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            AppLog.Error(ex, "Unknown error");
+        }
         try
         {
             await JsRuntime.InvokeVoidAsync("appInterop.setDocumentLanguage", language);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            AppLog.Error(ex, "Unknown error");
+        }
 
         if (_loadingTask != null && !_loadingTask.IsCompleted)
         {

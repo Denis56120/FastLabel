@@ -68,8 +68,9 @@ public class ApiClient(HttpClient httpClient)
                 return (false, errorDto.Message);
             }
         }
-        catch
+        catch (Exception ex)
         {
+            AppLog.Error(ex, "Parsing error");
         }
 
         return (false, "app.error.unknown");
