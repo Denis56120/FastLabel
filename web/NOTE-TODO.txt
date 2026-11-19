@@ -1,7 +1,10 @@
 - Web -
 > Finir le render + Faire l'API Print
-> Gérer le paiement et les souscriptions + Suppression subscriptiontype ?
-> Faire le style de FastLabel (Dépendance boostrap à voir) + Mettre en forme les mails de communication utilisateur
+> Gérer le paiement et les souscriptions + Suppression subscriptiontype ? + Ajouter hooks + Ajouter tâches planifiées
+    invoice.paid -> valider la souscription (plan en cours activé)
+    invoice.payment_failed -> prévenir le client que son paiement a été refusé (période de grâce activée pour le plan en cours)
+    customer.subscription.deleted -> prévenir le client que sa souscription a pris fin (retour au free plan)
+> Faire le style de FastLabel (Dépendance boostrap à voir) + Mettre en forme les mails de communication utilisateur + Faire des image + description pour les plans de souscriptions
 > Fiabiliser : Dans CustomAuthenticationStateProvider.cs, la méthode GetAuthenticationStateAsync effectue un appel HTTP (api/users/me) à chaque vérification d'état. En Blazor WebAssembly, cela peut générer une sur-sollicitation du serveur et ralentir l'expérience utilisateur si l'état est rafraîchi trop souvent.
 > Ajouter des logs partout ou il y a des catch{} avec ILogger et ToastService
 
@@ -9,3 +12,38 @@
 > Ajouter proxy côté agent
 > Reconnexion coupure réseau pour agent
 > Ajouter http-long-polling en secours pour l'agent
+
+Tarifs :
+
+Plan Gratuit :
+    Prix : 0€/mois
+    Ce qu'il couvre : 10 impressions.
+
+Plan Starter (Indépendants / Petites structures) :
+    Prix : 49€/mois ou 470€/an
+    Ce qu'il couvre : 500 impressions. (0.10€/impression mensuel - 0.08€/impression annuel)
+    Option : Pack 100 impressions supplémentaires en un clic : 9€ (0.09€/impression)
+
+Plan Pro (Équipes en croissance) :
+    Prix : 79€/mois ou 760€/an
+    Ce qu'il couvre : 1500 impressions. (0.05€/impression mensuel - 0.04€/impression annuel)
+    Option : Pack 1000 impressions supplémentaires en un clic : 29€ (0.03€/impression)
+
+Plan Business (PME / Structures exigeantes) :
+    Prix : 199€/mois ou 1910€/an
+    Ce qu'il couvre : 5000 impressions (0.04€/impression mensuel - 0.03€/impression annuel) 
+    Option : Pack 1000 impressions supplémentaires en un clic : 29€ (0.03€/impression)
+
+Plan Entreprise :
+    Prix : 399 €/mois ou 3830€/an
+    Ce qu'il couvre : 15000 impressions + support prioritaire  (0.03€/impression mensuel - 0.02€/impression annuel) 
+    Option : Pack 1000 impressions supplémentaires en un clic : 19€ (0.02€/impression)
+
+Pour les revendeurs :
+    Prix Palier 1 : Bon de réduction 10% de 1 à 9 utilisateurs
+    Prix Palier 2 : Bon de réduction 20% de 10 à 24 utilisateurs
+    Prix Palier 3 : Bon de réduction 30% +25 utilisateurs
+    Option : Packs impressions supplémentaires en un clic proposées en direct
+
+Pour tous :
+    Période de grâce : 14 jours après échéance
