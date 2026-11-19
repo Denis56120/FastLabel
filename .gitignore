@@ -38,8 +38,8 @@ Thumbs.db
 launchSettings.json
 *.exe
 *.db*
-FastLabel.DockerAgent
-FastLabel.Backend
+/agent/FastLabel.DockerAgent/docker/FastLabel.DockerAgent
+/web/server/FastLabel.Backend/docker/FastLabel.Backend
 fastlabel-package.tar.gz
 web/client/FastLabel.Client/docker/wwwroot/
 dist/fastlabel-package/
