@@ -22,10 +22,10 @@ Filename: "sc"; Parameters: "start FastLabelService"; StatusMsg: "Démarrage du 
 
 [UninstallRun]
 ; 1. Arrête le service proprement avant la désinstallation
-Filename: "sc"; Parameters: "stop FastLabelService"; Flags: runhidden
+Filename: "sc"; Parameters: "stop FastLabelService"; StatusMsg: "Arrêt du service FastLabel..."; Flags: runhidden; RunOnceId: "StopFastLabelService"
 
 ; 2. Désinstalle et supprime le service du gestionnaire Windows
-Filename: "{app}\FastLabel.Service.exe"; Parameters: "uninstall"; Flags: runhidden
+Filename: "{app}\FastLabel.Service.exe"; Parameters: "uninstall"; StatusMsg: "Désinstallation du service FastLabel..."; Flags: runhidden; RunOnceId: "UninstallFastLabelService"
 
 [UninstallDelete]
 ; Supprime l'intégralité du dossier d'installation et son contenu (fichiers de logs, sous-dossiers, etc.)
