@@ -6,15 +6,28 @@ public class SubscriptionEndpointsTests(TestWebApplicationFactory factory)
     private readonly HttpClient _client = factory.CreateUnauthenticatedClient();
 
     /// <summary>
-    /// Helper pour récupérer des IDs valides de Plan et de SubscriptionType, ainsi que créer un StripeRecord lié à l'utilisateur.
+    /// Helper pour récupérer un ID de Plan valide ainsi que créer un StripeRecord lié à l'utilisateur.
     /// </summary>
-    private async Task<(int planId, int typeId, int stripeId)> GetValidReferencesAsync(int userId)
+    private async Task<(int planId, int stripeId)> GetValidReferencesAsync(int userId, bool preferPaidPlan = false)
     {
         using var scope = factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-        var planId = await db.Plans.OrderBy(p => p.Id).Select(p => p.Id).FirstAsync();
-        var typeId = await db.SubscriptionTypes.OrderBy(st => st.Id).Select(st => st.Id).FirstAsync();
+        int planId;
+        if (preferPaidPlan)
+        {
+            planId = await db.Plans
+                .Where(p => p.Code != "free")
+                .OrderBy(p => p.SortOrder)
+                .ThenBy(p => p.Id)
+                .Select(p => (int?)p.Id)
+                .FirstOrDefaultAsync()
+                ?? await db.Plans.OrderBy(p => p.Id).Select(p => p.Id).FirstAsync();
+        }
+        else
+        {
+            planId = await db.Plans.OrderBy(p => p.Id).Select(p => p.Id).FirstAsync();
+        }
 
         // Crée le StripeRecord lié au bon UserId pour satisfaire la contrainte FK_Stripes_Users_UserId
         var stripeRecord = new StripeRecord
@@ -26,7 +39,7 @@ public class SubscriptionEndpointsTests(TestWebApplicationFactory factory)
         db.Stripes.Add(stripeRecord);
         await db.SaveChangesAsync();
 
-        return (planId, typeId, stripeRecord.Id);
+        return (planId, stripeRecord.Id);
     }
 
     // =========================================================================
@@ -43,13 +56,12 @@ public class SubscriptionEndpointsTests(TestWebApplicationFactory factory)
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var user = await db.Users.FirstAsync(u => u.Email == email);
-            var (planId, typeId, stripeId) = await GetValidReferencesAsync(user.Id);
+            var (planId, stripeId) = await GetValidReferencesAsync(user.Id);
 
             db.Subscriptions.Add(new Subscription
             {
                 UserId = user.Id,
                 PlanId = planId,
-                SubscriptionTypeId = typeId,
                 StripeId = stripeId,
                 SubscriptionPeriod = 12,
                 CreatedAt = DateTime.UtcNow
@@ -86,13 +98,12 @@ public class SubscriptionEndpointsTests(TestWebApplicationFactory factory)
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var user = await db.Users.FirstAsync(u => u.Email == email);
-            var (planId, typeId, stripeId) = await GetValidReferencesAsync(user.Id);
+            var (planId, stripeId) = await GetValidReferencesAsync(user.Id, preferPaidPlan: true);
 
             db.Subscriptions.Add(new Subscription
             {
                 UserId = user.Id,
                 PlanId = planId,
-                SubscriptionTypeId = typeId,
                 StripeId = stripeId,
                 SubscriptionPeriod = 12, // 12 mois à partir de maintenant (donc valide)
                 CreatedAt = DateTime.UtcNow
@@ -110,7 +121,7 @@ public class SubscriptionEndpointsTests(TestWebApplicationFactory factory)
     }
 
     [Fact]
-    public async Task GetCurrentSubscription_EndToEnd_ReturnsEmptyDtoWhenNoneActive()
+    public async Task GetCurrentSubscription_EndToEnd_FallsBackToFreeWhenPaidExpired()
     {
         var email = "sub.empty@exemple.fr";
         var client = await factory.CreateAuthenticatedClientAsync(email);
@@ -119,14 +130,13 @@ public class SubscriptionEndpointsTests(TestWebApplicationFactory factory)
         {
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
             var user = await db.Users.FirstAsync(u => u.Email == email);
-            var (planId, typeId, stripeId) = await GetValidReferencesAsync(user.Id);
+            var (paidPlanId, stripeId) = await GetValidReferencesAsync(user.Id, preferPaidPlan: true);
 
-            // Abonnement expiré (créé il y a 2 ans, période de 1 mois)
+            // Abonnement payant expiré (créé il y a 2 ans, période de 1 mois)
             db.Subscriptions.Add(new Subscription
             {
                 UserId = user.Id,
-                PlanId = planId,
-                SubscriptionTypeId = typeId,
+                PlanId = paidPlanId,
                 StripeId = stripeId,
                 SubscriptionPeriod = 1,
                 CreatedAt = DateTime.UtcNow.AddYears(-2)
@@ -139,8 +149,41 @@ public class SubscriptionEndpointsTests(TestWebApplicationFactory factory)
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var result = await response.Content.ReadFromJsonAsync<SubscriptionDto>();
         Assert.NotNull(result);
-        Assert.Equal(0, result.Id);
-        Assert.Equal(string.Empty, result.PlanName);
+        Assert.Equal("free", result.PlanCode);
+    }
+
+    [Fact]
+    public async Task GetCurrentSubscription_EndToEnd_PrioritizesActivePaidOverFree()
+    {
+        var email = "sub.priority@exemple.fr";
+        var client = await factory.CreateAuthenticatedClientAsync(email);
+
+        using (var scope = factory.Services.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var user = await db.Users.FirstAsync(u => u.Email == email);
+            var (paidPlanId, stripeId) = await GetValidReferencesAsync(user.Id, preferPaidPlan: true);
+
+            // CreateAuthenticatedClientAsync crée déjà un abonnement "free"
+            db.Subscriptions.Add(new Subscription
+            {
+                UserId = user.Id,
+                PlanId = paidPlanId,
+                StripeId = stripeId,
+                SubscriptionPeriod = 1,
+                CurrentPeriodStart = DateTime.UtcNow,
+                CurrentPeriodEnd = DateTime.UtcNow.AddMonths(1),
+                CreatedAt = DateTime.UtcNow
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var response = await client.GetAsync("/api/account/subscriptions/current");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var result = await response.Content.ReadFromJsonAsync<SubscriptionDto>();
+        Assert.NotNull(result);
+        Assert.NotEqual("free", result.PlanCode);
     }
 
     [Fact]

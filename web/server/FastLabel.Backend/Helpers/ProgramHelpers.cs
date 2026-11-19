@@ -192,6 +192,7 @@ public static class ProgramHelpers
         app.MapStripeEndpoints();
         app.MapResellerEndpoints();
         app.MapAntiforgeryEndpoints();
+        app.MapPlanEndpoints();
 
         app.Run();
     }

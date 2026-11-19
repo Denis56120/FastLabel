@@ -47,6 +47,19 @@ public static class DbHelpers
         return await db.Protocols.FindAsync(id);
     }
 
+    public static async Task<Plan?> GetPlanByPriceIdAsync(AppDbContext db, string? priceId)
+    {
+        if (string.IsNullOrWhiteSpace(priceId))
+        {
+            return null;
+        }
+
+        return await db.Plans.FirstOrDefaultAsync(p =>
+            p.StripeMonthlyPriceId == priceId ||
+            p.StripeYearlyPriceId == priceId ||
+            p.StripeTopUpPriceId == priceId);
+    }
+
     public static async Task<ResolutionDpi?> GetResolutionDpiByIdAsync(AppDbContext db, int id)
     {
         return await db.ResolutionDpis.FindAsync(id);

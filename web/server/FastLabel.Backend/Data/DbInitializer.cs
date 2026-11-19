@@ -314,6 +314,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         await CreateTextWithTranslationsAsync("common.back", "Back", new() { { "fr", "Retour" }, { "en", "Back" } });
         await CreateTextWithTranslationsAsync("common.no_records", "No records found.", new() { { "fr", "Aucun enregistrement." }, { "en", "No records found." } });
         await CreateTextWithTranslationsAsync("common.form", "Form", new() { { "fr", "Formulaire" }, { "en", "Form" } });
+        await CreateTextWithTranslationsAsync("common.close", "Close", new() { { "fr", "Fermer" }, { "en", "Close" } });
         await CreateTextWithTranslationsAsync("common.add", "Add", new() { { "fr", "Ajouter" }, { "en", "Add" } });
         await CreateTextWithTranslationsAsync("common.edit", "Edit", new() { { "fr", "Modifier" }, { "en", "Edit" } });
         await CreateTextWithTranslationsAsync("common.delete", "Delete", new() { { "fr", "Supprimer" }, { "en", "Delete" } });
@@ -448,6 +449,22 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         await CreateTextWithTranslationsAsync("account.subscription.extra_prints", "Remaining top-up credits", new() { { "fr", "Crédits de recharge restants" }, { "en", "Remaining top-up credits" } });
         await CreateTextWithTranslationsAsync("account.subscription.total_available", "Total available", new() { { "fr", "Total disponible" }, { "en", "Total available" } });
         await CreateTextWithTranslationsAsync("account.subscription.change_plan_button", "Change plan", new() { { "fr", "Changer d'offre" }, { "en", "Change plan" } });
+
+        await CreateTextWithTranslationsAsync("subscription.modal.title", "Choose a plan", new() { { "fr", "Choisir une offre" }, { "en", "Choose a plan" } });
+        await CreateTextWithTranslationsAsync("subscription.modal.subtitle", "Select the plan and billing cycle that fit your printing needs.", new() { { "fr", "Sélectionnez l'offre et le cycle de facturation adaptés à vos besoins." }, { "en", "Select the plan and billing cycle that fit your printing needs." } });
+        await CreateTextWithTranslationsAsync("subscription.modal.billing_cycle", "Billing cycle", new() { { "fr", "Cycle de facturation" }, { "en", "Billing cycle" } });
+        await CreateTextWithTranslationsAsync("subscription.modal.monthly", "Monthly", new() { { "fr", "Mensuel" }, { "en", "Monthly" } });
+        await CreateTextWithTranslationsAsync("subscription.modal.yearly", "Yearly", new() { { "fr", "Annuel" }, { "en", "Yearly" } });
+        await CreateTextWithTranslationsAsync("subscription.modal.no_plans", "No plans available at the moment.", new() { { "fr", "Aucune offre disponible pour le moment." }, { "en", "No plans available at the moment." } });
+        await CreateTextWithTranslationsAsync("subscription.modal.current_plan", "Current plan", new() { { "fr", "Offre actuelle" }, { "en", "Current plan" } });
+        await CreateTextWithTranslationsAsync("subscription.modal.free_price", "Free", new() { { "fr", "Gratuit" }, { "en", "Free" } });
+        await CreateTextWithTranslationsAsync("subscription.modal.per_month", "/ month", new() { { "fr", "/ mois" }, { "en", "/ month" } });
+        await CreateTextWithTranslationsAsync("subscription.modal.per_year", "/ year", new() { { "fr", "/ an" }, { "en", "/ year" } });
+        await CreateTextWithTranslationsAsync("subscription.modal.prints_included", "prints included / month", new() { { "fr", "impressions incluses / mois" }, { "en", "prints included / month" } });
+        await CreateTextWithTranslationsAsync("subscription.modal.topup_info", "Top-up available", new() { { "fr", "Recharge disponible" }, { "en", "Top-up available" } });
+        await CreateTextWithTranslationsAsync("subscription.modal.current_plan_button", "Active plan", new() { { "fr", "Offre active" }, { "en", "Active plan" } });
+        await CreateTextWithTranslationsAsync("subscription.modal.select_free", "Select free plan", new() { { "fr", "Choisir l'offre gratuite" }, { "en", "Select free plan" } });
+        await CreateTextWithTranslationsAsync("subscription.modal.subscribe_button", "Subscribe", new() { { "fr", "Souscrire" }, { "en", "Subscribe" } });
 
         await CreateTextWithTranslationsAsync("dashboard.subscription.period_free", "Free plan", new() { { "fr", "Offre gratuite" }, { "en", "Free plan" } });
         await CreateTextWithTranslationsAsync("dashboard.subscription.monthly_usage", "Prints used this month", new() { { "fr", "Impressions utilisées ce mois-ci" }, { "en", "Prints used this month" } });
@@ -593,10 +610,14 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         await CreateTextWithTranslationsAsync("label.error.description_max_length", "Description cannot exceed 500 characters", new() { { "fr", "La description ne peut pas dépasser 500 caractères" }, { "en", "Description cannot exceed 500 characters" } });
 
         // 4. Endpoints
-        await CreateTextWithTranslationsAsync("stripe.error.invalid_interval", "Intervalle de facturation invalide.", new() { { "fr", "Intervalle de facturation invalide." }, { "en", "Invalid billing interval." } });
-        await CreateTextWithTranslationsAsync("stripe.error.plan_not_found", "Le plan demandé est introuvable.", new() { { "fr", "Le plan demandé est introuvable." }, { "en", "The requested plan was not found." } });
-        await CreateTextWithTranslationsAsync("stripe.error.price_not_configured", "Le tarif Stripe n'est pas configuré.", new() { { "fr", "Le tarif Stripe n'est pas configuré." }, { "en", "The Stripe price is not configured." } });
+        await CreateTextWithTranslationsAsync("stripe.webhook.error.invalid_signature", "Invalid Stripe webhook signature.", new() { { "fr", "Signature du webhook Stripe invalide." }, { "en", "Invalid Stripe webhook signature." } });
+        await CreateTextWithTranslationsAsync("stripe.error.invalid_interval", "Invalid billing interval.", new() { { "fr", "Intervalle de facturation invalide." }, { "en", "Invalid billing interval." } });
+        await CreateTextWithTranslationsAsync("stripe.error.plan_not_found", "Plan not found.", new() { { "fr", "Offre introuvable." }, { "en", "Plan not found." } });
+        await CreateTextWithTranslationsAsync("stripe.error.price_not_configured", "Stripe price is not configured for this plan.", new() { { "fr", "Le tarif Stripe n'est pas configuré pour cette offre." }, { "en", "Stripe price is not configured for this plan." } });
+        await CreateTextWithTranslationsAsync("stripe.error.checkout_failed", "Unable to create Stripe checkout session.", new() { { "fr", "Impossible de créer la session de paiement Stripe." }, { "en", "Unable to create Stripe checkout session." } });
 
+        await CreateTextWithTranslationsAsync("subscription.notification.payment_failed", "Your payment failed. Your current plan is in a grace period.", new() { { "fr", "Votre paiement a échoué. Votre offre actuelle est en période de grâce." }, { "en", "Your payment failed. Your current plan is in a grace period." } });
+        await CreateTextWithTranslationsAsync("subscription.notification.subscription_ended", "Your subscription has ended. You have been switched to the free plan.", new() { { "fr", "Votre souscription a pris fin. Vous êtes repassé sur l'offre gratuite." }, { "en", "Your subscription has ended. You have been switched to the free plan." } });
         await CreateTextWithTranslationsAsync("subscription.error.unauthorized", "Unauthorized access", new() { { "fr", "Accès non autorisé" }, { "en", "Unauthorized access" } });
 
         await CreateTextWithTranslationsAsync("user.error.email_already_taken", "This email is already in use", new() { { "fr", "Cet e-mail est déjà utilisé" }, { "en", "This email is already in use" } });
