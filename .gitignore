@@ -40,4 +40,6 @@ launchSettings.json
 *.db*
 FastLabel.DockerAgent
 FastLabel.Backend
+fastlabel-fullpackage.tar.gz
 web/client/FastLabel.Client/docker/wwwroot/
+dist/fastlabel-fullpackage/
