@@ -6,6 +6,7 @@
 @inject ToastService ToastService
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthStateProvider
+@inject ILogger Logger
 
 <div class="container mt-4 mb-5">
     <h2>@Translation.GetString("account.title")</h2>
@@ -46,7 +47,8 @@
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label text-muted">@Translation.GetString("account.language_label")</label>
+                                <label
+                                class="form-label text-muted">@Translation.GetString("account.language_label")</label>
                                 <InputSelect class="form-select" @bind-Value="_userModel.LanguageId">
                                     @if (_languages != null)
                                     {
@@ -170,9 +172,13 @@
         {
             _languages = await ApiClient.GetFromJsonAsync<List<LanguageDto>>("api/languages") ?? new();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             _languages = new();
+
+            string error = Translation.GetString("app.error.unknown");
+            Logger.LogError(ex, error);
+            ToastService.ShowError(error);
         }
     }
 
@@ -188,9 +194,12 @@
 
             _subscriptions = await ApiClient.GetFromJsonAsync<List<SubscriptionDto>>("api/account/subscriptions") ?? new();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            ToastService.ShowError(Translation.GetString("app.error.unknown"));
+            string error = Translation.GetString("app.error.unknown");
+            Logger.LogError(ex, error);
+            ToastService.ShowError(error);
+
             Navigation.NavigateTo("/");
         }
         finally
@@ -218,6 +227,11 @@
             var (isSuccess, errorKey) = await ApiClient.PutAsync("api/users/me", _userModel);
             if (isSuccess)
             {
+                if (AuthStateProvider is CustomAuthenticationStateProvider customAuthStateProvider)
+                {
+                    customAuthStateProvider.NotifyUserAuthentication();
+                }
+
                 if (languageChanged && _languages != null)
                 {
                     var selectedLang = _languages.FirstOrDefault(l => l.Id == _userModel.LanguageId);
@@ -227,8 +241,11 @@
                         {
                             await Translation.InitializeAsync();
                         }
-                        catch
+                        catch (Exception ex)
                         {
+                            string error = Translation.GetString("app.error.unknown");
+                            Logger.LogError(ex, error);
+                            ToastService.ShowError(error);
                         }
                     }
                 }
@@ -248,9 +265,11 @@
                 ToastService.ShowError(Translation.GetString(errorKey ?? "app.error.unknown"));
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            ToastService.ShowError(Translation.GetString("app.error.unknown"));
+            string error = Translation.GetString("app.error.unknown");
+            Logger.LogError(ex, error);
+            ToastService.ShowError(error);
         }
         finally
         {

@@ -1,6 +1,8 @@
 @inherits TranslatableComponent
 @inject NavigationManager Navigation
 @inject ApiClient ApiClient
+@inject ToastService ToastService
+@inject ILogger Logger
 
 @if (!_isLoaded)
 {
@@ -40,10 +42,11 @@ else
                             {
                                 @foreach (var lang in _languages)
                                 {
-                                    var isCurrent = Translation.CurrentLanguage.Equals(lang.Code, StringComparison.OrdinalIgnoreCase);
+                                    var isCurrent = Translation.CurrentLanguage.Equals(lang.Code,
+                        StringComparison.OrdinalIgnoreCase);
                                     <li>
-                                        <button class="dropdown-item d-flex align-items-center gap-2 @(isCurrent ? "active" : "")" type="button"
-                                                @onclick='() => ChangeLanguage(lang.Code)'>
+                                        <button class="dropdown-item d-flex align-items-center gap-2 @(isCurrent ? "active" : "")"
+                                                type="button" @onclick='() => ChangeLanguage(lang.Code)'>
                                             @if (!string.IsNullOrEmpty(lang.Flag))
                                             {
                                                 <span>@lang.Flag</span>
@@ -90,8 +93,11 @@ else
             await Translation.InitializeAsync();
             await LoadLanguagesAsync();
         }
-        catch
+        catch (Exception ex)
         {
+            string error = Translation.GetString("app.error.unknown");
+            Logger.LogError(ex, error);
+            ToastService.ShowError(error);
         }
 
         _isLoaded = true;
@@ -104,9 +110,13 @@ else
         {
             _languages = await ApiClient.GetFromJsonAsync<List<LanguageDto>>("api/languages") ?? new();
         }
-        catch
+        catch (Exception ex)
         {
             _languages = new();
+
+            string error = Translation.GetString("app.error.unknown");
+            Logger.LogError(ex, error);
+            ToastService.ShowError(error);
         }
     }
 
@@ -148,22 +158,21 @@ else
     private async Task ChangeLanguage(string languageCode)
     {
         _isDropdownOpen = false;
-        
+
         try
         {
             await Translation.SetLanguageAsync(languageCode);
         }
-        catch
+        catch (Exception ex)
         {
+            string error = Translation.GetString("app.error.unknown");
+            Logger.LogError(ex, error);
+            ToastService.ShowError(error);
         }
 
-        try
+        if (_languages is null or { Count: 0 })
         {
             await LoadLanguagesAsync();
         }
-        catch
-        {
-        }
-        
     }
 }

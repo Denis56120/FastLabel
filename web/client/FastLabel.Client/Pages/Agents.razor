@@ -2,6 +2,8 @@
 @layout MainLayout
 @attribute [Authorize]
 @inject TranslationService Translation
+@inject ToastService ToastService
+@inject ILogger Logger
 @inject ApiClient ApiClient
 
 <CrudTablePage @ref="_crudTable"
@@ -112,8 +114,11 @@
         {
             _agentTypes = await ApiClient.GetFromJsonAsync<List<AgentTypeDto>>("api/agenttypes") ?? new();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            string error = Translation.GetString("app.error.unknown");
+            Logger.LogError(ex, error);
+            ToastService.ShowError(error);
         }
     }
 

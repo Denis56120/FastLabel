@@ -3,9 +3,10 @@
 @page "/dashboard/subscription/cancel"
 @layout MainLayout
 @attribute [Authorize]
-@inject TranslationService Translation
 @inject ApiClient ApiClient
+@inject TranslationService Translation
 @inject ToastService ToastService
+@inject ILogger Logger
 @inject NavigationManager Navigation
 
 <div class="container-fluid py-4">
@@ -236,9 +237,11 @@
             currentUser = userTask.Result;
             currentSubscription = subscriptionTask.Result;
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            ToastService.ShowError(Translation.GetString("app.error.unknown"));
+            string error = Translation.GetString("app.error.unknown");
+            Logger.LogError(ex, error);
+            ToastService.ShowError(error);
         }
         finally
         {
@@ -265,9 +268,11 @@
         {
             currentSubscription = await ApiClient.GetFromJsonAsync<SubscriptionDto>("api/account/subscriptions/current");
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            ToastService.ShowError(Translation.GetString("app.error.unknown"));
+            string error = Translation.GetString("app.error.unknown");
+            Logger.LogError(ex, error);
+            ToastService.ShowError(error);
         }
     }
 

@@ -4,6 +4,7 @@
 @inject NavigationManager Navigation
 @inject AuthService AuthService
 @inject ToastService ToastService
+@inject ILogger Logger
 @inject AuthenticationStateProvider AuthStateProvider
 
 <div class="d-flex justify-content-center align-items-center w-100">
@@ -118,9 +119,11 @@
                 ToastService.ShowError(Translation.GetString("auth.error.invalid_credentials"));
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            ToastService.ShowError(Translation.GetString("auth.error.server_unreachable"));
+            string error = Translation.GetString("auth.error.server_unreachable");
+            Logger.LogError(ex, error);
+            ToastService.ShowError(error);
         }
         finally
         {

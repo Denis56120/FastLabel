@@ -2,10 +2,12 @@
 @inject TranslationService Translation
 @inject ToastService ToastService
 @inject NavigationManager Navigation
+@inject ILogger Logger
 
 @if (IsVisible)
 {
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0, 0, 0, 0.5);" role="dialog" aria-modal="true">
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0, 0, 0, 0.5);" role="dialog"
+         aria-modal="true">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header">
@@ -13,19 +15,19 @@
                         <h5 class="modal-title fw-bold mb-0">@Translation.GetString("subscription.modal.title")</h5>
                         <small class="text-muted">@Translation.GetString("subscription.modal.subtitle")</small>
                     </div>
-                    <button type="button" class="btn-close" aria-label="@Translation.GetString("common.close")" @onclick="CloseAsync"></button>
+                    <button type="button" class="btn-close" aria-label="@Translation.GetString("common.close")"
+                            @onclick="CloseAsync"></button>
                 </div>
 
                 <div class="modal-body">
                     <div class="d-flex justify-content-center mb-4">
-                        <div class="btn-group" role="group" aria-label="@Translation.GetString("subscription.modal.billing_cycle")">
-                            <button type="button"
-                                    class="btn btn-sm @(!_isYearly ? "btn-primary" : "btn-outline-primary")"
+                        <div class="btn-group" role="group"
+                             aria-label="@Translation.GetString("subscription.modal.billing_cycle")">
+                            <button type="button" class="btn btn-sm @(!_isYearly ? "btn-primary" : "btn-outline-primary")"
                                     @onclick="() => SetBillingCycle(false)">
                                 @Translation.GetString("subscription.modal.monthly")
                             </button>
-                            <button type="button"
-                                    class="btn btn-sm @(_isYearly ? "btn-primary" : "btn-outline-primary")"
+                            <button type="button" class="btn btn-sm @(_isYearly ? "btn-primary" : "btn-outline-primary")"
                                     @onclick="() => SetBillingCycle(true)">
                                 @Translation.GetString("subscription.modal.yearly")
                             </button>
@@ -65,7 +67,8 @@
                                                     <h5 class="card-title fw-bold mb-0">@plan.Name</h5>
                                                     @if (isCurrentPlan)
                                                     {
-                                                        <span class="badge bg-primary">@Translation.GetString("subscription.modal.current_plan")</span>
+                                                        <span
+                                                        class="badge bg-primary">@Translation.GetString("subscription.modal.current_plan")</span>
                                                     }
                                                 </div>
 
@@ -77,75 +80,78 @@
                                                 <div class="mb-3">
                                                     @if (plan.IsFree || price <= 0)
                                                     {
-                                                        <span class="fs-4 fw-bold text-success">@Translation.GetString("subscription.modal.free_price")</span>
+                                                        <span
+                                                        class="fs-4 fw-bold text-success">@Translation.GetString("subscription.modal.free_price")</span>
                                                     }
                                                     else
                                                     {
-                                                        <span class="fs-4 fw-bold">@price.ToString("0.##") @Translation.GetString("common.currency")</span>
-                                                        <small class="text-muted">
-                                                            @(_isYearly
-                                                                ? Translation.GetString("subscription.modal.per_year")
-                                                                : Translation.GetString("subscription.modal.per_month"))
-                                                        </small>
-                                                    }
+                                                        <span class="fs-4 fw-bold">@price.ToString("0.##")
+                                                            @Translation.GetString("common.currency")</span>
+                                                            <small class="text-muted">
+                                                                @(_isYearly
+                                                                    ? Translation.GetString("subscription.modal.per_year")
+                                                                    : Translation.GetString("subscription.modal.per_month"))
+                                                            </small>
+                                                        }
+                                                    </div>
+
+                                                    <ul class="list-unstyled small mb-4">
+                                                        <li class="mb-1">
+                                                            <i class="bi bi-check-circle-fill text-success me-1"></i>
+                                                            <strong>@plan.MonthlyPrintsIncluded</strong>
+                                                            @Translation.GetString("subscription.modal.prints_included")
+                                                        </li>
+                                                        @if (plan.HasTopUp && plan.TopUpPrintsIncluded.HasValue &&
+                                            plan.TopUpPrice.HasValue)
+                                                        {
+                                                            <li class="text-muted">
+                                                                <i class="bi bi-plus-circle me-1"></i>
+                                                                @Translation.GetString("subscription.modal.topup_info")
+                                                                (+@plan.TopUpPrintsIncluded.Value - @plan.TopUpPrice.Value.ToString("0.##")
+                                                                @Translation.GetString("common.currency"))
+                                                            </li>
+                                                        }
+                                                    </ul>
                                                 </div>
 
-                                                <ul class="list-unstyled small mb-4">
-                                                    <li class="mb-1">
-                                                        <i class="bi bi-check-circle-fill text-success me-1"></i>
-                                                        <strong>@plan.MonthlyPrintsIncluded</strong> @Translation.GetString("subscription.modal.prints_included")
-                                                    </li>
-                                                    @if (plan.HasTopUp && plan.TopUpPrintsIncluded.HasValue && plan.TopUpPrice.HasValue)
+                                                <div>
+                                                    @if (isCurrentPlan)
                                                     {
-                                                        <li class="text-muted">
-                                                            <i class="bi bi-plus-circle me-1"></i>
-                                                            @Translation.GetString("subscription.modal.topup_info")
-                                                            (+@plan.TopUpPrintsIncluded.Value - @plan.TopUpPrice.Value.ToString("0.##") @Translation.GetString("common.currency"))
-                                                        </li>
+                                                        <button type="button" class="btn btn-outline-secondary w-100" disabled>
+                                                            @Translation.GetString("subscription.modal.current_plan_button")
+                                                        </button>
                                                     }
-                                                </ul>
-                                            </div>
-
-                                            <div>
-                                                @if (isCurrentPlan)
-                                                {
-                                                    <button type="button" class="btn btn-outline-secondary w-100" disabled>
-                                                        @Translation.GetString("subscription.modal.current_plan_button")
-                                                    </button>
-                                                }
-                                                else
-                                                {
-                                                    <button type="button"
-                                                            class="btn btn-primary w-100"
-                                                            disabled="@(_submittingPlanId != null)"
-                                                            @onclick="() => SelectPlanAsync(plan)">
-                                                        @if (isSubmittingThisPlan)
-                                                        {
-                                                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                                                        }
-                                                        @(plan.IsFree || price <= 0
-                                                            ? Translation.GetString("subscription.modal.select_free")
-                                                            : Translation.GetString("subscription.modal.subscribe_button"))
-                                                    </button>
-                                                }
+                                                    else
+                                                    {
+                                                        <button type="button" class="btn btn-primary w-100"
+                                                                disabled="@(_submittingPlanId != null)" @onclick="() => SelectPlanAsync(plan)">
+                                                            @if (isSubmittingThisPlan)
+                                                            {
+                                                                <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                                            }
+                                                            @(plan.IsFree || price <= 0
+                                                                ? Translation.GetString("subscription.modal.select_free")
+                                                                : Translation.GetString("subscription.modal.subscribe_button"))
+                                                        </button>
+                                                    }
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            }
-                        </div>
-                    }
-                </div>
+                                }
+                            </div>
+                        }
+                    </div>
 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" @onclick="CloseAsync">
-                        @Translation.GetString("common.close")
-                    </button>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" @onclick="CloseAsync">
+                            @Translation.GetString("common.close")
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-}
+    }
 
 @code {
     [Parameter] public bool IsVisible { get; set; }
@@ -173,10 +179,13 @@
         {
             _plans = await ApiClient.GetFromJsonAsync<List<PlanDto>>("api/plans") ?? new();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
             _plans = new();
-            ToastService.ShowError(Translation.GetString("app.error.unknown"));
+            
+            string error = Translation.GetString("app.error.unknown");
+            Logger.LogError(ex, error);
+            ToastService.ShowError(error);
         }
         finally
         {
@@ -233,9 +242,11 @@
             await OnSubscriptionChanged.InvokeAsync();
             await CloseAsync();
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            ToastService.ShowError(Translation.GetString("app.error.unknown"));
+            string error = Translation.GetString("app.error.unknown");
+            Logger.LogError(ex, error);
+            ToastService.ShowError(error);
         }
         finally
         {

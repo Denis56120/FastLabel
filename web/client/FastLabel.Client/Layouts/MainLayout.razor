@@ -2,6 +2,8 @@
 @inject AuthService AuthService
 @inject ApiClient ApiClient
 @inject NavigationManager Navigation
+@inject ToastService ToastService
+@inject ILogger Logger
 
 <PageTitle>FastLabel - @GetCurrentPageTitle()</PageTitle>
 
@@ -102,16 +104,22 @@ else
         {
             await ApiClient.GetFromJsonAsync<UserDto>("api/users/me");
         }
-        catch
+        catch (Exception ex)
         {
+            string error = Translation.GetString("app.error.unknown");
+            Logger.LogError(ex, error);
+            ToastService.ShowError(error);
         }
 
         try
         {
             await Translation.InitializeAsync();
         }
-        catch
+        catch (Exception ex)
         {
+            string error = Translation.GetString("app.error.unknown");
+            Logger.LogError(ex, error);
+            ToastService.ShowError(error);
         }
         
         _isLoaded = true;
