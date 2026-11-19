@@ -92,10 +92,10 @@ public static class StripeEndpoints
             Stripe.Event stripeEvent;
             try
             {
-                var signatureHeader = request.Headers["Stripe-Signature"];
-                stripeEvent = !string.IsNullOrWhiteSpace(webhookSecret)
-                    ? Stripe.EventUtility.ConstructEvent(json, signatureHeader, webhookSecret)
-                    : Stripe.EventUtility.ParseEvent(json);
+                var signatureHeader = request.Headers["Stripe-Signature"].FirstOrDefault();
+                stripeEvent = !string.IsNullOrWhiteSpace(webhookSecret) && !string.IsNullOrWhiteSpace(signatureHeader)
+                    ? Stripe.EventUtility.ConstructEvent(json, signatureHeader, webhookSecret, throwOnApiVersionMismatch: false)
+                    : Stripe.EventUtility.ParseEvent(json, throwOnApiVersionMismatch: false);
             }
             catch (Stripe.StripeException)
             {

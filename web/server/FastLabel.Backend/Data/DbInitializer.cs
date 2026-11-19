@@ -621,6 +621,9 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         await CreateTextWithTranslationsAsync("subscription.notification.payment_failed", "Your payment failed. Your current plan is in a grace period.", new() { { "fr", "Votre paiement a échoué. Votre offre actuelle est en période de grâce." }, { "en", "Your payment failed. Your current plan is in a grace period." } });
         await CreateTextWithTranslationsAsync("subscription.notification.subscription_ended", "Your subscription has ended. You have been switched to the free plan.", new() { { "fr", "Votre souscription a pris fin. Vous êtes repassé sur l'offre gratuite." }, { "en", "Your subscription has ended. You have been switched to the free plan." } });
         await CreateTextWithTranslationsAsync("subscription.error.unauthorized", "Unauthorized access", new() { { "fr", "Accès non autorisé" }, { "en", "Unauthorized access" } });
+        await CreateTextWithTranslationsAsync("subscription.error.not_found", "Subscription not found.", new() { { "fr", "Abonnement introuvable." }, { "en", "Subscription not found." } });
+
+        await CreateTextWithTranslationsAsync("plan.error.not_found", "Plan not found.", new() { { "fr", "Offre introuvable." }, { "en", "Plan not found." } });
 
         await CreateTextWithTranslationsAsync("user.error.email_already_taken", "This email is already in use", new() { { "fr", "Cet e-mail est déjà utilisé" }, { "en", "This email is already in use" } });
         await CreateTextWithTranslationsAsync("user.error.not_found", "User not found", new() { { "fr", "Utilisateur introuvable" }, { "en", "User not found" } });
