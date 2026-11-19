@@ -81,7 +81,7 @@
                                                     }
                                                     else
                                                     {
-                                                        <span class="fs-4 fw-bold">@price.ToString("0.##")</span>
+                                                        <span class="fs-4 fw-bold">@price.ToString("0.##") €</span>
                                                         <small class="text-muted">
                                                             @(_isYearly
                                                                 ? Translation.GetString("subscription.modal.per_year")
@@ -100,7 +100,7 @@
                                                         <li class="text-muted">
                                                             <i class="bi bi-plus-circle me-1"></i>
                                                             @Translation.GetString("subscription.modal.topup_info")
-                                                            (+@plan.TopUpPrintsIncluded.Value — @plan.TopUpPrice.Value.ToString("0.##"))
+                                                            (+@plan.TopUpPrintsIncluded.Value — @plan.TopUpPrice.Value.ToString("0.##") €)
                                                         </li>
                                                     }
                                                 </ul>
