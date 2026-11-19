@@ -81,7 +81,7 @@
                                                     }
                                                     else
                                                     {
-                                                        <span class="fs-4 fw-bold">@price.ToString("0.##") €</span>
+                                                        <span class="fs-4 fw-bold">@price.ToString("0.##") @Translation.GetString("common.currency")</span>
                                                         <small class="text-muted">
                                                             @(_isYearly
                                                                 ? Translation.GetString("subscription.modal.per_year")
@@ -100,7 +100,7 @@
                                                         <li class="text-muted">
                                                             <i class="bi bi-plus-circle me-1"></i>
                                                             @Translation.GetString("subscription.modal.topup_info")
-                                                            (+@plan.TopUpPrintsIncluded.Value — @plan.TopUpPrice.Value.ToString("0.##") €)
+                                                            (+@plan.TopUpPrintsIncluded.Value - @plan.TopUpPrice.Value.ToString("0.##") @Translation.GetString("common.currency"))
                                                         </li>
                                                     }
                                                 </ul>
@@ -194,16 +194,39 @@
         _submittingPlanId = plan.Id;
         try
         {
-            var payload = new StripeDto
+            var period = _isYearly ? 12 : 1;
+
+            if (plan.IsFree || (_isYearly ? plan.YearlyPrice : plan.MonthlyPrice) <= 0)
+            {
+                var subscribePayload = new SubscriptionDto
+                {
+                    PlanCode = plan.Code,
+                    SubscriptionPeriod = period
+                };
+
+                var (isSubSuccess, subError) = await ApiClient.PostAsync("api/subscriptions", subscribePayload);
+                if (!isSubSuccess)
+                {
+                    ToastService.ShowError(Translation.GetString(subError ?? "app.error.unknown"));
+                    return;
+                }
+
+                ToastService.ShowSuccess(Translation.GetString("subscription.modal.subscribed_success"));
+                await OnSubscriptionChanged.InvokeAsync();
+                await CloseAsync();
+                return;
+            }
+
+            var stripePayload = new StripeDto
             {
                 Plan = plan.Code,
                 BillingInterval = _isYearly ? "Yearly" : "Monthly"
             };
 
-            var (isSuccess, errorMessage) = await ApiClient.PostAsync("api/stripe/create-checkout-session", payload);
-            if (!isSuccess)
+            var (isStripeSuccess, stripeError) = await ApiClient.PostAsync("api/stripe/create-checkout-session", stripePayload);
+            if (!isStripeSuccess)
             {
-                ToastService.ShowError(Translation.GetString(errorMessage ?? "app.error.unknown"));
+                ToastService.ShowError(Translation.GetString(stripeError ?? "app.error.unknown"));
                 return;
             }
 

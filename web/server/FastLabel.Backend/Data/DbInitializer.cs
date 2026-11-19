@@ -321,6 +321,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         await CreateTextWithTranslationsAsync("common.save", "Save", new() { { "fr", "Enregistrer" }, { "en", "Save" } });
         await CreateTextWithTranslationsAsync("common.cancel", "Cancel", new() { { "fr", "Annuler" }, { "en", "Cancel" } });
         await CreateTextWithTranslationsAsync("common.loading", "Loading...", new() { { "fr", "Chargement en cours..." }, { "en", "Loading..." } });
+        await CreateTextWithTranslationsAsync("common.currency", "€", new() { { "fr", "€" }, { "en", "€" } });
 
         await CreateTextWithTranslationsAsync("nav.reseller_clients", "My clients", new() { { "fr", "Mes clients" }, { "en", "My clients" } });
         await CreateTextWithTranslationsAsync("reseller.clients.title", "Client Management", new() { { "fr", "Gestion des clients" }, { "en", "Client Management" } });
@@ -450,6 +451,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         await CreateTextWithTranslationsAsync("account.subscription.total_available", "Total available", new() { { "fr", "Total disponible" }, { "en", "Total available" } });
         await CreateTextWithTranslationsAsync("account.subscription.change_plan_button", "Change plan", new() { { "fr", "Changer d'offre" }, { "en", "Change plan" } });
 
+        await CreateTextWithTranslationsAsync("subscription.modal.subscribed_success", "Subscription updated.", new() { { "fr", "Offre mise à jour." }, { "en", "Subscription updated." } });
         await CreateTextWithTranslationsAsync("subscription.modal.title", "Choose a plan", new() { { "fr", "Choisir une offre" }, { "en", "Choose a plan" } });
         await CreateTextWithTranslationsAsync("subscription.modal.subtitle", "Select the plan and billing cycle that fit your printing needs.", new() { { "fr", "Sélectionnez l'offre et le cycle de facturation adaptés à vos besoins." }, { "en", "Select the plan and billing cycle that fit your printing needs." } });
         await CreateTextWithTranslationsAsync("subscription.modal.billing_cycle", "Billing cycle", new() { { "fr", "Cycle de facturation" }, { "en", "Billing cycle" } });
