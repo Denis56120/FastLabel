@@ -85,4 +85,4 @@ echo ========================================================
 echo [SUCCES] Publication et preparation OK !
 echo          Binaire pret dans : "%DOCKER_DIR%\%BINARY_NAME%"
 echo ========================================================
-pause
+if not defined BATCH_MODE pause

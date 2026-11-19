@@ -1,27 +1,58 @@
 @echo off
 setlocal
 chcp 65001 >nul
-title Creation du Full Package FastLabel
+title Creation du Package Web FastLabel (Backend + Client)
 
 set "ROOT_DIR=%~dp0"
 if "%ROOT_DIR:~-1%"=="\" set "ROOT_DIR=%ROOT_DIR:~0,-1%"
 
 set "DIST_DIR=%ROOT_DIR%\dist"
-set "PKG_DIR=%DIST_DIR%\fastlabel-fullpackage"
-set "ARCHIVE_PATH=%DIST_DIR%\fastlabel-fullpackage.tar.gz"
+set "PKG_DIR=%DIST_DIR%\fastlabel-package"
+set "ARCHIVE_PATH=%DIST_DIR%\fastlabel-package.tar.gz"
 
-set "AGENT_DOCKER=%ROOT_DIR%\agent\FastLabel.DockerAgent\docker"
 set "BACKEND_DOCKER=%ROOT_DIR%\web\server\FastLabel.Backend\docker"
 set "CLIENT_DOCKER=%ROOT_DIR%\web\client\FastLabel.Client\docker"
 
+set "BACKEND_BUILD_BAT=%ROOT_DIR%\web\script-build-docker-backend.bat"
+set "CLIENT_BUILD_BAT=%ROOT_DIR%\web\script-build-docker-front.bat"
+
+set "BATCH_MODE=1"
+
 echo ========================================================
-echo 1. Verification des artefacts dans les dossiers docker...
+echo 1. Publication du Backend...
 echo ========================================================
-if not exist "%AGENT_DOCKER%\FastLabel.DockerAgent" (
-    echo [ERREUR] Binaire agent manquant : "%AGENT_DOCKER%\FastLabel.DockerAgent"
+if not exist "%BACKEND_BUILD_BAT%" (
+    echo [ERREUR] Script introuvable : "%BACKEND_BUILD_BAT%"
     pause
     exit /b 1
 )
+call "%BACKEND_BUILD_BAT%"
+if errorlevel 1 (
+    echo [ERREUR] Echec de la publication du Backend.
+    pause
+    exit /b 1
+)
+
+echo.
+echo ========================================================
+echo 2. Publication du Client...
+echo ========================================================
+if not exist "%CLIENT_BUILD_BAT%" (
+    echo [ERREUR] Script introuvable : "%CLIENT_BUILD_BAT%"
+    pause
+    exit /b 1
+)
+call "%CLIENT_BUILD_BAT%"
+if errorlevel 1 (
+    echo [ERREUR] Echec de la publication du Client.
+    pause
+    exit /b 1
+)
+
+echo.
+echo ========================================================
+echo 3. Verification des artefacts...
+echo ========================================================
 if not exist "%BACKEND_DOCKER%\FastLabel.Backend" (
     echo [ERREUR] Binaire backend manquant : "%BACKEND_DOCKER%\FastLabel.Backend"
     pause
@@ -35,16 +66,14 @@ if not exist "%CLIENT_DOCKER%\wwwroot\index.html" (
 
 echo.
 echo ========================================================
-echo 2. Preparation du dossier de package...
+echo 4. Preparation du dossier de package...
 echo ========================================================
 if exist "%PKG_DIR%" rmdir /s /q "%PKG_DIR%"
 if exist "%ARCHIVE_PATH%" del /f /q "%ARCHIVE_PATH%"
 
-mkdir "%PKG_DIR%\agent"
 mkdir "%PKG_DIR%\backend"
 mkdir "%PKG_DIR%\client"
 
-xcopy "%AGENT_DOCKER%\*" "%PKG_DIR%\agent\" /e /i /h /y >nul
 xcopy "%BACKEND_DOCKER%\*" "%PKG_DIR%\backend\" /e /i /h /y >nul
 xcopy "%CLIENT_DOCKER%\*" "%PKG_DIR%\client\" /e /i /h /y >nul
 
@@ -54,9 +83,9 @@ if exist "%ROOT_DIR%\deploy.sh" (
 
 echo.
 echo ========================================================
-echo 3. Compression en archive .tar.gz...
+echo 5. Compression en archive .tar.gz...
 echo ========================================================
-tar -czf "%ARCHIVE_PATH%" -C "%DIST_DIR%" fastlabel-fullpackage
+tar -czf "%ARCHIVE_PATH%" -C "%DIST_DIR%" fastlabel-package
 if errorlevel 1 (
     echo [ERREUR] Echec de creation de l'archive tar.gz.
     pause
@@ -65,7 +94,7 @@ if errorlevel 1 (
 
 echo.
 echo ========================================================
-echo [SUCCES] Full package pret :
+echo [SUCCES] Package pret :
 echo          "%ARCHIVE_PATH%"
 echo ========================================================
 pause

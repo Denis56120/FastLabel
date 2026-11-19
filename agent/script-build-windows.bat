@@ -96,4 +96,4 @@ echo ========================================================
 echo [SUCCES] Installateur publie dans :
 echo          "%INSTALLER_DIR%\FastLabel_Setup_v1.0.0.exe"
 echo ========================================================
-pause
+if not defined BATCH_MODE pause
