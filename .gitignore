@@ -39,3 +39,5 @@ launchSettings.json
 *.exe
 *.db*
 FastLabel.DockerAgent
+FastLabel.Backend
+web/client/FastLabel.Client/docker/wwwroot/

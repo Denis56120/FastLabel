@@ -22,6 +22,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\shared\FastLabel.Shared\FastLabel.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(SkipClientReference)' != 'true'">
     <ProjectReference Include="..\..\client\FastLabel.Client\FastLabel.Client.csproj" />
   </ItemGroup>
 
