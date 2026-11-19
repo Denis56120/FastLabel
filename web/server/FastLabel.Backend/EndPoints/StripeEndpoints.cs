@@ -40,7 +40,7 @@ public static class StripeEndpoints
                 return Results.BadRequest(new ErrorResponseDto { Message = "stripe.error.price_not_configured" });
             }
 
-            var secretKey = configuration["Stripe:SecretKey"];
+            var secretKey = configuration["STRIPE_SECRET_KEY"];
             if (!string.IsNullOrWhiteSpace(secretKey))
             {
                 Stripe.StripeConfiguration.ApiKey = secretKey;
@@ -81,8 +81,8 @@ public static class StripeEndpoints
         routes.MapPost("api/stripe/webhook", async (HttpRequest request, AppDbContext db, IConfiguration configuration) =>
         {
             var json = await new StreamReader(request.Body).ReadToEndAsync();
-            var webhookSecret = configuration["Stripe:WebhookSecret"];
-            var secretKey = configuration["Stripe:SecretKey"];
+            var webhookSecret = configuration["STRIPE_WEBHOOK_SECRET"];
+            var secretKey = configuration["STRIPE_SECRET_KEY"];
 
             if (!string.IsNullOrWhiteSpace(secretKey))
             {
