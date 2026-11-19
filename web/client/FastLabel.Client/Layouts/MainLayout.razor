@@ -105,9 +105,8 @@ else
         }
         catch (Exception ex)
         {
-            string error = Translation.GetString("app.error.unknown");
-            AppLog.Error(ex, error);
-            ToastService.ShowError(error);
+            AppLog.Error(ex);
+            ToastService.ShowError(Translation.GetString("app.error.unknown"));
         }
 
         try
@@ -116,9 +115,8 @@ else
         }
         catch (Exception ex)
         {
-            string error = Translation.GetString("app.error.unknown");
-            AppLog.Error(ex, error);
-            ToastService.ShowError(error);
+            AppLog.Error(ex);
+            ToastService.ShowError(Translation.GetString("app.error.unknown"));
         }
         
         _isLoaded = true;

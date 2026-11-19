@@ -94,7 +94,7 @@ public class CustomAuthenticationStateProvider(IHttpClientFactory clientFactory)
         }
         catch (Exception ex)
         {
-            AppLog.Error(ex, "Unknown error");
+            AppLog.Error(ex);
             if (_cachedState is not null)
             {
                 return _cachedState;

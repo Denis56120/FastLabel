@@ -120,9 +120,8 @@
         }
         catch (Exception ex)
         {
-            string error = Translation.GetString("auth.error.server_unreachable");
-            AppLog.Error(ex, error);
-            ToastService.ShowError(error);
+            AppLog.Error(ex);
+            ToastService.ShowError(Translation.GetString("auth.error.server_unreachable"));
         }
         finally
         {

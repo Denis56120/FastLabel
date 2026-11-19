@@ -27,7 +27,7 @@ public abstract class TranslatableComponent : LayoutComponentBase, IDisposable
         }
         catch (Exception ex)
         {
-            AppLog.Error(ex, "Impossible loading");
+            AppLog.Error(ex);
         }
     }
 

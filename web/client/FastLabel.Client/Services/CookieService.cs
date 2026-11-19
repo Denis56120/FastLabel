@@ -16,7 +16,7 @@ public class CookieService(IServiceProvider serviceProvider)
         }
         catch (Exception ex)
         {
-            AppLog.Error(ex, "GetCookie Error");
+            AppLog.Error(ex);
             return string.Empty;
         }
     }
@@ -29,7 +29,7 @@ public class CookieService(IServiceProvider serviceProvider)
         }
         catch (Exception ex)
         {
-            AppLog.Error(ex, "SetCookie Error");
+            AppLog.Error(ex);
         }
     }
 }

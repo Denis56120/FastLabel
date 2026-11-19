@@ -175,9 +175,8 @@
         {
             _languages = new();
 
-            string error = Translation.GetString("app.error.unknown");
-            AppLog.Error(ex, error);
-            ToastService.ShowError(error);
+            AppLog.Error(ex);
+            ToastService.ShowError(Translation.GetString("app.error.unknown"));
         }
     }
 
@@ -195,9 +194,8 @@
         }
         catch (Exception ex)
         {
-            string error = Translation.GetString("app.error.unknown");
-            AppLog.Error(ex, error);
-            ToastService.ShowError(error);
+            AppLog.Error(ex);
+            ToastService.ShowError(Translation.GetString("app.error.unknown"));
 
             Navigation.NavigateTo("/");
         }
@@ -242,9 +240,8 @@
                         }
                         catch (Exception ex)
                         {
-                            string error = Translation.GetString("app.error.unknown");
-                            AppLog.Error(ex, error);
-                            ToastService.ShowError(error);
+                            AppLog.Error(ex);
+                            ToastService.ShowError(Translation.GetString("app.error.unknown"));
                         }
                     }
                 }
@@ -266,9 +263,8 @@
         }
         catch (Exception ex)
         {
-            string error = Translation.GetString("app.error.unknown");
-            AppLog.Error(ex, error);
-            ToastService.ShowError(error);
+            AppLog.Error(ex);
+            ToastService.ShowError(Translation.GetString("app.error.unknown"));
         }
         finally
         {

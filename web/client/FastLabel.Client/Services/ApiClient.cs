@@ -70,7 +70,7 @@ public class ApiClient(HttpClient httpClient)
         }
         catch (Exception ex)
         {
-            AppLog.Error(ex, "Parsing error");
+            AppLog.Error(ex);
         }
 
         return (false, "app.error.unknown");

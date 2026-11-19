@@ -94,9 +94,8 @@ else
         }
         catch (Exception ex)
         {
-            string error = Translation.GetString("app.error.unknown");
-            AppLog.Error(ex, error);
-            ToastService.ShowError(error);
+            AppLog.Error(ex);
+            ToastService.ShowError(Translation.GetString("app.error.unknown"));
         }
 
         _isLoaded = true;
@@ -113,9 +112,8 @@ else
         {
             _languages = new();
 
-            string error = Translation.GetString("app.error.unknown");
-            AppLog.Error(ex, error);
-            ToastService.ShowError(error);
+            AppLog.Error(ex);
+            ToastService.ShowError(Translation.GetString("app.error.unknown"));
         }
     }
 
@@ -164,9 +162,8 @@ else
         }
         catch (Exception ex)
         {
-            string error = Translation.GetString("app.error.unknown");
-            AppLog.Error(ex, error);
-            ToastService.ShowError(error);
+            AppLog.Error(ex);
+            ToastService.ShowError(Translation.GetString("app.error.unknown"));
         }
 
         if (_languages is null or { Count: 0 })
