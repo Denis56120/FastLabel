@@ -18,15 +18,18 @@ public class Subscription
     [Required]
     public int SubscriptionPeriod { get; set; }
 
-    public int SubscriptionTypeId { get; set; }
-
-    [ForeignKey(nameof(SubscriptionTypeId))]
-    public SubscriptionType SubscriptionType { get; set; } = null!;
-
-    public int StripeId { get; set; }
+    public int? StripeId { get; set; }
 
     [ForeignKey(nameof(StripeId))]
-    public StripeRecord Stripe { get; set; } = null!;
+    public StripeRecord? Stripe { get; set; }
+
+    public DateTime? CurrentPeriodStart { get; set; }
+
+    public DateTime? CurrentPeriodEnd { get; set; }
+
+    public int ExtraPrintsBalance { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public DateTime? UpdatedAt { get; set; }
 }

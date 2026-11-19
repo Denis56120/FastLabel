@@ -86,7 +86,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         // Trouve la langue anglaise
         var englishLanguage = await _context.Languages
             .FirstOrDefaultAsync(l => l.Code == "en") ?? throw new InvalidOperationException("La langue anglaise ne peut pas être trouvée");
-        int englishLanguageId = englishLanguage.Id;    
+        int englishLanguageId = englishLanguage.Id;
 
         // 3. Protocoles d'impression (Protocol)
         if (!await _context.Protocols.AnyAsync())
@@ -146,7 +146,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
 
         var activeStatus = await _context.BasicStatuses
         .FirstOrDefaultAsync(s => s.NameTextId == statusTextId) ?? throw new InvalidOperationException("Le BasicStatus correspondant au tag 'status.active' est introuvable.");
-        
+
         int activeStatusId = activeStatus.Id;
 
         // 7. Statuts des tâches d'impression (PrintJobStatus)
@@ -166,63 +166,122 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             await _context.SaveChangesAsync();
         }
 
-        // 8. Types d'abonnements (SubscriptionType)
-        if (!await _context.SubscriptionTypes.AnyAsync())
-        {
-            var sub1 = await CreateTextWithTranslationsAsync("subtype.paid", "Paid", new() { { "fr", "Payé" }, { "en", "Paid" } });
-            var sub2 = await CreateTextWithTranslationsAsync("subtype.trial", "Trial", new() { { "fr", "Essai" }, { "en", "Trial" } });
-
-            _context.SubscriptionTypes.AddRange(
-                new SubscriptionType { NameTextId = sub1.Id },
-                new SubscriptionType { NameTextId = sub2.Id }
-            );
-            await _context.SaveChangesAsync();
-        }
-
-        // 9. Plans d'abonnement (Plan)
+        // 8. Plans d'abonnement (Plan)
         if (!await _context.Plans.AnyAsync())
         {
-            var planFreeText = await CreateTextWithTranslationsAsync("plan.free.name", "Free Plan", new() { { "fr", "Plan Gratuit" }, { "en", "Free Plan" } });
-            var planProText = await CreateTextWithTranslationsAsync("plan.pro.name", "Pro Plan", new() { { "fr", "Plan Professionnel" }, { "en", "Pro Plan" } });
-            var planEnterpriseText = await CreateTextWithTranslationsAsync("plan.enterprise.name", "Enterprise Plan", new() { { "fr", "Plan Entreprise" }, { "en", "Enterprise Plan" } });
+            var planFreeText = await CreateTextWithTranslationsAsync(
+                "plan.free",
+                "Free",
+                new() { { "fr", "Gratuit" }, { "en", "Free" } }
+            );
 
-            var freeDescFr = JsonSerializer.Serialize(new { price = 0, currency = "EUR", billing = "monthly", max_printers = 2, features = new[] { "Impression de base", "Jusqu'à 2 imprimantes" } });
-            var freeDescEn = JsonSerializer.Serialize(new { price = 0, currency = "EUR", billing = "monthly", max_printers = 2, features = new[] { "Basic printing", "Up to 2 printers" } });
+            var planStarterText = await CreateTextWithTranslationsAsync(
+                "plan.starter",
+                "Starter",
+                new() { { "fr", "Starter" }, { "en", "Starter" } }
+            );
 
-            var proDescFr = JsonSerializer.Serialize(new { price = 29, currency = "EUR", billing = "monthly", max_printers = 10, features = new[] { "Impression illimitée", "Agents multiples", "Support prioritaire" } });
-            var proDescEn = JsonSerializer.Serialize(new { price = 29, currency = "EUR", billing = "monthly", max_printers = 10, features = new[] { "Unlimited printing", "Multiple agents", "Priority support" } });
+            var planProText = await CreateTextWithTranslationsAsync(
+                "plan.pro",
+                "Pro",
+                new() { { "fr", "Pro" }, { "en", "Pro" } }
+            );
 
-            var entDescFr = JsonSerializer.Serialize(new { price = 99, currency = "EUR", billing = "monthly", max_printers = -1, features = new[] { "Imprimantes illimitées", "Multi-site", "API dédiée", "Support 24/7" } });
-            var entDescEn = JsonSerializer.Serialize(new { price = 99, currency = "EUR", billing = "monthly", max_printers = -1, features = new[] { "Unlimited printers", "Multi-site", "Dedicated API", "24/7 support" } });
+            var planBusinessText = await CreateTextWithTranslationsAsync(
+                "plan.business",
+                "Business",
+                new() { { "fr", "Business" }, { "en", "Business" } }
+            );
 
-            var descFree = await CreateTextWithTranslationsAsync("plan.free.description", freeDescEn, new() { { "fr", freeDescFr }, { "en", freeDescEn } });
-            var descPro = await CreateTextWithTranslationsAsync("plan.pro.description", proDescEn, new() { { "fr", proDescFr }, { "en", proDescEn } });
-            var descEnt = await CreateTextWithTranslationsAsync("plan.enterprise.description", entDescEn, new() { { "fr", entDescFr }, { "en", entDescEn } });
+            var planEnterpriseText = await CreateTextWithTranslationsAsync(
+                "plan.enterprise",
+                "Enterprise",
+                new() { { "fr", "Entreprise" }, { "en", "Enterprise" } }
+            );
 
             _context.Plans.AddRange(
                 new Plan
                 {
+                    Code = "free",
                     NameTextId = planFreeText.Id,
-                    DescriptionJsonTextId = descFree.Id,
+                    MonthlyPrintsIncluded = 10,
+                    MonthlyPrice = 0m,
+                    YearlyPrice = 0m,
+                    TopUpPrintsIncluded = null,
+                    TopUpPrice = null,
+                    SortOrder = 1,
                     BasicStatusId = activeStatusId
                 },
                 new Plan
                 {
+                    Code = "starter",
+                    NameTextId = planStarterText.Id,
+                    MonthlyPrintsIncluded = 500,
+                    MonthlyPrice = 49m,
+                    YearlyPrice = 470m,
+                    TopUpPrintsIncluded = 100,
+                    TopUpPrice = 9m,
+                    StripeProductId = _env.IsDevelopment() ? "prod_VcjVk4ebwZmmYQ" : string.Empty,
+                    StripeMonthlyPriceId = _env.IsDevelopment() ? "price_1UdIRE56MInqLcWx3aKllRRc" : string.Empty,
+                    StripeYearlyPriceId = _env.IsDevelopment() ? "price_1UbU2I56MInqLcWxBjLHwsC1" : string.Empty,
+                    StripeTopUpPriceId = _env.IsDevelopment() ? "price_1UdIVt56MInqLcWxFjESFNhN" : string.Empty,
+                    SortOrder = 2,
+                    BasicStatusId = activeStatusId
+                },
+                new Plan
+                {
+                    Code = "pro",
                     NameTextId = planProText.Id,
-                    DescriptionJsonTextId = descPro.Id,
+                    MonthlyPrintsIncluded = 1_500,
+                    MonthlyPrice = 79m,
+                    YearlyPrice = 760m,
+                    TopUpPrintsIncluded = 1_000,
+                    TopUpPrice = 29m,
+                    StripeProductId = _env.IsDevelopment() ? "prod_VcjWw4zl5axAoC" : string.Empty,
+                    StripeMonthlyPriceId = _env.IsDevelopment() ? "price_1UdIQT56MInqLcWxEOpZCNQ3" : string.Empty,
+                    StripeYearlyPriceId = _env.IsDevelopment() ? "price_1UbU3I56MInqLcWxAmM5Esyz" : string.Empty,
+                    StripeTopUpPriceId = _env.IsDevelopment() ? "price_1UdIVe56MInqLcWxtjBQnaVF" : string.Empty,
+                    SortOrder = 3,
                     BasicStatusId = activeStatusId
                 },
                 new Plan
                 {
+                    Code = "business",
+                    NameTextId = planBusinessText.Id,
+                    MonthlyPrintsIncluded = 5_000,
+                    MonthlyPrice = 199m,
+                    YearlyPrice = 1_910m,
+                    TopUpPrintsIncluded = 1_000,
+                    TopUpPrice = 29m,
+                    StripeProductId = _env.IsDevelopment() ? "prod_VcjWdgZ48O14mq" : string.Empty,
+                    StripeMonthlyPriceId = _env.IsDevelopment() ? "price_1UdIPr56MInqLcWxPbohBHz2" : string.Empty,
+                    StripeYearlyPriceId = _env.IsDevelopment() ? "price_1UbU3o56MInqLcWxyyLSYWl6" : string.Empty,
+                    StripeTopUpPriceId = _env.IsDevelopment() ? "price_1UdIVQ56MInqLcWx5aoG2Izx" : string.Empty,
+                    SortOrder = 4,
+                    BasicStatusId = activeStatusId
+                },
+                new Plan
+                {
+                    Code = "enterprise",
                     NameTextId = planEnterpriseText.Id,
-                    DescriptionJsonTextId = descEnt.Id,
+                    MonthlyPrintsIncluded = 15_000,
+                    MonthlyPrice = 399m,
+                    YearlyPrice = 3_830m,
+                    TopUpPrintsIncluded = 1_000,
+                    TopUpPrice = 19m,
+                    StripeProductId = _env.IsDevelopment() ? "prod_VebfYZRXulp2Bb" : string.Empty,
+                    StripeMonthlyPriceId = _env.IsDevelopment() ? "price_1UdISC56MInqLcWxv7gJsot1" : string.Empty,
+                    StripeYearlyPriceId = _env.IsDevelopment() ? "price_1UdIRp56MInqLcWxsI4rdLrz" : string.Empty,
+                    StripeTopUpPriceId = _env.IsDevelopment() ? "price_1UdIV656MInqLcWxgUWWTSc9" : string.Empty,
+                    SortOrder = 5,
                     BasicStatusId = activeStatusId
                 }
             );
+
             await _context.SaveChangesAsync();
         }
 
-        // 10. Compte Administrateur par défaut
+        // 9. Compte Administrateur par défaut
         if (!await _context.Users.AnyAsync() && !_env.IsDevelopment())
         {
             _passwordHasher ??= new PasswordHasher<User>();
@@ -375,10 +434,26 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         await CreateTextWithTranslationsAsync("account.subscriptions_title", "My Subscriptions", new() { { "fr", "Mes abonnements" }, { "en", "My Subscriptions" } });
         await CreateTextWithTranslationsAsync("account.no_subscriptions", "No subscriptions found.", new() { { "fr", "Aucun abonnement trouvé." }, { "en", "No subscriptions found." } });
         await CreateTextWithTranslationsAsync("account.subscription.plan", "Plan", new() { { "fr", "Plan" }, { "en", "Plan" } });
-        await CreateTextWithTranslationsAsync("account.subscription.type", "Type", new() { { "fr", "Type" }, { "en", "Type" } });
         await CreateTextWithTranslationsAsync("account.subscription.period", "Period", new() { { "fr", "Période" }, { "en", "Period" } });
         await CreateTextWithTranslationsAsync("account.subscription.date", "Created At", new() { { "fr", "Créé le" }, { "en", "Created At" } });
+        await CreateTextWithTranslationsAsync("account.current_subscription_title", "Current subscription", new() { { "fr", "Abonnement actuel" }, { "en", "Current subscription" } });
+        await CreateTextWithTranslationsAsync("account.no_active_subscription", "No active subscription", new() { { "fr", "Aucun abonnement actif" }, { "en", "No active subscription" } });
+        await CreateTextWithTranslationsAsync("account.subscription.billing_cycle", "Billing cycle", new() { { "fr", "Cycle de facturation" }, { "en", "Billing cycle" } });
+        await CreateTextWithTranslationsAsync("account.subscription.period_dates", "Current period", new() { { "fr", "Période en cours" }, { "en", "Current period" } });
+        await CreateTextWithTranslationsAsync("account.subscription.period_free", "Free", new() { { "fr", "Gratuit" }, { "en", "Free" } });
+        await CreateTextWithTranslationsAsync("account.subscription.period_monthly", "Monthly", new() { { "fr", "Mensuel" }, { "en", "Monthly" } });
+        await CreateTextWithTranslationsAsync("account.subscription.period_yearly", "Yearly", new() { { "fr", "Annuel" }, { "en", "Yearly" } });
+        await CreateTextWithTranslationsAsync("account.subscription.months", "months", new() { { "fr", "mois" }, { "en", "months" } });
+        await CreateTextWithTranslationsAsync("account.subscription.monthly_usage", "Prints used this month", new() { { "fr", "Impressions utilisées ce mois-ci" }, { "en", "Prints used this month" } });
+        await CreateTextWithTranslationsAsync("account.subscription.extra_prints", "Remaining top-up credits", new() { { "fr", "Crédits de recharge restants" }, { "en", "Remaining top-up credits" } });
+        await CreateTextWithTranslationsAsync("account.subscription.total_available", "Total available", new() { { "fr", "Total disponible" }, { "en", "Total available" } });
+        await CreateTextWithTranslationsAsync("account.subscription.change_plan_button", "Change plan", new() { { "fr", "Changer d'offre" }, { "en", "Change plan" } });
 
+        await CreateTextWithTranslationsAsync("dashboard.subscription.period_free", "Free plan", new() { { "fr", "Offre gratuite" }, { "en", "Free plan" } });
+        await CreateTextWithTranslationsAsync("dashboard.subscription.monthly_usage", "Prints used this month", new() { { "fr", "Impressions utilisées ce mois-ci" }, { "en", "Prints used this month" } });
+        await CreateTextWithTranslationsAsync("dashboard.subscription.extra_prints", "Top-up balance", new() { { "fr", "Solde recharge" }, { "en", "Top-up balance" } });
+        await CreateTextWithTranslationsAsync("dashboard.subscription.total_available", "Available", new() { { "fr", "Disponible" }, { "en", "Available" } });
+        await CreateTextWithTranslationsAsync("dashboard.subscription.topup_button", "Top up prints", new() { { "fr", "Recharger" }, { "en", "Top up prints" } });
         await CreateTextWithTranslationsAsync("dashboard.subscription.checkout_success", "Default", new() { { "fr", "Votre abonnement a été activé avec succès !" }, { "en", "Your subscription has been successfully activated!" } });
         await CreateTextWithTranslationsAsync("dashboard.subscription.checkout_cancel", "Default", new() { { "fr", "Le processus de paiement a été annulé." }, { "en", "The payment process was canceled." } });
         await CreateTextWithTranslationsAsync("dashboard.title", "Dashboard", new() { { "fr", "Tableau de bord" }, { "en", "Dashboard" } });
@@ -460,7 +535,6 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         await CreateTextWithTranslationsAsync("stripe.error.interval_max_length", "L'intervalle ne peut pas dépasser 20 caractères.", new() { { "fr", "L'intervalle ne peut pas dépasser 20 caractères." }, { "en", "The interval cannot exceed 20 characters." } });
 
         await CreateTextWithTranslationsAsync("subscription.error.plan_required", "Plan name is required", new() { { "fr", "Le nom du plan est requis" }, { "en", "Plan name is required" } });
-        await CreateTextWithTranslationsAsync("subscription.error.type_required", "Subscription type is required", new() { { "fr", "Le type d'abonnement est requis" }, { "en", "Subscription type is required" } });
         await CreateTextWithTranslationsAsync("subscription.error.period_invalid", "Invalid subscription period", new() { { "fr", "Période d'abonnement invalide" }, { "en", "Invalid subscription period" } });
 
         await CreateTextWithTranslationsAsync("resolutions.error.value_required", "Resolution value is required", new() { { "fr", "La valeur de la résolution est requise" }, { "en", "Resolution value is required" } });

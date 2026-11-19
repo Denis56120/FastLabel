@@ -9,7 +9,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<ResolutionDpi> ResolutionDpis => Set<ResolutionDpi>();
     public DbSet<BasicStatus> BasicStatuses => Set<BasicStatus>();
     public DbSet<PrintJobStatus> PrintJobStatuses => Set<PrintJobStatus>();
-    public DbSet<SubscriptionType> SubscriptionTypes => Set<SubscriptionType>();
     public DbSet<AgentType> AgentTypes => Set<AgentType>();
     public DbSet<Plan> Plans => Set<Plan>();
     public DbSet<StripeRecord> Stripes => Set<StripeRecord>();

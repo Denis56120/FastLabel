@@ -53,7 +53,20 @@ public class DevelopmentDataSeeder(AppDbContext context, IPasswordHasher<User> p
             await _context.SaveChangesAsync();
         }
 
-        // 2. Agent Windows par défaut pour chaque utilisateur
+        // 2. Souscription 'free' par défaut pour chaque utilisateur
+        if (!await _context.Subscriptions.AnyAsync())
+        {
+            var users = await _context.Users.ToListAsync();
+            foreach (var user in users)
+            {
+                var freeSubscription = await DbHelpers.CreateSubscription(_context, user.Id, "free", 0, null, DateTime.UtcNow, null, 0);        
+                _context.Subscriptions.AddRange(freeSubscription);
+            }
+
+            await _context.SaveChangesAsync();
+        }
+
+        // 3. Agent Windows par défaut pour chaque utilisateur
         if (!await _context.Agents.AnyAsync())
         {
             var users = await _context.Users.ToListAsync();
@@ -67,7 +80,7 @@ public class DevelopmentDataSeeder(AppDbContext context, IPasswordHasher<User> p
             await _context.SaveChangesAsync();
         }
 
-        // 3. Imprimante par défaut ("Test Printer") pour chaque utilisateur
+        // 4. Imprimante par défaut ("Test Printer") pour chaque utilisateur
         if (!await _context.Printers.AnyAsync())
         {
             var users = await _context.Users.ToListAsync();
@@ -82,7 +95,7 @@ public class DevelopmentDataSeeder(AppDbContext context, IPasswordHasher<User> p
             await _context.SaveChangesAsync();
         }
 
-        // 4. Modèle d'étiquette par défaut ("Label Test") pour chaque utilisateur
+        // 5. Modèle d'étiquette par défaut ("Label Test") pour chaque utilisateur
         if (!await _context.Templates.AnyAsync())
         {
             var users = await _context.Users.ToListAsync();

@@ -102,6 +102,25 @@ public static class DbHelpers
         return await db.Languages.FirstOrDefaultAsync(l => l.Code == code);
     }
 
+    public static async Task<int> GetPlanIdByCodeAsync(AppDbContext db, string code)
+    {
+        var planId = await db.Plans
+            .Where(p => p.Code == code)
+            .OrderBy(p => p.Id)
+            .Select(p => (int?)p.Id)
+            .FirstOrDefaultAsync();
+
+        if (planId.HasValue)
+        {
+            return planId.Value;
+        }
+
+        var fallbackPlan = await db.Plans.OrderBy(p => p.Id).Skip(1).FirstOrDefaultAsync()
+                        ?? await db.Plans.OrderBy(p => p.Id).FirstOrDefaultAsync();
+
+        return fallbackPlan?.Id ?? 1;
+    }
+
     public static async Task<int> GetAgentTypeIdByTagAsync(AppDbContext db, string tag)
     {
         var agentTypeId = await db.AgentTypes
@@ -211,6 +230,23 @@ public static class DbHelpers
         return (targetLanguage?.Id ?? 1, targetLanguage?.Code ?? HttpContextHelpers.DefaultLanguage);
     }
 
+    public static async Task<Subscription> CreateSubscription(AppDbContext db, int userid, string plancode, int subscriptionperiod = 0, int? stripeid = null, DateTime? currentperiodstart = null, DateTime? currentperiodend = null, int extraprintsbalance = 0)
+    {
+        var freePlanId = await GetPlanIdByCodeAsync(db, plancode);
+
+        return new Subscription
+        {
+            UserId = userid,
+            PlanId = freePlanId,
+            SubscriptionPeriod = subscriptionperiod,
+            StripeId = stripeid,
+            CurrentPeriodStart = currentperiodstart,
+            CurrentPeriodEnd = currentperiodend,
+            ExtraPrintsBalance = extraprintsbalance,
+            CreatedAt = DateTime.UtcNow
+        };
+    }
+
     public static async Task<Agent> CreateAgent(AppDbContext db, int userid, string agenttypetag)
     {
         int agentTypeId = await GetAgentTypeIdByTagAsync(db, agenttypetag);
@@ -285,6 +321,9 @@ public static class DbHelpers
 
         db.Users.Add(user);
         await db.SaveChangesAsync();
+
+        var freeSubscription = await CreateSubscription(db, user.Id, "free", 0, null, DateTime.UtcNow, null, 0);        
+        db.Subscriptions.AddRange(freeSubscription); 
 
         var windowsAgent = await CreateAgent(db, user.Id, "agenttype.windows");
         var linuxAgent = await CreateAgent(db, user.Id, "agenttype.linux");

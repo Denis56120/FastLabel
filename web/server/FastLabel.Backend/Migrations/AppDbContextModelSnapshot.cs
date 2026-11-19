@@ -135,20 +135,57 @@ namespace FastLabel.Backend.Migrations
                     b.Property<int>("BasicStatusId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("DescriptionJsonTextId")
+                    b.Property<decimal>("MonthlyPrice")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<int>("MonthlyPrintsIncluded")
                         .HasColumnType("integer");
 
                     b.Property<int>("NameTextId")
                         .HasColumnType("integer");
 
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("StripeMonthlyPriceId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("StripeProductId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("StripeTopUpPriceId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("StripeYearlyPriceId")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<decimal?>("TopUpPrice")
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<int?>("TopUpPrintsIncluded")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("YearlyPrice")
+                        .HasColumnType("decimal(10,2)");
+
                     b.HasKey("Id");
 
                     b.HasIndex("BasicStatusId");
-
-                    b.HasIndex("DescriptionJsonTextId");
 
                     b.HasIndex("NameTextId");
 
@@ -341,17 +378,26 @@ namespace FastLabel.Backend.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("CurrentPeriodEnd")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("CurrentPeriodStart")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ExtraPrintsBalance")
+                        .HasColumnType("integer");
+
                     b.Property<int>("PlanId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("StripeId")
+                    b.Property<int?>("StripeId")
                         .HasColumnType("integer");
 
                     b.Property<int>("SubscriptionPeriod")
                         .HasColumnType("integer");
 
-                    b.Property<int>("SubscriptionTypeId")
-                        .HasColumnType("integer");
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("UserId")
                         .HasColumnType("integer");
@@ -362,29 +408,9 @@ namespace FastLabel.Backend.Migrations
 
                     b.HasIndex("StripeId");
 
-                    b.HasIndex("SubscriptionTypeId");
-
                     b.HasIndex("UserId");
 
                     b.ToTable("Subscriptions");
-                });
-
-            modelBuilder.Entity("FastLabel.Backend.Models.SubscriptionType", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("NameTextId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("NameTextId");
-
-                    b.ToTable("SubscriptionTypes");
                 });
 
             modelBuilder.Entity("FastLabel.Backend.Models.Template", b =>
@@ -593,12 +619,6 @@ namespace FastLabel.Backend.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("FastLabel.Backend.Models.Text", "DescriptionJson")
-                        .WithMany()
-                        .HasForeignKey("DescriptionJsonTextId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("FastLabel.Backend.Models.Text", "Name")
                         .WithMany()
                         .HasForeignKey("NameTextId")
@@ -606,8 +626,6 @@ namespace FastLabel.Backend.Migrations
                         .IsRequired();
 
                     b.Navigation("BasicStatus");
-
-                    b.Navigation("DescriptionJson");
 
                     b.Navigation("Name");
                 });
@@ -710,14 +728,7 @@ namespace FastLabel.Backend.Migrations
                     b.HasOne("FastLabel.Backend.Models.StripeRecord", "Stripe")
                         .WithMany()
                         .HasForeignKey("StripeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("FastLabel.Backend.Models.SubscriptionType", "SubscriptionType")
-                        .WithMany()
-                        .HasForeignKey("SubscriptionTypeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("FastLabel.Backend.Models.User", "User")
                         .WithMany()
@@ -729,20 +740,7 @@ namespace FastLabel.Backend.Migrations
 
                     b.Navigation("Stripe");
 
-                    b.Navigation("SubscriptionType");
-
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("FastLabel.Backend.Models.SubscriptionType", b =>
-                {
-                    b.HasOne("FastLabel.Backend.Models.Text", "Name")
-                        .WithMany()
-                        .HasForeignKey("NameTextId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Name");
                 });
 
             modelBuilder.Entity("FastLabel.Backend.Models.Template", b =>
