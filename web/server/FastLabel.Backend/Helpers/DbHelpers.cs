@@ -243,6 +243,53 @@ public static class DbHelpers
         return (targetLanguage?.Id ?? 1, targetLanguage?.Code ?? HttpContextHelpers.DefaultLanguage);
     }
 
+    public static async Task<int> GetUsersCountAsync(AppDbContext db, CancellationToken cancellationToken = default)
+    {
+        return await db.Users.CountAsync(cancellationToken);
+    }
+
+    public static async Task<int> GetResellersCountAsync(AppDbContext db, CancellationToken cancellationToken = default)
+    {
+        return await db.Users.CountAsync(u => u.IsReseller, cancellationToken);
+    }
+
+    public static async Task<int> GetSubscriptionsCountAsync(AppDbContext db, CancellationToken cancellationToken = default)
+    {
+        return await db.Subscriptions.CountAsync(cancellationToken);
+    }
+
+    public static async Task<int> GetAgentsCountAsync(AppDbContext db, CancellationToken cancellationToken = default)
+    {
+        return await db.Agents.CountAsync(cancellationToken);
+    }
+
+    public static async Task<int> GetActiveAgentsCountAsync(AppDbContext db, DateTime sinceUtc, CancellationToken cancellationToken = default)
+    {
+        return await db.Agents.CountAsync(a => a.LastSeenAt != null && a.LastSeenAt >= sinceUtc, cancellationToken);
+    }
+
+    public static async Task<int> GetTemplatesCountAsync(AppDbContext db, CancellationToken cancellationToken = default)
+    {
+        return await db.Templates.CountAsync(cancellationToken);
+    }
+
+    public static async Task<int> GetPrintersCountAsync(AppDbContext db, CancellationToken cancellationToken = default)
+    {
+        return await db.Printers.CountAsync(cancellationToken);
+    }
+
+    public static async Task<int> GetPrintJobsCountSinceAsync(AppDbContext db, DateTime sinceUtc, CancellationToken cancellationToken = default)
+    {
+        return await db.PrintJobs.CountAsync(j => j.CreatedAt >= sinceUtc, cancellationToken);
+    }
+
+    public static async Task<long> GetPrintedLabelsQuantitySinceAsync(AppDbContext db, DateTime sinceUtc, CancellationToken cancellationToken = default)
+    {
+        return await db.PrintJobs
+            .Where(j => j.CreatedAt >= sinceUtc)
+            .SumAsync(j => (long?)j.Quantity, cancellationToken) ?? 0L;
+    }
+
     public static async Task<Subscription> CreateSubscription(AppDbContext db, int userid, string plancode, int subscriptionperiod = 0, int? stripeid = null, DateTime? currentperiodstart = null, DateTime? currentperiodend = null, int extraprintsbalance = 0)
     {
         var freePlanId = await GetPlanIdByCodeAsync(db, plancode);
@@ -335,8 +382,8 @@ public static class DbHelpers
         db.Users.Add(user);
         await db.SaveChangesAsync();
 
-        var freeSubscription = await CreateSubscription(db, user.Id, "free", 0, null, DateTime.UtcNow, null, 0);        
-        db.Subscriptions.AddRange(freeSubscription); 
+        var freeSubscription = await CreateSubscription(db, user.Id, "free", 0, null, DateTime.UtcNow, null, 0);
+        db.Subscriptions.AddRange(freeSubscription);
 
         var windowsAgent = await CreateAgent(db, user.Id, "agenttype.windows");
         var linuxAgent = await CreateAgent(db, user.Id, "agenttype.linux");

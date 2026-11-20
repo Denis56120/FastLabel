@@ -1,8 +1,3 @@
-using MailKit.Net.Smtp;
-using MailKit.Security;
-using MimeKit;
-using MimeKit.Text;
-
 namespace FastLabel.Backend.Services;
 
 public interface IEmailService
@@ -25,28 +20,28 @@ public class EmailService(IConfiguration configuration) : IEmailService
 
         if (string.IsNullOrWhiteSpace(smtpServer))
         {
-            var ex = new InvalidOperationException("Configuration SMTP invalide : 'SMTP_SERVER' est manquant ou vide.");
+            var ex = new InvalidOperationException("smtp.error.server_missing");
             AppLog.Error(ex);
             throw ex;
         }
 
         if (string.IsNullOrWhiteSpace(portStr) || !int.TryParse(portStr, out int port) || port is < 1 or > 65535)
         {
-            var ex = new InvalidOperationException($"Configuration SMTP invalide : 'SMTP_PORT' ('{portStr}') doit être un entier compris entre 1 et 65535.");
+            var ex = new InvalidOperationException("smtp.error.port_invalid");
             AppLog.Error(ex);
             throw ex;
         }
 
         if (string.IsNullOrWhiteSpace(senderEmail))
         {
-            var ex = new InvalidOperationException("Configuration SMTP invalide : 'SMTP_SENDER_EMAIL' est manquant ou vide.");
+            var ex = new InvalidOperationException("smtp.error.sender_missing");
             AppLog.Error(ex);
             throw ex;
         }
 
         if (string.IsNullOrWhiteSpace(username) && !string.IsNullOrEmpty(password))
         {
-            var ex = new InvalidOperationException("Configuration SMTP invalide : 'SMTP_PASSWORD' est défini sans 'SMTP_USER_NAME'.");
+            var ex = new InvalidOperationException("smtp.error.username_missing");
             AppLog.Error(ex);
             throw ex;
         }
@@ -61,10 +56,16 @@ public class EmailService(IConfiguration configuration) : IEmailService
             Text = message
         };
 
-        using var smtp = new SmtpClient();
+        var secureSocketOptions = port == 465
+            ? SecureSocketOptions.SslOnConnect
+            : port == 587
+                ? SecureSocketOptions.StartTls
+                : SecureSocketOptions.Auto;
+
+        using var smtp = new MailKit.Net.Smtp.SmtpClient();
         try
         {
-            await smtp.ConnectAsync(smtpServer, port, SecureSocketOptions.Auto);
+            await smtp.ConnectAsync(smtpServer, port, secureSocketOptions);
 
             if (!string.IsNullOrEmpty(username))
             {
@@ -76,7 +77,7 @@ public class EmailService(IConfiguration configuration) : IEmailService
         catch (Exception ex)
         {
             AppLog.Error(ex);
-            throw new InvalidOperationException($"Échec de l'envoi de l'e-mail à {toEmail}: {ex.Message}", ex);
+            throw new InvalidOperationException("admin.smtp.error.send_failed", ex);
         }
         finally
         {

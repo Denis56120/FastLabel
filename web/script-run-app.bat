@@ -12,7 +12,7 @@ echo Lancement du Serveur...
 echo ========================================================
 start "FastLabel - Serveur" cmd /k "cd /d "%SERVER_DIR%" && dotnet watch --launch-profile http -nr"
 
-timeout /t 6 /nobreak >nul
+timeout /t 10 /nobreak >nul
 
 echo ========================================================
 echo Lancement du Client...

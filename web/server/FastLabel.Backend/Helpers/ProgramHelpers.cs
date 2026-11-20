@@ -195,6 +195,7 @@ public static class ProgramHelpers
         app.MapResellerEndpoints();
         app.MapAntiforgeryEndpoints();
         app.MapPlanEndpoints();
+        app.MapAdminEndpoints();
 
         app.Run();
     }

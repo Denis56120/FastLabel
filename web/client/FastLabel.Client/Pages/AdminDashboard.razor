@@ -1,0 +1,402 @@
+@page "/admin"
+@layout MainLayout
+@attribute [Authorize(Roles = "Admin")]
+@inherits TranslatableComponent
+@inject ApiClient ApiClient
+@inject ToastService ToastService
+@inject NavigationManager Navigation
+
+<div class="container mt-4 mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">@Translation.GetString("admin.dashboard.title")</h2>
+        <button type="button" class="btn btn-outline-primary" @onclick="RefreshAllAsync" disabled="@_isRefreshing">
+            @if (_isRefreshing)
+            {
+                <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+            }
+            @Translation.GetString("admin.dashboard.refresh")
+        </button>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="d-flex justify-content-center my-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">@Translation.GetString("common.loading")</span>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row g-4 mb-4">
+            <div class="col-lg-6">
+                <div class="card shadow-sm h-100">
+                    <div class="card-body">
+                        <h4 class="card-title mb-3">@Translation.GetString("admin.db.section_title")</h4>
+
+                        @if (!_dbStatus.HasValue)
+                        {
+                            <div class="alert alert-danger mb-0" role="alert">
+                                @Translation.GetString("admin.db.error.connection_failed")
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="badge bg-success">@Translation.GetString("admin.status.connected")</span>
+                                <span class="text-muted small">@JsonHelpers.GetInt64(_dbStatus.Value, "latencyMs")
+                                    @Translation.GetString("admin.metrics.ms")</span>
+                                </div>
+
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <div class="border rounded p-2">
+                                            <div class="text-muted small">@Translation.GetString("admin.metrics.users")</div>
+                                            <div class="fs-5 fw-bold">@JsonHelpers.GetInt32(_dbStatus.Value, "usersCount")</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="border rounded p-2">
+                                            <div class="text-muted small">@Translation.GetString("admin.metrics.resellers")</div>
+                                            <div class="fs-5 fw-bold">@JsonHelpers.GetInt32(_dbStatus.Value, "resellersCount")</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="border rounded p-2">
+                                            <div class="text-muted small">@Translation.GetString("admin.metrics.subscriptions")</div>
+                                            <div class="fs-5 fw-bold">@JsonHelpers.GetInt32(_dbStatus.Value, "subscriptionsCount")</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="border rounded p-2">
+                                            <div class="text-muted small">@Translation.GetString("admin.metrics.agents_active_24h")</div>
+                                            <div class="fs-5 fw-bold">@JsonHelpers.GetInt32(_dbStatus.Value, "activeAgentsLast24h")
+                                                / @JsonHelpers.GetInt32(_dbStatus.Value, "agentsCount")</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="border rounded p-2">
+                                                <div class="text-muted small">@Translation.GetString("admin.metrics.templates")</div>
+                                                <div class="fs-5 fw-bold">@JsonHelpers.GetInt32(_dbStatus.Value, "templatesCount")</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="border rounded p-2">
+                                                <div class="text-muted small">@Translation.GetString("admin.metrics.printers")</div>
+                                                <div class="fs-5 fw-bold">@JsonHelpers.GetInt32(_dbStatus.Value, "printersCount")</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-6">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-body">
+                                <h4 class="card-title mb-3">@Translation.GetString("admin.stripe.section_title")</h4>
+
+                                @if (!_stripeStatus.HasValue)
+                                {
+                                    <div class="alert alert-warning mb-3" role="alert">
+                                        @Translation.GetString("admin.stripe.not_tested_or_failed")
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <span class="badge bg-success">@Translation.GetString("admin.status.connected")</span>
+                                        <span class="text-muted small">@JsonHelpers.GetInt64(_stripeStatus.Value, "latencyMs")
+                                            @Translation.GetString("admin.metrics.ms")</span>
+                                        </div>
+
+                                        <div class="mb-2">
+                                            <span class="text-muted">@Translation.GetString("admin.stripe.mode_label") :</span>
+                                            <strong class="ms-1">
+                                                @(JsonHelpers.GetBool(_stripeStatus.Value, "isTestMode") ?
+                                        Translation.GetString("admin.stripe.mode_test") :
+                                        Translation.GetString("admin.stripe.mode_live"))
+                                            </strong>
+                                        </div>
+
+                                        <div class="mb-3">
+                                            <span class="text-muted">@Translation.GetString("admin.stripe.webhook_secret_label") :</span>
+                                            <strong class="ms-1">
+                                                @(JsonHelpers.GetBool(_stripeStatus.Value, "hasWebhookSecret") ?
+                                        Translation.GetString("common.yes") : Translation.GetString("common.no"))
+                                            </strong>
+                                        </div>
+                                    }
+
+                                    <button type="button" class="btn btn-outline-secondary w-100" @onclick="CheckStripeStatusAsync"
+                                            disabled="@_isCheckingStripe">
+                                        @if (_isCheckingStripe)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                        }
+                                        @Translation.GetString("admin.stripe.test_button")
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row g-4 mb-4">
+                        <div class="col-lg-6">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-body">
+                                    <h4 class="card-title mb-3">@Translation.GetString("admin.print.section_title")</h4>
+
+                                    @if (_dbStatus.HasValue)
+                                    {
+                                        <div class="table-responsive">
+                                            <table class="table table-striped align-middle mb-0">
+                                                <thead>
+                                                    <tr>
+                                                        <th>@Translation.GetString("admin.print.period")</th>
+                                                        <th>@Translation.GetString("admin.print.jobs")</th>
+                                                        <th>@Translation.GetString("admin.print.labels")</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td>@Translation.GetString("admin.print.last_24h")</td>
+                                                        <td>@JsonHelpers.GetInt32(_dbStatus.Value, "printJobs24h")</td>
+                                                        <td>@JsonHelpers.GetInt64(_dbStatus.Value, "printedLabels24h")</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>@Translation.GetString("admin.print.last_7d")</td>
+                                                        <td>@JsonHelpers.GetInt32(_dbStatus.Value, "printJobs7d")</td>
+                                                        <td>@JsonHelpers.GetInt64(_dbStatus.Value, "printedLabels7d")</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td>@Translation.GetString("admin.print.last_30d")</td>
+                                                        <td>@JsonHelpers.GetInt32(_dbStatus.Value, "printJobs30d")</td>
+                                                        <td>@JsonHelpers.GetInt64(_dbStatus.Value, "printedLabels30d")</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-6">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-body">
+                                    <h4 class="card-title mb-3">@Translation.GetString("admin.smtp.section_title")</h4>
+
+                                    <button type="button" class="btn btn-outline-secondary w-100 mb-3"
+                                            @onclick="TestSmtpConnectionAsync" disabled="@_isTestingSmtp">
+                                        @if (_isTestingSmtp)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                        }
+                                        @Translation.GetString("admin.smtp.test_connection_button")
+                                    </button>
+
+                                    <hr class="my-3" />
+
+                                    <div class="mb-3">
+                                        <label
+                                        class="form-label text-muted">@Translation.GetString("admin.smtp.target_email_label")</label>
+                                        <input type="email" class="form-control" @bind="_testEmail"
+                                               placeholder="@Translation.GetString("admin.smtp.target_email_placeholder")" />
+                                    </div>
+
+                                    <button type="button" class="btn btn-primary w-100" @onclick="SendTestEmailAsync"
+                                            disabled="@_isSendingEmail">
+                                        @if (_isSendingEmail)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                        }
+                                        @Translation.GetString("admin.smtp.send_button")
+                                    </button>
+
+                                    @if (_lastSmtpLatencyMs.HasValue)
+                                    {
+                                        <div class="form-text mt-2">
+                                            @Translation.GetString("admin.smtp.last_latency") : @_lastSmtpLatencyMs.Value
+                                            @Translation.GetString("admin.metrics.ms")
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+@code {
+    private bool _isLoading = true;
+    private bool _isRefreshing = false;
+    private bool _isCheckingStripe = false;
+    private bool _isTestingSmtp = false;
+    private bool _isSendingEmail = false;
+    private string _testEmail = string.Empty;
+    private long? _lastSmtpLatencyMs;
+    private JsonElement? _dbStatus;
+    private JsonElement? _stripeStatus;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await InitPageAsync();
+    }
+
+    private async Task InitPageAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            await LoadDbStatusAsync();
+            await LoadStripeStatusAsync();
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error(ex);
+            ToastService.ShowError(Translation.GetString("app.error.unknown"));
+            Navigation.NavigateTo("/");
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task RefreshAllAsync()
+    {
+        _isRefreshing = true;
+        try
+        {
+            await LoadDbStatusAsync();
+            await LoadStripeStatusAsync();
+            ToastService.ShowSuccess(Translation.GetString("admin.dashboard.refreshed"));
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error(ex);
+            ToastService.ShowError(Translation.GetString("app.error.unknown"));
+        }
+        finally
+        {
+            _isRefreshing = false;
+        }
+    }
+
+    private async Task LoadDbStatusAsync()
+    {
+        try
+        {
+            _dbStatus = await ApiClient.GetFromJsonAsync<JsonElement>("api/admin/db/status");
+        }
+        catch (Exception ex)
+        {
+            _dbStatus = null;
+            AppLog.Error(ex);
+            ToastService.ShowError(Translation.GetString("admin.db.error.connection_failed"));
+        }
+    }
+
+    private async Task LoadStripeStatusAsync()
+    {
+        try
+        {
+            _stripeStatus = await ApiClient.GetFromJsonAsync<JsonElement>("api/admin/stripe/status");
+        }
+        catch (Exception ex)
+        {
+            _stripeStatus = null;
+            AppLog.Error(ex);
+            ToastService.ShowError(Translation.GetString("admin.stripe.error.connection_failed"));
+        }
+    }
+
+    private async Task CheckStripeStatusAsync()
+    {
+        _isCheckingStripe = true;
+        try
+        {
+            await LoadStripeStatusAsync();
+            if (_stripeStatus.HasValue)
+            {
+                ToastService.ShowSuccess(Translation.GetString("admin.stripe.success.connected"));
+            }
+        }
+        finally
+        {
+            _isCheckingStripe = false;
+        }
+    }
+
+    private async Task TestSmtpConnectionAsync()
+    {
+        _isTestingSmtp = true;
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            using var emptyDoc = JsonDocument.Parse("{}");
+            var (isSuccess, errorKey) = await ApiClient.PostAsync("api/admin/smtp/test-connection", emptyDoc.RootElement);
+            stopwatch.Stop();
+            if (isSuccess)
+            {
+                _lastSmtpLatencyMs = stopwatch.ElapsedMilliseconds;
+                ToastService.ShowSuccess(Translation.GetString("admin.smtp.success.connected"));
+            }
+            else
+            {
+                ToastService.ShowError(Translation.GetString(errorKey ?? "admin.smtp.error.connection_failed"));
+            }
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            AppLog.Error(ex);
+            ToastService.ShowError(Translation.GetString("admin.smtp.error.connection_failed"));
+        }
+        finally
+        {
+            _isTestingSmtp = false;
+        }
+    }
+
+    private async Task SendTestEmailAsync()
+    {
+        var trimmedEmail = _testEmail.Trim();
+        if (string.IsNullOrWhiteSpace(trimmedEmail))
+        {
+            ToastService.ShowError(Translation.GetString("admin.smtp.error.email_required"));
+            return;
+        }
+
+        _isSendingEmail = true;
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        try
+        {
+            var encodedEmail = Uri.EscapeDataString(trimmedEmail);
+            using var emptyDoc = JsonDocument.Parse("{}");
+            var (isSuccess, errorKey) = await ApiClient.PostAsync($"api/admin/smtp/test-email?email={encodedEmail}", emptyDoc.RootElement);
+            stopwatch.Stop();
+            if (isSuccess)
+            {
+                _lastSmtpLatencyMs = stopwatch.ElapsedMilliseconds;
+                ToastService.ShowSuccess(Translation.GetString("admin.smtp.success.sent"));
+            }
+            else
+            {
+                ToastService.ShowError(Translation.GetString(errorKey ?? "admin.smtp.error.send_failed"));
+            }
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            AppLog.Error(ex);
+            ToastService.ShowError(Translation.GetString("admin.smtp.error.send_failed"));
+        }
+        finally
+        {
+            _isSendingEmail = false;
+        }
+    }
+}

@@ -21,6 +21,8 @@ global using SkiaSharp;
 global using System.Collections.Concurrent;
 global using System.ComponentModel.DataAnnotations;
 global using System.ComponentModel.DataAnnotations.Schema;
+global using System.Diagnostics;
+global using System.Net.Mail;
 global using System.Net.WebSockets;
 global using System.Runtime.CompilerServices;
 global using System.Security.Claims;
