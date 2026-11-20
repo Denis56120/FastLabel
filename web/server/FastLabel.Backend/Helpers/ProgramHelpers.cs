@@ -4,13 +4,16 @@ public static class ProgramHelpers
 {
     public static void AddEnvironmentConfiguration(WebApplicationBuilder builder)
     {
-        var envPath = Path.Combine(Directory.GetCurrentDirectory(), ".env.dev");
-
-        if (File.Exists(envPath))
+        if (builder.Environment.IsDevelopment())
         {
-            Env.Load(envPath);
-        }
+            var envPath = Path.Combine(Directory.GetCurrentDirectory(), ".env.dev");
 
+            if (File.Exists(envPath))
+            {
+                Env.Load(envPath);
+            }
+        }
+        
         EnvironmentVariablesExtensions.AddEnvironmentVariables(builder.Configuration);
     }
 

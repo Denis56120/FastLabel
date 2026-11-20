@@ -5,6 +5,7 @@ set -e
 CONTAINER_NAME="fastlabel-client-instance"
 IMAGE_NAME="fastlabel-client"
 HOST_PORT="${HOST_PORT:-8081}"
+APP_ENV="${APP_ENV:-Production}"
 
 echo "=== Lancement du conteneur : $CONTAINER_NAME ==="
 
@@ -20,6 +21,7 @@ docker run -d \
     --name "$CONTAINER_NAME" \
     --restart always \
     -p "$HOST_PORT":80 \
+    -e APP_ENV="$APP_ENV" \
     "$IMAGE_NAME"
 
 echo "=== Conteneur lancé avec succès ! ==="
