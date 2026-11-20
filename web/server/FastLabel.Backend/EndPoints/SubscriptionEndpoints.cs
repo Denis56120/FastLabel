@@ -13,8 +13,6 @@ public static class SubscriptionEndpoints
             if (!int.TryParse(userIdString, out var userId))
                 return Results.Unauthorized();
 
-            bool isAdmin = claimsUser.IsInRole("Admin");
-
             var (languageId, language) = await DbHelpers.GetUserLanguageByUserIdAsync(httpContext, db, userId);
 
             var query = db.Subscriptions
@@ -38,6 +36,8 @@ public static class SubscriptionEndpoints
                            ?? s.Plan.Name.DefaultTranslation)
                         : string.Empty,
                     SubscriptionPeriod = s.SubscriptionPeriod,
+                    CurrentPeriodStart = s.CurrentPeriodStart,
+                    CurrentPeriodEnd = s.CurrentPeriodEnd,
                     CreatedAt = s.CreatedAt
                 })
                 .ToListAsync();

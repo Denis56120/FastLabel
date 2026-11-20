@@ -303,7 +303,7 @@ public static class DbHelpers
             CurrentPeriodStart = currentperiodstart,
             CurrentPeriodEnd = currentperiodend,
             ExtraPrintsBalance = extraprintsbalance,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = currentperiodstart.HasValue && currentperiodstart.Value < DateTime.UtcNow ? currentperiodstart.Value : DateTime.UtcNow
         };
     }
 

@@ -53,16 +53,23 @@ public class DevelopmentDataSeeder(AppDbContext context, IPasswordHasher<User> p
             await _context.SaveChangesAsync();
         }
 
-        // 2. Souscription 'free' par défaut pour chaque utilisateur
+        // 2. Souscription pour chaque utilisateur
         if (!await _context.Subscriptions.AnyAsync())
         {
             var users = await _context.Users.ToListAsync();
             foreach (var user in users)
             {
+                if (user.IsAdmin)
+                {
+                    var pastsubscription = await DbHelpers.CreateSubscription(_context, user.Id, "free", 0, null, DateTime.UtcNow.AddMonths(-1), null, 0);
+                    _context.Subscriptions.Add(pastsubscription);
+                }
+                
                 var subscription = 
                     user.IsAdmin ? await DbHelpers.CreateSubscription(_context, user.Id, "enterprise", 12, null, DateTime.UtcNow, DateTime.UtcNow.AddMonths(12), 0)
                     : await DbHelpers.CreateSubscription(_context, user.Id, "free", 0, null, DateTime.UtcNow, null, 0);        
                 _context.Subscriptions.Add(subscription);
+
             }
 
             await _context.SaveChangesAsync();

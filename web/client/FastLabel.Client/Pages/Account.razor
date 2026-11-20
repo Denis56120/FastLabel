@@ -20,8 +20,7 @@
     else
     {
         <div class="row justify-content-center">
-            <div class="col-md-8 col-lg-6">
-                @* --- SECTION PROFIL --- *@
+            <div class="col-12 col-lg-10 col-xl-9">
                 <div class="card shadow-sm mb-4">
                     <div class="card-body">
                         <h4 class="card-title mb-3">@Translation.GetString("account.profile_section")</h4>
@@ -89,7 +88,6 @@
                     </div>
                 </div>
 
-                @* --- HISTORIQUE DES ABONNEMENTS --- *@
                 <div class="card shadow-sm">
                     <div class="card-body">
                         <h4 class="card-title mb-3">@Translation.GetString("account.subscriptions_title")</h4>
@@ -114,6 +112,8 @@
                                         <tr>
                                             <th>@Translation.GetString("account.subscription.plan")</th>
                                             <th>@Translation.GetString("account.subscription.period")</th>
+                                            <th>@Translation.GetString("account.subscription.currentperiodstart")</th>
+                                            <th>@Translation.GetString("account.subscription.currentperiodend")</th>
                                             <th>@Translation.GetString("account.subscription.date")</th>
                                         </tr>
                                     </thead>
@@ -123,7 +123,9 @@
                                             <tr>
                                                 <td>@sub.PlanName</td>
                                                 <td>@FormatPeriod(sub.SubscriptionPeriod)</td>
-                                                <td>@sub.CreatedAt.ToLocalTime().ToString("g")</td>
+                                                <td>@(sub.CurrentPeriodStart?.ToLocalTime().ToString("d") ?? "-")</td>
+                                                <td>@(sub.CurrentPeriodEnd?.ToLocalTime().ToString("d") ?? "-")</td>
+                                                <td>@sub.CreatedAt.ToLocalTime().ToString("d")</td>
                                             </tr>
                                         }
                                     </tbody>

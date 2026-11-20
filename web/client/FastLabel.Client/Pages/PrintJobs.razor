@@ -69,7 +69,7 @@
                 @(string.IsNullOrEmpty(item.ResponseMessage) ? Translation.GetString("printjobs.status.success") : Translation.GetString("printjobs.status.error"))
             </span>
         </td>
-        <td>@(item.ProcessedAt?.ToLocalTime().ToString("g") ?? item.CreatedAt.ToLocalTime().ToString("g"))</td>
+        <td>@(item.ProcessedAt?.ToLocalTime().ToString("d") ?? item.CreatedAt.ToLocalTime().ToString("d"))</td>
     </RowTemplate>
 
 </CrudTablePage>

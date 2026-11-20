@@ -60,8 +60,8 @@
         }
         <td>@agent.AgentTypeName</td>
         <td><code>@agent.ApiKey</code></td>
-        <td>@agent.CreatedAt.ToLocalTime().ToString("g")</td>
-        <td>@(agent.LastSeenAt?.ToLocalTime().ToString("g") ?? "-")</td>
+        <td>@agent.CreatedAt.ToLocalTime().ToString("d")</td>
+        <td>@(agent.LastSeenAt?.ToLocalTime().ToString("d") ?? "-")</td>
     </RowTemplate>
 
     <FormFields Context="agent">

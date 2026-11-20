@@ -43,7 +43,7 @@
     <RowTemplate Context="client">
         <td>@client.Name</td>
         <td>@client.Email</td>
-        <td>@client.CreatedAt.ToLocalTime().ToString("g")</td>
+        <td>@client.CreatedAt.ToLocalTime().ToString("d")</td>
     </RowTemplate>
 
     <FormFields Context="client">

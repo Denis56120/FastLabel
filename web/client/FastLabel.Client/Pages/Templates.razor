@@ -66,8 +66,8 @@
         }
         <td>@template.Name</td>
         <td>@template.BasicStatusName</td>
-        <td>@template.CreatedAt.ToLocalTime().ToString("g")</td>
-        <td>@template.UpdatedAt.ToLocalTime().ToString("g")</td>
+        <td>@template.CreatedAt.ToLocalTime().ToString("d")</td>
+        <td>@template.UpdatedAt.ToLocalTime().ToString("d")</td>
         <td class="text-end">
             <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => EditRenderer(template.Id)" title="@Translation.GetString("templates.edit_renderer")">
                 <i class="bi bi-palette"></i>
