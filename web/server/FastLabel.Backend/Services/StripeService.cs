@@ -18,6 +18,7 @@ public class StripeService : IStripeService
         var apiKey = ConfigurationHelpers.GetStripeKey(_configuration);
         if (string.IsNullOrWhiteSpace(apiKey))
             throw new InvalidOperationException("stripe.error.api_key_missing");
+        Stripe.StripeConfiguration.ApiKey = apiKey;
     }
 
     public async Task<string> CreateCustomerAsync(string email, string name)
