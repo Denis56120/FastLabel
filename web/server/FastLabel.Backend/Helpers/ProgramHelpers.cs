@@ -84,7 +84,7 @@ public static class ProgramHelpers
 
         services.AddSingleton<PrintBrokerService>();
 
-        services.AddSingleton<ILoggerProvider>(_ =>new FileLoggerProvider(Path.Combine(builder.Environment.ContentRootPath, "logs"), LogLevel.Warning));   
+        services.AddSingleton<ILoggerProvider>(_ =>new FileLoggerProvider(Path.Combine(builder.Environment.ContentRootPath, "logs"), builder.Environment.IsProduction() ? LogLevel.Warning : LogLevel.Debug));   
 
         services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(options =>
@@ -167,6 +167,8 @@ public static class ProgramHelpers
         var app = builder.Build();
 
         AppLog.Configure(app);
+
+        AppLog.Log("test");
 
         if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
         {

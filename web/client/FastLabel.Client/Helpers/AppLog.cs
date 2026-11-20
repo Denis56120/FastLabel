@@ -9,6 +9,23 @@ public static class AppLog
         _factory = factory;
     }
 
+    public static void Log(
+        string? message,
+        [CallerMemberName] string memberName = "",
+        [CallerFilePath] string filePath = "")
+    {
+        var category = Path.GetFileNameWithoutExtension(filePath);
+        var logger = _factory?.CreateLogger(string.IsNullOrEmpty(category) ? "FastLabel.Client" : category);
+
+        if (logger is null)
+        {
+            Console.WriteLine($"[{category}.{memberName}] {message}");
+            return;
+        }
+
+        logger.LogDebug("{Message} ({Member})", message ?? "Erreur inattendue", memberName);
+    }
+
     public static void Error(
         Exception ex,
         string? message = null,

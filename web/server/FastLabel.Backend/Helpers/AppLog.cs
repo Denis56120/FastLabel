@@ -10,6 +10,16 @@ public static class AppLog
         _factory = app.Services.GetRequiredService<ILoggerFactory>();
     }
 
+    public static void Log(
+        string message,
+        LogLevel level = LogLevel.Debug,
+        Exception? ex = null,
+        [CallerMemberName] string memberName = "",
+        [CallerFilePath] string filePath = "")
+    {
+        WriteLog(level, ex, message, memberName, filePath);
+    }
+
     public static void Error(
         Exception ex,
         string? message = null,
@@ -30,7 +40,7 @@ public static class AppLog
 
     private static void WriteLog(
         LogLevel level,
-        Exception ex,
+        Exception? ex,
         string message,
         string memberName,
         string filePath)
@@ -45,7 +55,14 @@ public static class AppLog
         if (logger is null)
         {
             var output = level >= LogLevel.Error ? Console.Error : Console.Out;
-            output.WriteLine($"[{level}] [{category}.{memberName}] {message}: {ex}");
+            if (ex is null)
+            {
+                output.WriteLine($"[{level}] [{category}.{memberName}] {message}");
+            }
+            else
+            {
+                output.WriteLine($"[{level}] [{category}.{memberName}] {message}: {ex}");
+            }
             return;
         }
 
