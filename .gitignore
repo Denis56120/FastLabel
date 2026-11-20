@@ -19,8 +19,6 @@
 !.vscode/extensions.json
 
 ## Sensitive or local configuration files
-appsettings.Development.json
-appsettings.local.json
 .env*
 
 ## FodyWeavers
@@ -34,14 +32,11 @@ FodyWeavers.xsd
 .Trashes
 ehthumbs.db
 Thumbs.db
-launchSettings.json
 *.exe
 *.db*
 
-## FastLabel
+## FastLabel generated files
 /agent/FastLabel.DockerAgent/docker/FastLabel.DockerAgent
-/web/client/FastLabel.Client/docker/wwwroot/
 /web/server/FastLabel.Backend/docker/FastLabel.Backend
-/dist/fastlabel-package.tar.gz
-/dist/fastlabel-package/
-publish/
+/web/client/FastLabel.Client/docker/wwwroot/
+/dist/*
