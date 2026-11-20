@@ -5,9 +5,9 @@ public static class AppLog
     private const string DefaultCategory = "FastLabel.Backend";
     private static ILoggerFactory? _factory;
 
-    public static void Configure(ILoggerFactory factory)
+    public static void Configure(WebApplication app)
     {
-        _factory = factory;
+        _factory = app.Services.GetRequiredService<ILoggerFactory>();
     }
 
     public static void Error(
@@ -16,7 +16,7 @@ public static class AppLog
         [CallerMemberName] string memberName = "",
         [CallerFilePath] string filePath = "")
     {
-        WriteLog(LogLevel.Error, ex, message ?? "Erreur inattendue", memberName, filePath);
+        WriteLog(LogLevel.Error, ex, message ?? "Unexpected error", memberName, filePath);
     }
 
     public static void Warn(
@@ -25,7 +25,7 @@ public static class AppLog
         [CallerMemberName] string memberName = "",
         [CallerFilePath] string filePath = "")
     {
-        WriteLog(LogLevel.Warning, ex, message ?? "Avertissement", memberName, filePath);
+        WriteLog(LogLevel.Warning, ex, message ?? "Warning", memberName, filePath);
     }
 
     private static void WriteLog(
