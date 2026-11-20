@@ -59,8 +59,10 @@ public class DevelopmentDataSeeder(AppDbContext context, IPasswordHasher<User> p
             var users = await _context.Users.ToListAsync();
             foreach (var user in users)
             {
-                var freeSubscription = await DbHelpers.CreateSubscription(_context, user.Id, "free", 0, null, DateTime.UtcNow, null, 0);        
-                _context.Subscriptions.AddRange(freeSubscription);
+                var subscription = 
+                    user.IsAdmin ? await DbHelpers.CreateSubscription(_context, user.Id, "enterprise", 12, null, DateTime.UtcNow, DateTime.UtcNow.AddMonths(12), 0)
+                    : await DbHelpers.CreateSubscription(_context, user.Id, "free", 0, null, DateTime.UtcNow, null, 0);        
+                _context.Subscriptions.Add(subscription);
             }
 
             await _context.SaveChangesAsync();
@@ -103,8 +105,8 @@ public class DevelopmentDataSeeder(AppDbContext context, IPasswordHasher<User> p
             {
                 for (int i = 1; i <= 100; i++)
                 {
-                    var testprinter = await DbHelpers.CreateTemplate(_context, user.Id, $"Test Label #{i}");
-                    _context.Templates.Add(testprinter);
+                    var testtemplate = await DbHelpers.CreateTemplate(_context, user.Id, $"Test Label #{i}");
+                    _context.Templates.Add(testtemplate);
                 }
             }
             await _context.SaveChangesAsync();

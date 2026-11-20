@@ -325,7 +325,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             await _context.SaveChangesAsync();
         }
 
-        // 9. Compte Administrateur par défaut (hors Development)
+        // 9. Compte Administrateur par défaut
         if (!await _context.Users.AnyAsync() && _env.IsProduction())
         {
             var adminName = _configuration["ADMIN_USER_NAME"];
@@ -352,6 +352,10 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             adminUser.PasswordHash = _passwordHasher.HashPassword(adminUser, adminPassword);
 
             _context.Users.Add(adminUser);
+            await _context.SaveChangesAsync();
+
+            var subscription = await DbHelpers.CreateSubscription(_context, adminUser.Id, "free", 0, null, DateTime.UtcNow, null, 0);
+            _context.Subscriptions.Add(subscription);
             await _context.SaveChangesAsync();
         }
     }
@@ -416,7 +420,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             ["common.currency"] = ("€", new() { { "fr", "€" }, { "en", "€" } }),
             ["common.yes"] = ("Yes", new() { { "fr", "Oui" }, { "en", "Yes" } }),
             ["common.no"] = ("No", new() { { "fr", "Non" }, { "en", "No" } }),
-            
+
             ["nav.reseller_clients"] = ("My clients", new() { { "fr", "Mes clients" }, { "en", "My clients" } }),
             ["reseller.clients.title"] = ("Client Management", new() { { "fr", "Gestion des clients" }, { "en", "Client Management" } }),
             ["reseller.clients.description"] = ("Manage your end-clients and track your associated licenses.", new() { { "fr", "Gérez vos clients finaux et suivez vos licences associées." }, { "en", "Manage your end-clients and track your associated licenses." } }),
@@ -562,7 +566,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             ["subscription.modal.current_plan_button"] = ("Active plan", new() { { "fr", "Offre active" }, { "en", "Active plan" } }),
             ["subscription.modal.select_free"] = ("Select free plan", new() { { "fr", "Choisir l'offre gratuite" }, { "en", "Select free plan" } }),
             ["subscription.modal.subscribe_button"] = ("Subscribe", new() { { "fr", "Souscrire" }, { "en", "Subscribe" } }),
-            
+
             ["dashboard.subscription.period_free"] = ("Free plan", new() { { "fr", "Offre gratuite" }, { "en", "Free plan" } }),
             ["dashboard.subscription.monthly_usage"] = ("Prints used this month", new() { { "fr", "Impressions utilisées ce mois-ci" }, { "en", "Prints used this month" } }),
             ["dashboard.subscription.extra_prints"] = ("Top-up balance", new() { { "fr", "Solde recharge" }, { "en", "Top-up balance" } }),
@@ -725,6 +729,8 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             ["stripe.error.plan_not_found"] = ("Plan not found.", new() { { "fr", "Offre introuvable." }, { "en", "Plan not found." } }),
             ["stripe.error.price_not_configured"] = ("Stripe price is not configured for this plan.", new() { { "fr", "Le tarif Stripe n'est pas configuré pour cette offre." }, { "en", "Stripe price is not configured for this plan." } }),
             ["stripe.error.checkout_failed"] = ("Unable to create Stripe checkout session.", new() { { "fr", "Impossible de créer la session de paiement Stripe." }, { "en", "Unable to create Stripe checkout session." } }),
+            ["stripe.webhook.error.missing_signature_or_secret"] = ("Missing Stripe signature or webhook secret", new() { { "fr", "Signature Stripe ou secret de webhook manquant" }, { "en", "Missing Stripe signature or webhook secret" } }),
+            ["stripe.webhook.error.invalid_plan_upgrade"] = ("Invalid subscription plan upgrade", new() { { "fr", "Changement d'offre ou de durée d'abonnement non autorisé" }, { "en", "Invalid subscription plan upgrade" } }),
 
             ["subscription.notification.payment_failed"] = ("Your payment failed. Your current plan is in a grace period.", new() { { "fr", "Votre paiement a échoué. Votre offre actuelle est en période de grâce." }, { "en", "Your payment failed. Your current plan is in a grace period." } }),
             ["subscription.notification.subscription_ended"] = ("Your subscription has ended. You have been switched to the free plan.", new() { { "fr", "Votre souscription a pris fin. Vous êtes repassé sur l'offre gratuite." }, { "en", "Your subscription has ended. You have been switched to the free plan." } }),

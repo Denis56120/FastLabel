@@ -86,7 +86,7 @@ public static class StripeEndpoints
             var signatureHeader = request.Headers["Stripe-Signature"].FirstOrDefault();
             if (string.IsNullOrWhiteSpace(webhookSecret) || string.IsNullOrWhiteSpace(signatureHeader))
             {
-                var ex = new InvalidOperationException("Webhook Stripe rejeté : signature ou secret manquant.");
+                var ex = new InvalidOperationException("stripe.webhook.error.missing_signature_or_secret");
                 AppLog.Error(ex);
                 return Results.BadRequest(new ErrorResponseDto { Message = "stripe.webhook.error.invalid_signature" });
             }
@@ -104,6 +104,13 @@ public static class StripeEndpoints
 
             switch (stripeEvent.Type)
             {
+                case Stripe.EventTypes.CustomerSubscriptionUpdated:
+                    if (stripeEvent.Data.Object is Stripe.Subscription updatedSubscription)
+                    {
+                        await HandleCustomerSubscriptionUpdatedAsync(updatedSubscription, db);
+                    }
+                    break;
+
                 case Stripe.EventTypes.InvoicePaid:
                     if (stripeEvent.Data.Object is Stripe.Invoice paidInvoice)
                     {
@@ -128,6 +135,92 @@ public static class StripeEndpoints
 
             return Results.Ok();
         }).DisableAntiforgery();
+    }
+
+    private static async Task HandleCustomerSubscriptionUpdatedAsync(Stripe.Subscription updatedSubscription, AppDbContext db)
+    {
+        var stripeRecord = await db.Stripes
+            .FirstOrDefaultAsync(s =>
+                (!string.IsNullOrWhiteSpace(updatedSubscription.Id) && s.StripeSubscriptionId == updatedSubscription.Id) ||
+                (!string.IsNullOrWhiteSpace(updatedSubscription.CustomerId) && s.StripeCustomerId == updatedSubscription.CustomerId));
+
+        if (stripeRecord == null)
+        {
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(updatedSubscription.Id) &&
+            !string.Equals(stripeRecord.StripeSubscriptionId, updatedSubscription.Id, StringComparison.Ordinal))
+        {
+            stripeRecord.StripeSubscriptionId = updatedSubscription.Id;
+        }
+
+        var firstItem = updatedSubscription.Items?.Data?.FirstOrDefault();
+        var priceId = firstItem?.Price?.Id;
+        if (string.IsNullOrWhiteSpace(priceId))
+        {
+            return;
+        }
+
+        var targetPlan = await DbHelpers.GetPlanByPriceIdAsync(db, priceId);
+        if (targetPlan == null)
+        {
+            return;
+        }
+
+        bool isYearly = !string.IsNullOrWhiteSpace(targetPlan.StripeYearlyPriceId) &&
+                        string.Equals(targetPlan.StripeYearlyPriceId, priceId, StringComparison.OrdinalIgnoreCase);
+        int targetPeriodMonths = isYearly ? 12 : 1;
+
+        var now = DateTime.UtcNow;
+        var periodStart = firstItem?.CurrentPeriodStart != null
+            ? firstItem.CurrentPeriodStart.ToUniversalTime()
+            : now;
+        var periodEnd = firstItem?.CurrentPeriodEnd != null
+            ? firstItem.CurrentPeriodEnd.ToUniversalTime()
+            : now.AddMonths(targetPeriodMonths);
+
+        var subscription = await db.Subscriptions
+            .Where(s => s.UserId == stripeRecord.UserId && s.StripeId == stripeRecord.Id)
+            .OrderByDescending(s => s.CreatedAt)
+            .FirstOrDefaultAsync();
+
+        if (subscription == null)
+        {
+            subscription = await DbHelpers.CreateSubscription(
+                db,
+                stripeRecord.UserId,
+                targetPlan.Code,
+                targetPeriodMonths,
+                stripeRecord.Id,
+                periodStart,
+                periodEnd,
+                0);
+            db.Subscriptions.Add(subscription);
+        }
+        else
+        {
+            var currentPlan = await db.Plans.FirstOrDefaultAsync(p => p.Id == subscription.PlanId);
+            if (currentPlan != null && targetPlan.Id != currentPlan.Id)
+            {
+                bool isHigherPlan = targetPlan.SortOrder > currentPlan.SortOrder;
+                bool isValidPeriod = targetPeriodMonths >= subscription.SubscriptionPeriod;
+                if (!isHigherPlan || !isValidPeriod)
+                {
+                    var ex = new InvalidOperationException("stripe.webhook.error.invalid_plan_upgrade");
+                    AppLog.Error(ex);
+                    return;
+                }
+            }
+
+            subscription.PlanId = targetPlan.Id;
+            subscription.SubscriptionPeriod = targetPeriodMonths;
+            subscription.CurrentPeriodStart = periodStart;
+            subscription.CurrentPeriodEnd = periodEnd;
+            subscription.UpdatedAt = now;
+        }
+
+        await db.SaveChangesAsync();
     }
 
     private static async Task HandleInvoicePaidAsync(Stripe.Invoice invoice, AppDbContext db)

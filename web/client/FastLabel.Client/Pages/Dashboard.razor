@@ -42,7 +42,8 @@
                             </div>
                         </div>
                         <span class="badge bg-success bg-opacity-10 text-success">
-                            @(string.IsNullOrEmpty(currentUser?.BasicStatusName) ? Translation.GetString("dashboard.status.active") : currentUser.BasicStatusName)
+                            @(string.IsNullOrEmpty(currentUser?.BasicStatusName) ?
+                        Translation.GetString("dashboard.status.active") : currentUser.BasicStatusName)
                         </span>
                     </div>
                 </div>
@@ -57,7 +58,8 @@
                                     <i class="bi bi-credit-card fs-4"></i>
                                 </div>
                                 <div class="ms-3">
-                                    <h6 class="text-muted mb-1">@Translation.GetString("dashboard.current_subscription")</h6>
+                                    <h6 class="text-muted mb-1">@Translation.GetString("dashboard.current_subscription")
+                                    </h6>
                                     <h5 class="mb-0 fw-semibold">
                                         @if (HasActiveSubscription)
                                         {
@@ -80,7 +82,9 @@
                                     @if (currentSubscription!.SubscriptionPeriod > 0)
                                     {
                                         <small class="text-muted">
-                                            @Translation.GetString("dashboard.subscription.period_prefix") @currentSubscription.SubscriptionPeriod @Translation.GetString("dashboard.subscription.period_suffix")
+                                            @Translation.GetString("dashboard.subscription.period_prefix")
+                                            @currentSubscription.SubscriptionPeriod
+                                            @Translation.GetString("dashboard.subscription.period_suffix")
                                         </small>
                                     }
                                     else
@@ -93,117 +97,117 @@
 
                                 <div class="mt-3">
                                     <div class="d-flex justify-content-between small mb-1">
-                                        <span class="text-muted">@Translation.GetString("dashboard.subscription.monthly_usage")</span>
+                                        <span
+                                        class="text-muted">@Translation.GetString("dashboard.subscription.monthly_usage")</span>
                                         <span class="fw-semibold">
-                                            @currentSubscription.PrintsUsedThisMonth / @currentSubscription.MonthlyPrintsIncluded
+                                            @currentSubscription.PrintsUsedThisMonth /
+                                            @currentSubscription.MonthlyPrintsIncluded
                                         </span>
                                     </div>
                                     <div class="progress" style="height: 8px;">
-                                        <div class="progress-bar @GetUsageBarCssClass(currentSubscription)"
-                                             role="progressbar"
+                                        <div class="progress-bar @GetUsageBarCssClass(currentSubscription)" role="progressbar"
                                              style="width: @GetUsagePercentage(currentSubscription)%"
-                                             aria-valuenow="@currentSubscription.PrintsUsedThisMonth"
-                                             aria-valuemin="0"
+                                             aria-valuenow="@currentSubscription.PrintsUsedThisMonth" aria-valuemin="0"
                                              aria-valuemax="@currentSubscription.MonthlyPrintsIncluded">
                                         </div>
                                     </div>
                                     <div class="d-flex justify-content-between small text-muted mt-2">
-                                        <span>@Translation.GetString("dashboard.subscription.extra_prints"): <strong>+@currentSubscription.ExtraPrintsBalance</strong></span>
-                                        <span>@Translation.GetString("dashboard.subscription.total_available"): <strong class="text-primary">@currentSubscription.TotalAvailablePrints</strong></span>
+                                        <span>@Translation.GetString("dashboard.subscription.extra_prints"):
+                                            <strong>+@currentSubscription.ExtraPrintsBalance</strong></span>
+                                            <span>@Translation.GetString("dashboard.subscription.total_available"): <strong
+                                                class="text-primary">@currentSubscription.TotalAvailablePrints</strong></span>
+                                            </div>
+                                        </div>
+                                    }
+                            else
+                                    {
+                                        <button type="button" class="btn btn-sm btn-outline-primary mt-2"
+                                                @onclick="OpenSubscriptionModal">
+                                            @Translation.GetString("dashboard.subscription.subscribe")
+                                        </button>
+                                    }
+                                </div>
+
+                                @if (HasActiveSubscription)
+                                {
+                                    <div class="mt-3 pt-2 border-top d-flex flex-column gap-2">
+                                        <button type="button" class="btn btn-sm btn-outline-primary w-100"
+                                                @onclick="OpenSubscriptionModal">
+                                            @Translation.GetString("account.subscription.change_plan_button")
+                                        </button>
+
+                                        @if (currentSubscription != null && currentSubscription.TopUpPrintsIncluded.HasValue &&
+                                currentSubscription.TopUpPrice.HasValue)
+                                        {
+                                            <button type="button" class="btn btn-sm btn-outline-success w-100" disabled="@isProcessingTopUp"
+                                                    @onclick="HandleTopUpAsync">
+                                                @if (isProcessingTopUp)
+                                                {
+                                                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>
+                                                }
+                                                @Translation.GetString("dashboard.subscription.topup_button")
+                                                (+@currentSubscription.TopUpPrintsIncluded.Value —
+                                                @currentSubscription.TopUpPrice.Value.ToString("0.##") €)
+                                            </button>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card shadow-sm border-0 h-100">
+                            <div class="card-body d-flex flex-column justify-content-between">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0 bg-warning bg-opacity-10 p-3 rounded text-warning">
+                                        <i class="bi bi-shield-lock fs-4"></i>
+                                    </div>
+                                    <div class="ms-3">
+                                        <h6 class="text-muted mb-1">@Translation.GetString("dashboard.security")</h6>
+                                        <h5 class="mb-0 fw-semibold">@Translation.GetString("dashboard.security_title")</h5>
                                     </div>
                                 </div>
-                            }
-                            else
-                            {
-                                <button type="button" class="btn btn-sm btn-outline-primary mt-2" @onclick="OpenSubscriptionModal">
-                                    @Translation.GetString("dashboard.subscription.subscribe")
-                                </button>
-                            }
-                        </div>
-
-                        @if (HasActiveSubscription)
-                        {
-                            <div class="mt-3 pt-2 border-top d-flex flex-column gap-2">
-                                @if (string.Equals(currentSubscription!.PlanCode, "free", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    <button type="button" class="btn btn-sm btn-outline-primary w-100" @onclick="OpenSubscriptionModal">
-                                        @Translation.GetString("account.subscription.change_plan_button")
+                                <div class="mt-3 text-end">
+                                    <button class="btn btn-sm btn-outline-secondary w-100" @onclick="NavigateToAccount">
+                                        @Translation.GetString("dashboard.manage_account")
                                     </button>
-                                }
-
-                                @if (currentSubscription.TopUpPrintsIncluded.HasValue && currentSubscription.TopUpPrice.HasValue)
-                                {
-                                    <button type="button"
-                                            class="btn btn-sm btn-outline-success w-100"
-                                            disabled="@isProcessingTopUp"
-                                            @onclick="HandleTopUpAsync">
-                                        @if (isProcessingTopUp)
-                                        {
-                                            <span class="spinner-border spinner-border-sm me-1" role="status"></span>
-                                        }
-                                        @Translation.GetString("dashboard.subscription.topup_button")
-                                        (+@currentSubscription.TopUpPrintsIncluded.Value — @currentSubscription.TopUpPrice.Value.ToString("0.##") €)
-                                    </button>
-                                }
+                                </div>
                             </div>
-                        }
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="card shadow-sm border-0 h-100">
-                    <div class="card-body d-flex flex-column justify-content-between">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-shrink-0 bg-warning bg-opacity-10 p-3 rounded text-warning">
-                                <i class="bi bi-shield-lock fs-4"></i>
-                            </div>
-                            <div class="ms-3">
-                                <h6 class="text-muted mb-1">@Translation.GetString("dashboard.security")</h6>
-                                <h5 class="mb-0 fw-semibold">@Translation.GetString("dashboard.security_title")</h5>
-                            </div>
-                        </div>
-                        <div class="mt-3 text-end">
-                            <button class="btn btn-sm btn-outline-secondary w-100" @onclick="NavigateToAccount">
-                                @Translation.GetString("dashboard.manage_account")
-                            </button>
                         </div>
                     </div>
                 </div>
-            </div>
+
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card shadow-sm border-0">
+                            <div class="card-body">
+                                <h4 class="card-title mb-4">@Translation.GetString("dashboard.account_info")</h4>
+                                @if (currentUser != null)
+                                {
+                                    <ul class="list-group list-group-flush">
+                                        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                            <span class="text-muted">@Translation.GetString("dashboard.field.name")</span>
+                                            <span class="fw-medium">@currentUser.Name</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                            <span class="text-muted">@Translation.GetString("dashboard.field.email")</span>
+                                            <span class="fw-medium">@currentUser.Email</span>
+                                        </li>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                            <span class="text-muted">@Translation.GetString("dashboard.field.member_since")</span>
+                                            <span class="fw-medium">@currentUser.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</span>
+                                        </li>
+                                    </ul>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
         </div>
 
-        <div class="row">
-            <div class="col-12">
-                <div class="card shadow-sm border-0">
-                    <div class="card-body">
-                        <h4 class="card-title mb-4">@Translation.GetString("dashboard.account_info")</h4>
-                        @if (currentUser != null)
-                        {
-                            <ul class="list-group list-group-flush">
-                                <li class="list-group-item d-flex justify-content-between align-items-center py-3">
-                                    <span class="text-muted">@Translation.GetString("dashboard.field.name")</span>
-                                    <span class="fw-medium">@currentUser.Name</span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between align-items-center py-3">
-                                    <span class="text-muted">@Translation.GetString("dashboard.field.email")</span>
-                                    <span class="fw-medium">@currentUser.Email</span>
-                                </li>
-                                <li class="list-group-item d-flex justify-content-between align-items-center py-3">
-                                    <span class="text-muted">@Translation.GetString("dashboard.field.member_since")</span>
-                                    <span class="fw-medium">@currentUser.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</span>
-                                </li>
-                            </ul>
-                        }
-                    </div>
-                </div>
-            </div>
-        </div>
-    }
-</div>
-
-<SubscriptionModal @bind-IsVisible="_showSubscriptionModal"
-                   CurrentPlanCode="@currentSubscription?.PlanCode"
+<SubscriptionModal @bind-IsVisible="_showSubscriptionModal" CurrentPlanCode="@currentSubscription?.PlanCode"
                    OnSubscriptionChanged="RefreshSubscriptionAsync" />
 
 @code {
@@ -218,8 +222,8 @@
 
     private string DisplayUserRole => currentUser?.IsAdmin == true
         ? Translation.GetString("dashboard.role.admin")
-        : (currentUser?.IsReseller == true 
-            ? Translation.GetString("dashboard.role.reseller") 
+        : (currentUser?.IsReseller == true
+            ? Translation.GetString("dashboard.role.reseller")
             : Translation.GetString("dashboard.role.user"));
 
     protected override async Task OnInitializedAsync()
