@@ -5,7 +5,7 @@
     invoice.payment_failed -> prévenir le client que son paiement a été refusé (période de grâce activée pour le plan en cours)
     customer.subscription.deleted -> prévenir le client que sa souscription a pris fin (retour au free plan)
 > Faire le style de FastLabel (Dépendance boostrap à voir) + Mettre en forme les mails de communication utilisateur + Faire des image + description pour les plans de souscriptions
-> Ajouter des logs partout ou il y a des catch{} avec ILogger et ToastService
+> Changer correctement les intitulés pour AppLog() et les Toast
 
 - Agent -
 > Ajouter proxy côté agent
