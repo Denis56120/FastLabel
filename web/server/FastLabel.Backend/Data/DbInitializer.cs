@@ -592,7 +592,6 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             ["dashboard.subscription.subscribe"] = ("Subscribe to a plan", new() { { "fr", "Souscrire à une offre" }, { "en", "Subscribe to a plan" } }),
             ["dashboard.security_title"] = ("Security & Profile", new() { { "fr", "Sécurité & Profil" }, { "en", "Security & Profile" } }),
             ["dashboard.manage_account"] = ("Manage account", new() { { "fr", "Gérer mon compte" }, { "en", "Manage account" } }),
-            ["dashboard.account_info"] = ("Account Information", new() { { "fr", "Informations du compte" }, { "en", "Account Information" } }),
             ["dashboard.field.name"] = ("Name", new() { { "fr", "Nom" }, { "en", "Name" } }),
             ["dashboard.field.email"] = ("Email", new() { { "fr", "Email" }, { "en", "Email" } }),
             ["dashboard.field.member_since"] = ("Member since", new() { { "fr", "Membre depuis" }, { "en", "Member since" } }),
