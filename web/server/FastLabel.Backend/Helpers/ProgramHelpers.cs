@@ -194,7 +194,7 @@ public static class ProgramHelpers
         app.MapResolutionDpiEndpoints();
         app.MapSubscriptionEndpoints();
         app.MapStripeEndpoints();
-        app.MapResellerEndpoints();
+        app.MapClientEndpoints();
         app.MapAntiforgeryEndpoints();
         app.MapPlanEndpoints();
         app.MapAdminEndpoints();

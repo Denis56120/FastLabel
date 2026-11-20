@@ -1,12 +1,12 @@
 namespace FastLabel.Backend.Endpoints;
 
-public static class ResellerEndpoints
+public static class ClientEndpoints
 {
-    public static void MapResellerEndpoints(this IEndpointRouteBuilder routes)
+    public static void MapClientEndpoints(this IEndpointRouteBuilder routes)
     {
-        var resellerGroup = routes.MapGroup("/api/reseller").RequireAuthorization();
+        var clientGroup = routes.MapGroup("/api/clients").RequireAuthorization();
 
-        resellerGroup.MapGet("/clients", async (
+        clientGroup.MapGet("/", async (
             int? page, 
             int? pageSize, 
             string? sortBy, 
@@ -19,8 +19,8 @@ public static class ResellerEndpoints
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
-            var reseller = await DbHelpers.GetUserByIdAsync(db, userId);  
-            if (reseller == null || !reseller.IsReseller)
+            var user = await DbHelpers.GetUserByIdAsync(db, userId);  
+            if (user == null || !user.IsReseller)
                 return Results.Forbid();
 
             int currentPage = page ?? 1;
@@ -68,7 +68,7 @@ public static class ResellerEndpoints
             return Results.Ok(result);
         });
 
-        resellerGroup.MapPost("/clients", async (
+        clientGroup.MapPost("/", async (
             UserDto clientDto, 
             AppDbContext db, 
             IEmailService emailService, 
@@ -80,8 +80,7 @@ public static class ResellerEndpoints
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
-            var reseller = await DbHelpers.GetUserByIdWithStripeRecordAsync(db, userId);  
-
+            var reseller = await DbHelpers.GetUserByIdWithStripeRecordAsync(db, userId); 
             if (reseller == null || !reseller.IsReseller)
                 return Results.Forbid();
 
@@ -105,7 +104,7 @@ public static class ResellerEndpoints
                 catch (Exception ex)
                 {
                     AppLog.Error(ex);
-                    return Results.BadRequest(new ErrorResponseDto { Message = "reseller.error.stripe_update_failed" });
+                    return Results.BadRequest(new ErrorResponseDto { Message = "client.error.stripe_update_failed" });
                 }
             }
 
@@ -132,10 +131,10 @@ public static class ResellerEndpoints
             clientDto.Id = newClient.Id;
             clientDto.Password = null;
 
-            return Results.Created($"/api/reseller/clients/{newClient.Id}", clientDto);
+            return Results.Created($"/api/clients/{newClient.Id}", clientDto);
         });
 
-        resellerGroup.MapDelete("/clients/{id:int}", async (
+        clientGroup.MapDelete("/{id:int}", async (
             int id, 
             AppDbContext db, 
             IStripeService stripeService, 
@@ -162,7 +161,7 @@ public static class ResellerEndpoints
                 catch (Exception ex)
                 {
                     AppLog.Error(ex);
-                    return Results.BadRequest(new ErrorResponseDto { Message = "reseller.error.stripe_update_failed" });
+                    return Results.BadRequest(new ErrorResponseDto { Message = "client.error.stripe_update_failed" });
                 }
             }
 
@@ -172,7 +171,7 @@ public static class ResellerEndpoints
             return Results.NoContent();
         });
 
-        resellerGroup.MapPost("/clients/delete-batch", async (
+        clientGroup.MapPost("/delete-batch", async (
             int[] ids,
             AppDbContext db,
             IStripeService stripeService,
@@ -210,7 +209,7 @@ public static class ResellerEndpoints
                 catch (Exception ex)
                 {
                     AppLog.Error(ex);
-                    return Results.BadRequest(new ErrorResponseDto { Message = "reseller.error.stripe_update_failed" });
+                    return Results.BadRequest(new ErrorResponseDto { Message = "client.error.stripe_update_failed" });
                 }
             }
 

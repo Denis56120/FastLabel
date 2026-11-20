@@ -1,10 +1,10 @@
 namespace FastLabel.Backend.Tests.Tests;
 
 [Collection("FastLabel Test Collection")]
-public class ResellerEndpointsTests(TestWebApplicationFactory factory)
+public class ClientEndpointsTests(TestWebApplicationFactory factory)
 {
     // =========================================================================
-    // 1. TESTS POUR GET /api/reseller/clients
+    // 1. TESTS POUR GET /api/clients
     // =========================================================================
 
     [Fact]
@@ -32,7 +32,7 @@ public class ResellerEndpointsTests(TestWebApplicationFactory factory)
             await db.SaveChangesAsync();
         }
 
-        var response = await client.GetAsync("/api/reseller/clients?page=1&pageSize=10");
+        var response = await client.GetAsync("/api/clients?page=1&pageSize=10");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var result = await response.Content.ReadFromJsonAsync<PagedResultDto<UserDto>>();
@@ -46,7 +46,7 @@ public class ResellerEndpointsTests(TestWebApplicationFactory factory)
     {
         var client = await factory.CreateAuthenticatedClientAsync("regular.user@exemple.fr", isReseller: false);
 
-        var response = await client.GetAsync("/api/reseller/clients");
+        var response = await client.GetAsync("/api/clients");
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
@@ -55,13 +55,13 @@ public class ResellerEndpointsTests(TestWebApplicationFactory factory)
     public async Task GetResellerClients_Fail_WhenUnauthenticated_ReturnsUnauthorized()
     {
         var client = factory.CreateUnauthenticatedClient();
-        var response = await client.GetAsync("/api/reseller/clients");
+        var response = await client.GetAsync("/api/clients");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     // =========================================================================
-    // 2. TESTS POUR POST /api/reseller/clients
+    // 2. TESTS POUR POST /api/clients
     // =========================================================================
 
     [Fact]
@@ -76,7 +76,7 @@ public class ResellerEndpointsTests(TestWebApplicationFactory factory)
             Email = "nouveau.client@exemple.fr"
         };
 
-        var response = await client.PostAsJsonAsync("/api/reseller/clients", newClientDto);
+        var response = await client.PostAsJsonAsync("/api/clients", newClientDto);
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var created = await response.Content.ReadFromJsonAsync<UserDto>();
@@ -114,7 +114,7 @@ public class ResellerEndpointsTests(TestWebApplicationFactory factory)
             Email = "existing@exemple.fr"
         };
 
-        var response = await client.PostAsJsonAsync("/api/reseller/clients", dto);
+        var response = await client.PostAsJsonAsync("/api/clients", dto);
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         var error = await response.Content.ReadFromJsonAsync<ErrorResponseDto>();
@@ -132,13 +132,13 @@ public class ResellerEndpointsTests(TestWebApplicationFactory factory)
             Email = "client@exemple.fr"
         };
 
-        var response = await client.PostAsJsonAsync("/api/reseller/clients", dto);
+        var response = await client.PostAsJsonAsync("/api/clients", dto);
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     // =========================================================================
-    // 3. TESTS POUR DELETE /api/reseller/clients/{id}
+    // 3. TESTS POUR DELETE /api/clients/{id}
     // =========================================================================
 
     [Fact]
@@ -169,7 +169,7 @@ public class ResellerEndpointsTests(TestWebApplicationFactory factory)
             clientId = clientUser.Id;
         }
 
-        var response = await client.DeleteAsync($"/api/reseller/clients/{clientId}");
+        var response = await client.DeleteAsync($"/api/clients/{clientId}");
 
         Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
@@ -187,7 +187,7 @@ public class ResellerEndpointsTests(TestWebApplicationFactory factory)
         var resellerEmail = "reseller.delfail@exemple.fr";
         var client = await factory.CreateAuthenticatedClientAsync(resellerEmail, isReseller: true);
 
-        var response = await client.DeleteAsync("/api/reseller/clients/999999");
+        var response = await client.DeleteAsync("/api/clients/999999");
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         var error = await response.Content.ReadFromJsonAsync<ErrorResponseDto>();
@@ -199,7 +199,7 @@ public class ResellerEndpointsTests(TestWebApplicationFactory factory)
     {
         var client = await factory.CreateAuthenticatedClientAsync("regular.delete@exemple.fr", isReseller: false);
 
-        var response = await client.DeleteAsync("/api/reseller/clients/1");
+        var response = await client.DeleteAsync("/api/clients/1");
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }

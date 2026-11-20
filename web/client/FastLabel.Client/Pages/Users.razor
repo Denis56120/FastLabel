@@ -38,16 +38,16 @@
 
     <TableFilters>
         <th>
-            <input type="text" class="form-control form-control-sm" placeholder="Filtrer..." 
+            <input type="text" class="form-control form-control-sm" placeholder="@Translation.GetString("common.filter_placeholder")" 
                    @oninput='e => FilterAsync("filterByName", e.Value?.ToString())' />
         </th>
         <th>
-            <input type="text" class="form-control form-control-sm" placeholder="Filtrer..." 
+            <input type="text" class="form-control form-control-sm" placeholder="@Translation.GetString("common.filter_placeholder")" 
                    @oninput='e => FilterAsync("filterByEmail", e.Value?.ToString())' />
         </th>
         <th></th>
         <th>
-            <input type="text" class="form-control form-control-sm" placeholder="Filtrer..." 
+            <input type="text" class="form-control form-control-sm" placeholder="@Translation.GetString("common.filter_placeholder")" 
                    @oninput='e => FilterAsync("filterByReseller", e.Value?.ToString())' />
         </th>
         <th></th>

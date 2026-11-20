@@ -1,4 +1,4 @@
-@page "/reseller/clients"
+@page "/clients"
 @layout MainLayout
 @attribute [Authorize(Roles = "Reseller")]
 @inject TranslationService Translation
@@ -6,15 +6,15 @@
 <CrudTablePage @ref="_crudTable"
                TItem="UserDto" 
                TKey="int"
-               ApiEndpoint="api/reseller/clients"
+               ApiEndpoint="api/clients"
                DisableEdit="true"
                IdSelector="u => u.Id"
                CreateNewItem="@(() => new UserDto())"
-               Title="@Translation.GetString("reseller.clients.title")"
-               Description="@Translation.GetString("reseller.clients.description")"
-               EmptyMessage="@Translation.GetString("reseller.clients.no_clients")"
-               AddModalTitle="@Translation.GetString("reseller.clients.add_title")"
-               EditModalTitle="@Translation.GetString("reseller.clients.edit_title")">
+               Title="@Translation.GetString("clients.title")"
+               Description="@Translation.GetString("clients.description")"
+               EmptyMessage="@Translation.GetString("clients.no_clients")"
+               AddModalTitle="@Translation.GetString("clients.add_title")"
+               EditModalTitle="@Translation.GetString("clients.edit_title")">
 
     <TableHeader>
         <th role="button" @onclick='() => SortAsync("Name")'>
@@ -30,11 +30,11 @@
 
     <TableFilters>
         <th>
-            <input type="text" class="form-control form-control-sm" placeholder="Filtrer..." 
+            <input type="text" class="form-control form-control-sm" placeholder="@Translation.GetString("common.filter_placeholder")" 
                    @oninput='e => FilterAsync("filterByName", e.Value?.ToString())' />
         </th>
         <th>
-            <input type="text" class="form-control form-control-sm" placeholder="Filtrer..." 
+            <input type="text" class="form-control form-control-sm" placeholder="@Translation.GetString("common.filter_placeholder")" 
                    @oninput='e => FilterAsync("filterByEmail", e.Value?.ToString())' />
         </th>
         <th></th>

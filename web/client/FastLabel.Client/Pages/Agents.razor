@@ -4,12 +4,14 @@
 @inject TranslationService Translation
 @inject ToastService ToastService
 @inject ApiClient ApiClient
+@inject IJSRuntime JSRuntime
 
 <CrudTablePage @ref="_crudTable"
                TItem="AgentDto" 
                TKey="int"
                ApiEndpoint="api/agents"
                IdSelector="a => a.Id"
+               IsReadOnly="true"
                CreateNewItem="CreateNewAgent"
                Title="@Translation.GetString("agents.title")"
                Description="@Translation.GetString("agents.description")"
@@ -40,12 +42,12 @@
         @if (_isAdmin)
         {
             <th>
-                <input type="text" class="form-control form-control-sm" placeholder="Filtrer..." 
+                <input type="text" class="form-control form-control-sm" placeholder="@Translation.GetString("common.filter_placeholder")" 
                        @oninput='e => FilterAsync("filterByUser", e.Value?.ToString())' />
             </th>
         }
         <th>
-            <input type="text" class="form-control form-control-sm" placeholder="Filtrer..." 
+            <input type="text" class="form-control form-control-sm" placeholder="@Translation.GetString("common.filter_placeholder")" 
                    @oninput='e => FilterAsync("filterByType", e.Value?.ToString())' />
         </th>
         <th></th>
@@ -59,7 +61,17 @@
             <td>@agent.UserName</td>
         }
         <td>@agent.AgentTypeName</td>
-        <td><code>@agent.ApiKey</code></td>
+        <td>
+            <div class="d-flex align-items-center gap-2">
+                <code>@agent.ApiKey</code>
+                <button type="button"
+                        class="btn btn-sm btn-outline-secondary"
+                        title="@Translation.GetString("agents.copy_api_key")"
+                        @onclick="() => CopyApiKeyAsync(agent.ApiKey)">
+                    <i class="bi bi-clipboard"></i>
+                </button>
+            </div>
+        </td>
         <td>@agent.CreatedAt.ToLocalTime().ToString("d")</td>
         <td>@(agent.LastSeenAt?.ToLocalTime().ToString("d") ?? "-")</td>
     </RowTemplate>
@@ -92,7 +104,6 @@
 
     private AgentDto CreateNewAgent()
     {
-        // La clé sera générée et renvoyée par le serveur lors de la création
         return new AgentDto();
     }
 
@@ -117,6 +128,26 @@
         {
             AppLog.Error(ex);
             ToastService.ShowError(Translation.GetString("app.error.unknown"));
+        }
+    }
+
+    private async Task CopyApiKeyAsync(string? apiKey)
+    {
+        if (string.IsNullOrWhiteSpace(apiKey))
+        {
+            ToastService.ShowError(Translation.GetString("agents.error.copy_api_key_failed"));
+            return;
+        }
+
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", apiKey);
+            ToastService.ShowSuccess(Translation.GetString("agents.success.api_key_copied"));
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error(ex);
+            ToastService.ShowError(Translation.GetString("agents.error.copy_api_key_failed"));
         }
     }
 

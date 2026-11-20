@@ -77,9 +77,9 @@ else
                     
                     <AuthorizeView Roles="Reseller">
                         <li class="nav-item">
-                            <NavLink class="nav-link text-dark" href="/reseller/clients" Match="NavLinkMatch.Prefix"
+                            <NavLink class="nav-link text-dark" href="/clients" Match="NavLinkMatch.Prefix"
                                      @onclick="CloseSidebarOnMobile">
-                                <i class="bi bi-shop me-2"></i> @Translation.GetString("nav.reseller_clients")
+                                <i class="bi bi-shop me-2"></i> @Translation.GetString("nav.clients")
                             </NavLink>
                         </li>
                     </AuthorizeView>
@@ -143,7 +143,7 @@ else
         if (uri.Contains("/printers")) return Translation.GetString("nav.printers");
         if (uri.Contains("/agents")) return Translation.GetString("nav.agents");
         if (uri.Contains("/users")) return Translation.GetString("nav.users");
-        if (uri.Contains("/reseller/clients")) return Translation.GetString("reseller.clients.title");
+        if (uri.Contains("/clients")) return Translation.GetString("clients.title");
         if (uri.Contains("/printjobs")) return Translation.GetString("nav.printjobs");
 
         return Translation.GetString("nav.home");
