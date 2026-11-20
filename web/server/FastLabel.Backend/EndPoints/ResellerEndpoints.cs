@@ -68,7 +68,14 @@ public static class ResellerEndpoints
             return Results.Ok(result);
         });
 
-        resellerGroup.MapPost("/clients", async (UserDto clientDto, AppDbContext db, IEmailService emailService, IConfiguration configuration, IStripeService stripeService, HttpContext httpContext, ClaimsPrincipal claimsUser) =>
+        resellerGroup.MapPost("/clients", async (
+            UserDto clientDto, 
+            AppDbContext db, 
+            IEmailService emailService, 
+            IConfiguration configuration, 
+            IStripeService stripeService, 
+            HttpContext httpContext, 
+            ClaimsPrincipal claimsUser) =>
         {
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
@@ -128,7 +135,11 @@ public static class ResellerEndpoints
             return Results.Created($"/api/reseller/clients/{newClient.Id}", clientDto);
         });
 
-        resellerGroup.MapDelete("/clients/{id:int}", async (int id, AppDbContext db, IStripeService stripeService, ClaimsPrincipal claimsUser) =>
+        resellerGroup.MapDelete("/clients/{id:int}", async (
+            int id, 
+            AppDbContext db, 
+            IStripeService stripeService, 
+            ClaimsPrincipal claimsUser) =>
         {
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
@@ -159,6 +170,54 @@ public static class ResellerEndpoints
             await db.SaveChangesAsync();
 
             return Results.NoContent();
+        });
+
+        resellerGroup.MapPost("/clients/delete-batch", async (
+            int[] ids,
+            AppDbContext db,
+            IStripeService stripeService,
+            ClaimsPrincipal claimsUser) =>
+        {
+            var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
+            if (userId == 0) return Results.Unauthorized();
+
+            var reseller = await DbHelpers.GetUserByIdWithStripeRecordAsync(db, userId);
+
+            if (reseller == null || !reseller.IsReseller)
+                return Results.Forbid();
+
+            if (ids == null || ids.Length == 0)
+                return Results.BadRequest(new ErrorResponseDto { Message = "common.error.empty_selection" });
+
+            var distinctIds = ids.Distinct().ToList();
+
+            var clientsToDelete = await db.Users
+                .Where(u => u.ResellerId == userId && distinctIds.Contains(u.Id))
+                .ToListAsync();
+
+            if (clientsToDelete.Count == 0)
+                return Results.NotFound(new ErrorResponseDto { Message = "user.error.not_found" });
+
+            if (reseller.StripeRecord != null && !string.IsNullOrEmpty(reseller.StripeRecord.StripeSubscriptionId))
+            {
+                try
+                {
+                    for (int i = 0; i < clientsToDelete.Count; i++)
+                    {
+                        await stripeService.DecrementSubscriptionQuantityAsync(reseller.StripeRecord.StripeSubscriptionId);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    AppLog.Error(ex);
+                    return Results.BadRequest(new ErrorResponseDto { Message = "reseller.error.stripe_update_failed" });
+                }
+            }
+
+            db.Users.RemoveRange(clientsToDelete);
+            await db.SaveChangesAsync();
+
+            return Results.Ok(new { DeletedCount = clientsToDelete.Count });
         });
     }
 }

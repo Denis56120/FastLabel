@@ -18,8 +18,8 @@
         <div class="d-flex align-items-center gap-2">
             @if (CustomToolbarActions != null && _selectedIds.Count == 1)
             {
-                var selectedItem = _items.FirstOrDefault(i => EqualityComparer<TKey>.Default.Equals(IdSelector(i),
-            _selectedIds.First()));
+                var selectedId = _selectedIds.First();
+                var selectedItem = _items.FirstOrDefault(i => EqualityComparer<TKey>.Default.Equals(IdSelector(i), selectedId));
                 if (selectedItem != null)
                 {
                     @CustomToolbarActions(selectedItem)
@@ -31,20 +31,20 @@
                 <div class="btn-group" role="group">
                     @if (!DisableAdd)
                     {
-                        <button class="btn btn-primary btn-sm" @onclick="OpenAddModal">
+                        <button type="button" class="btn btn-primary btn-sm" disabled="@(_isSaving || _isDeleting)" @onclick="OpenAddModal">
                             <i class="bi bi-plus-lg"></i> @Translation.GetString("common.add")
                         </button>
                     }
                     @if (!DisableEdit)
                     {
-                        <button class="btn btn-outline-secondary btn-sm" disabled="@(_selectedIds.Count != 1)"
+                        <button type="button" class="btn btn-outline-secondary btn-sm" disabled="@(_selectedIds.Count != 1 || _isSaving || _isDeleting)"
                                 @onclick="OpenEditModal">
                             <i class="bi bi-pencil"></i> @Translation.GetString("common.edit")
                         </button>
                     }
                     @if (!DisableDelete)
                     {
-                        <button class="btn btn-outline-danger btn-sm" disabled="@(_selectedIds.Count == 0)"
+                        <button type="button" class="btn btn-outline-danger btn-sm" disabled="@(_selectedIds.Count == 0 || _isSaving || _isDeleting)"
                                 @onclick="DeleteSelectedAsync">
                             <i class="bi bi-trash"></i> @Translation.GetString("common.delete") (@_selectedIds.Count)
                         </button>
@@ -64,7 +64,7 @@
 
     <!-- Encapsulation dans le ServerTable unifié -->
     <ServerTable @ref="_table" TItem="TItem" Title="" Description="" EmptyMessage="@EmptyMessage"
-                 ApiEndpoint="@ApiEndpoint" EnableFiltering="@EnableFiltering" @bind-Items="_items">
+                 ApiEndpoint="@ApiEndpoint" EnableFiltering="@EnableFiltering" Items="_items" ItemsChanged="OnItemsChanged">
 
         <TableHeader>
             @if (!IsReadOnly && (!DisableEdit || !DisableDelete))
@@ -138,16 +138,27 @@
     [Parameter] public bool DisableAdd { get; set; } = false;
     [Parameter] public bool DisableEdit { get; set; } = false;
     [Parameter] public bool DisableDelete { get; set; } = false;
+    [Parameter] public bool UseBatchForSingleDelete { get; set; } = false;
 
     private ServerTable<TItem>? _table;
     private List<TItem> _items = new();
     private HashSet<TKey> _selectedIds = new();
     private bool _isModalOpen = false;
     private bool _isEditMode = false;
+    private bool _isSaving = false;
+    private bool _isDeleting = false;
     private TItem _currentItem = new();
     private EditContext? _editContext;
 
-    private bool IsAllSelected => _items.Any() && _selectedIds.Count == _items.Count;
+    private bool IsAllSelected => _items.Count > 0 && _items.All(i => _selectedIds.Contains(IdSelector(i)));
+
+    private Task OnItemsChanged(List<TItem> newItems)
+    {
+        _items = newItems ?? new();
+        var visibleIds = _items.Select(IdSelector).ToHashSet();
+        _selectedIds.RemoveWhere(id => !visibleIds.Contains(id));
+        return Task.CompletedTask;
+    }
 
     /// <summary>
     /// Permet de forcer un rafraîchissement des données depuis la table serveur.
@@ -163,104 +174,152 @@
 
     private void ToggleSelection(TKey id, object? checkedValue)
     {
-        if (checkedValue is bool isChecked && isChecked) _selectedIds.Add(id);
-        else _selectedIds.Remove(id);
+        if (checkedValue is bool isChecked && isChecked)
+            _selectedIds.Add(id);
+        else
+            _selectedIds.Remove(id);
     }
 
     private void ToggleSelectAll(ChangeEventArgs e)
     {
         if (e.Value is bool isChecked && isChecked)
-            _selectedIds = _items.Select(IdSelector).ToHashSet();
+        {
+            foreach (var item in _items)
+            {
+                _selectedIds.Add(IdSelector(item));
+            }
+        }
         else
-            _selectedIds.Clear();
+        {
+            var visibleIds = _items.Select(IdSelector).ToHashSet();
+            _selectedIds.RemoveWhere(id => visibleIds.Contains(id));
+        }
     }
 
     private void OpenAddModal()
     {
-        if (IsReadOnly || DisableAdd) return;
+        if (IsReadOnly || DisableAdd || _isSaving || _isDeleting) return;
         _isEditMode = false;
         _currentItem = CreateNewItem != null ? CreateNewItem() : new TItem();
         _editContext = new EditContext(_currentItem);
         _isModalOpen = true;
-        StateHasChanged();
     }
 
     private void OpenEditModal()
     {
-        if (IsReadOnly || DisableEdit || _selectedIds.Count != 1) return;
+        if (IsReadOnly || DisableEdit || _selectedIds.Count != 1 || _isSaving || _isDeleting) return;
         var selectedId = _selectedIds.First();
         var itemToEdit = _items.FirstOrDefault(i => EqualityComparer<TKey>.Default.Equals(IdSelector(i), selectedId));
         
         if (itemToEdit != null)
         {
             _isEditMode = true;
-            _currentItem = CloneItem != null
-                ? CloneItem(itemToEdit)
-                : System.Text.Json.JsonSerializer.Deserialize<TItem>(System.Text.Json.JsonSerializer.Serialize(itemToEdit))!;
-            
+            _currentItem = CloneItemSafe(itemToEdit);
             _editContext = new EditContext(_currentItem);
             _isModalOpen = true;
         }
     }
 
-    private void CloseModal() => _isModalOpen = false;
+    private TItem CloneItemSafe(TItem source)
+    {
+        if (CloneItem != null)
+        {
+            return CloneItem(source);
+        }
+
+        try
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(source);
+            return System.Text.Json.JsonSerializer.Deserialize<TItem>(json) ?? new TItem();
+        }
+        catch (Exception ex)
+        {
+            AppLog.Warn(ex, "Impossible de cloner l'élément de type {ItemType} via JSON, repli sur une nouvelle instance.", typeof(TItem).Name);
+            return new TItem();
+        }
+    }
+
+    private void CloseModal()
+    {
+        if (_isSaving) return;
+        _isModalOpen = false;
+    }
 
     private async Task SaveItemAsync()
     {
-        if (IsReadOnly) return;
+        if (_isSaving || IsReadOnly) return;
+        if (_isEditMode && DisableEdit) return;
+        if (!_isEditMode && DisableAdd) return;
         if (_editContext != null && !_editContext.Validate()) return;
 
-        bool isSuccess;
-        string? errorKey;
+        _isSaving = true;
+        try
+        {
+            bool isSuccess;
+            string? errorKey;
 
-        if (_isEditMode)
-        {
-            var id = IdSelector(_currentItem);
-            (isSuccess, errorKey) = await ApiClient.PutAsync($"{ApiEndpoint}/{id}", _currentItem);
-        }
-        else
-        {
-            (isSuccess, errorKey) = await ApiClient.PostAsync(ApiEndpoint, _currentItem);
-        }
+            if (_isEditMode)
+            {
+                var id = IdSelector(_currentItem);
+                (isSuccess, errorKey) = await ApiClient.PutAsync($"{ApiEndpoint}/{id}", _currentItem);
+            }
+            else
+            {
+                (isSuccess, errorKey) = await ApiClient.PostAsync(ApiEndpoint, _currentItem);
+            }
 
-        if (isSuccess)
-        {
-            _isModalOpen = false;
-            ToastService.ShowSuccess(Translation.GetString("app.success.saved"));
-            await RefreshAsync();
+            if (isSuccess)
+            {
+                _isModalOpen = false;
+                ToastService.ShowSuccess(Translation.GetString("app.success.saved"));
+                await RefreshAsync();
+            }
+            else
+            {
+                var keyToTranslate = errorKey ?? "app.error.unknown";
+                ToastService.ShowError(Translation.GetString(keyToTranslate));
+            }
         }
-        else
+        finally
         {
-            var keyToTranslate = errorKey ?? "app.error.unknown";
-            ToastService.ShowError(Translation.GetString(keyToTranslate));
+            _isSaving = false;
         }
     }
 
     private async Task DeleteSelectedAsync()
     {
-        if (IsReadOnly || DisableDelete || !_selectedIds.Any()) return;
+        if (_isDeleting || IsReadOnly || DisableDelete || _selectedIds.Count == 0) return;
 
-        bool isSuccess;
-        string? errorKey;
+        _isDeleting = true;
+        try
+        {
+            bool isSuccess;
+            string? errorKey;
 
-        if (_selectedIds.Count == 1)
-        {
-            (isSuccess, errorKey) = await ApiClient.DeleteAsync($"{ApiEndpoint}/{_selectedIds.First()}");
-        }
-        else
-        {
-            (isSuccess, errorKey) = await ApiClient.PostAsync($"{ApiEndpoint}/delete-batch", _selectedIds.ToList());
-        }
+            if (_selectedIds.Count == 1 && !UseBatchForSingleDelete)
+            {
+                (isSuccess, errorKey) = await ApiClient.DeleteAsync($"{ApiEndpoint}/{_selectedIds.First()}");
+            }
+            else
+            {
+                (isSuccess, errorKey) = await ApiClient.PostAsync($"{ApiEndpoint}/delete-batch", _selectedIds.ToList());
+            }
 
-        if (isSuccess)
-        {
-            ToastService.ShowSuccess(Translation.GetString("app.success.deleted"));
-            await RefreshAsync();
+            if (isSuccess)
+            {
+                _selectedIds.Clear();
+                ToastService.ShowSuccess(Translation.GetString("app.success.deleted"));
+                await RefreshAsync();
+            }
+            else
+            {
+                var keyToTranslate = errorKey ?? "app.error.unknown";
+                ToastService.ShowError(Translation.GetString(keyToTranslate));
+            }
         }
-        else
+        finally
         {
-            var keyToTranslate = errorKey ?? "app.error.unknown";
-            ToastService.ShowError(Translation.GetString(keyToTranslate));
+            _isDeleting = false;
         }
     }
 

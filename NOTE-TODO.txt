@@ -6,6 +6,18 @@
     customer.subscription.deleted -> prévenir le client que sa souscription a pris fin (retour au free plan)
 > Faire le style de FastLabel (Dépendance boostrap à voir) + Mettre en forme les mails de communication utilisateur + Faire des image + description pour les plans de souscriptions
 > Changer correctement les intitulés pour AppLog() et les Toast
+> Dans Endpoints/UserEndpoints.cs (PUT /api/users/me), si l'utilisateur change son email (emailChanged == true), son compte passe en status.inactive, mais la session cookie d'authentification active n'est pas invalidée (SignOutAsync).   
+> Dans Endpoints/UserEndpoints.cs (PUT /api/users/{id:int} sur adminGroup), l'endpoint retourne Results.Ok(user) (l'entité EF User, incluant PasswordHash, PasswordResetToken, EmailVerificationToken) au lieu d'un UserDto.
+> Dans EmailService.cs, int.Parse(portStr) lèvera une exception non gérée si SMTP_PORT est vide ou non numérique au lieu d'une erreur de configuration explicite.
+> Divergence entre EnsureCreatedAsync() et MigrateAsync() au démarrage :
+> Dans Helpers/ProgramHelpers.cs, UseDatabaseMigrationsAsync appelle await dbContext.Database.MigrateAsync(), tandis que DbInitializer.InitializeAsync() appelle await _context.Database.EnsureCreatedAsync(). Si la base est vide, MigrateAsync() crée les tables et la table __EFMigrationsHistory ; EnsureCreatedAsync() est alors un no-op, mais mélanger les deux est source de confusion (et EnsureCreatedAsync() ne gère pas l'historique de migrations).
+> StripeEndpoints.cs cherche d'abord $"plan.{normalizedCode}.name" avant de retomber sur p.Code.ToLower() == normalizedCode. Uniformiser la convention de nommage évitera des recherches inutiles ou des bugs silencieux.
+> CrudTablePage affiche le bouton Edit tant que DisableEdit est à false, alors que ResellerEndpoints.cs n'expose que GET /clients, POST /clients et DELETE /clients/{id}. Cliquer sur Modifier appellera donc un PUT api/reseller/clients/{id} inexistant (405/404). Mets DisableEdit="true" sur Resellers.razor (ou implémente le PUT côté backend).
+> Gestion du cache de traductions après changement de langue (Pages/Account.razor) :
+> Après PUT api/users/me, le code appelle await Translation.InitializeAsync() sans vérifier/forcer le rechargement si la langue a changé ou si le cookie/langue utilisateur n'est pas encore pris en compte.
+> Pagination en mémoire (ToListAsync() avant Skip/Take) dans QueryableHelpers.cs : ToPagedResultAsync charge toutes les entités correspondantes en mémoire (await query.ToListAsync()) avant de mapper, trier et paginer. Avec DevelopmentDataSeeder qui génère 100 imprimantes et 100 templates par utilisateur (et potentiellement des dizaines de milliers de PrintJobs en production), cela va consommer de la RAM et ralentir fortement les requêtes. Il faut filtrer, trier et paginer directement côté SQL (IQueryable) autant que possible, et ne garder le tri naturel (NaturalStringHelpers) que sur des jeux de données bornés ou via une stratégie dédiée.
+> Requêtes lourdes avec multiples Include en cascade sur les tables de traductions :
+> Chaque GET sur /api/agents, /api/printers, /api/templates, /api/users charge Name -> Translations -> Language pour chaque ligne. À terme, un dictionnaire/cache en mémoire (ou une projection SQL ciblée sans charger tout le graphe) sera beaucoup plus léger.
 
 - Agent -
 > Ajouter proxy côté agent
