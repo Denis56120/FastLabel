@@ -143,7 +143,7 @@ public static class ProgramHelpers
             var initializer = new DbInitializer(dbContext, configuration, passwordHasher, app.Environment);
             await initializer.InitializeAsync();
 
-            if (app.Environment.IsDevelopment())
+            if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
             {
                 var dataseeder = new DevelopmentDataSeeder(dbContext, passwordHasher);
                 await dataseeder.SeedAsync();
@@ -162,7 +162,7 @@ public static class ProgramHelpers
     {
         var app = builder.Build();
 
-        if (app.Environment.IsDevelopment())
+        if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
         {
             app.UseDeveloperExceptionPage();
         }

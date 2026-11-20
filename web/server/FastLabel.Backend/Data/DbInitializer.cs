@@ -265,10 +265,10 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
                     YearlyPrice = 470m,
                     TopUpPrintsIncluded = 100,
                     TopUpPrice = 9m,
-                    StripeProductId = _env.IsDevelopment() ? "prod_VcjVk4ebwZmmYQ" : string.Empty,
-                    StripeMonthlyPriceId = _env.IsDevelopment() ? "price_1UdIRE56MInqLcWx3aKllRRc" : string.Empty,
-                    StripeYearlyPriceId = _env.IsDevelopment() ? "price_1UbU2I56MInqLcWxBjLHwsC1" : string.Empty,
-                    StripeTopUpPriceId = _env.IsDevelopment() ? "price_1UdIVt56MInqLcWxFjESFNhN" : string.Empty,
+                    StripeProductId = _env.IsProduction() ? "prod_TODO" : "prod_VcjVk4ebwZmmYQ",
+                    StripeMonthlyPriceId = _env.IsProduction() ? "price_TODO" : "price_1UdIRE56MInqLcWx3aKllRRc",
+                    StripeYearlyPriceId = _env.IsProduction() ? "price_TODO" : "price_1UbU2I56MInqLcWxBjLHwsC1",
+                    StripeTopUpPriceId = _env.IsProduction() ? "price_TODO" : "price_1UdIVt56MInqLcWxFjESFNhN",
                     SortOrder = 2,
                     BasicStatusId = activeStatusId
                 },
@@ -281,10 +281,10 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
                     YearlyPrice = 760m,
                     TopUpPrintsIncluded = 1_000,
                     TopUpPrice = 29m,
-                    StripeProductId = _env.IsDevelopment() ? "prod_VcjWw4zl5axAoC" : string.Empty,
-                    StripeMonthlyPriceId = _env.IsDevelopment() ? "price_1UdIQT56MInqLcWxEOpZCNQ3" : string.Empty,
-                    StripeYearlyPriceId = _env.IsDevelopment() ? "price_1UbU3I56MInqLcWxAmM5Esyz" : string.Empty,
-                    StripeTopUpPriceId = _env.IsDevelopment() ? "price_1UdIVe56MInqLcWxtjBQnaVF" : string.Empty,
+                    StripeProductId = _env.IsProduction() ? "prod_TODO" : "prod_VcjWw4zl5axAoC",
+                    StripeMonthlyPriceId = _env.IsProduction() ? "price_TODO" : "price_1UdIQT56MInqLcWxEOpZCNQ3",
+                    StripeYearlyPriceId = _env.IsProduction() ? "price_TODO" : "price_1UbU3I56MInqLcWxAmM5Esyz",
+                    StripeTopUpPriceId = _env.IsProduction() ? "price_TODO" : "price_1UdIVe56MInqLcWxtjBQnaVF",
                     SortOrder = 3,
                     BasicStatusId = activeStatusId
                 },
@@ -297,10 +297,10 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
                     YearlyPrice = 1_910m,
                     TopUpPrintsIncluded = 1_000,
                     TopUpPrice = 29m,
-                    StripeProductId = _env.IsDevelopment() ? "prod_VcjWdgZ48O14mq" : string.Empty,
-                    StripeMonthlyPriceId = _env.IsDevelopment() ? "price_1UdIPr56MInqLcWxPbohBHz2" : string.Empty,
-                    StripeYearlyPriceId = _env.IsDevelopment() ? "price_1UbU3o56MInqLcWxyyLSYWl6" : string.Empty,
-                    StripeTopUpPriceId = _env.IsDevelopment() ? "price_1UdIVQ56MInqLcWx5aoG2Izx" : string.Empty,
+                    StripeProductId = _env.IsProduction() ? "prod_TODO" : "prod_VcjWdgZ48O14mq",
+                    StripeMonthlyPriceId = _env.IsProduction() ? "price_TODO" : "price_1UdIPr56MInqLcWxPbohBHz2",
+                    StripeYearlyPriceId = _env.IsProduction() ? "price_TODO" : "price_1UbU3o56MInqLcWxyyLSYWl6",
+                    StripeTopUpPriceId = _env.IsProduction() ? "price_TODO" : "price_1UdIVQ56MInqLcWx5aoG2Izx",
                     SortOrder = 4,
                     BasicStatusId = activeStatusId
                 },
@@ -313,10 +313,10 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
                     YearlyPrice = 3_830m,
                     TopUpPrintsIncluded = 1_000,
                     TopUpPrice = 19m,
-                    StripeProductId = _env.IsDevelopment() ? "prod_VebfYZRXulp2Bb" : string.Empty,
-                    StripeMonthlyPriceId = _env.IsDevelopment() ? "price_1UdISC56MInqLcWxv7gJsot1" : string.Empty,
-                    StripeYearlyPriceId = _env.IsDevelopment() ? "price_1UdIRp56MInqLcWxsI4rdLrz" : string.Empty,
-                    StripeTopUpPriceId = _env.IsDevelopment() ? "price_1UdIV656MInqLcWxgUWWTSc9" : string.Empty,
+                    StripeProductId = _env.IsProduction() ? "prod_TODO" : "prod_VebfYZRXulp2Bb",
+                    StripeMonthlyPriceId = _env.IsProduction() ? "price_TODO" : "price_1UdISC56MInqLcWxv7gJsot1",
+                    StripeYearlyPriceId = _env.IsProduction() ? "price_TODO" : "price_1UdIRp56MInqLcWxsI4rdLrz",
+                    StripeTopUpPriceId = _env.IsProduction() ? "price_TODO" : "price_1UdIV656MInqLcWxgUWWTSc9",
                     SortOrder = 5,
                     BasicStatusId = activeStatusId
                 }
@@ -326,7 +326,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         }
 
         // 9. Compte Administrateur par défaut (hors Development)
-        if (!await _context.Users.AnyAsync() && !_env.IsDevelopment())
+        if (!await _context.Users.AnyAsync() && _env.IsProduction())
         {
             var adminName = _configuration["ADMIN_USER_NAME"];
             var adminEmail = _configuration["ADMIN_USER_EMAIL"];
