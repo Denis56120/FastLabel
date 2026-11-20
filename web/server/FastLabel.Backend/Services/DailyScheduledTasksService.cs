@@ -1,17 +1,14 @@
 namespace FastLabel.Backend.Services;
 
-public class DailyScheduledTasksService(
-    IServiceScopeFactory scopeFactory,
-    IConfiguration configuration) : BackgroundService
+public class DailyScheduledTasksService(IServiceScopeFactory scopeFactory) : BackgroundService
 {
     private readonly IServiceScopeFactory _scopeFactory = scopeFactory;
-    private readonly IConfiguration _configuration = configuration;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (!stoppingToken.IsCancellationRequested)
         {
-            var nextRunUtc = GetNextDailyRunUtc(_configuration);
+            var nextRunUtc = GetNextDailyRunUtc();
             var delay = nextRunUtc - DateTime.UtcNow;
 
             if (delay > TimeSpan.Zero)
@@ -30,7 +27,7 @@ public class DailyScheduledTasksService(
         }
     }
 
-    private static DateTime GetNextDailyRunUtc(IConfiguration configuration)
+    private static DateTime GetNextDailyRunUtc()
     {
         if (!TimeSpan.TryParse("00:00", out var targetTimeOfDay))
         {
