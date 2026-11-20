@@ -21,9 +21,6 @@
 ## Sensitive or local configuration files
 .env*
 
-## FodyWeavers
-FodyWeavers.xsd
-
 ## OS generated files
 .DS_Store
 .DS_Store?
@@ -40,3 +37,4 @@ Thumbs.db
 /web/server/FastLabel.Backend/docker/FastLabel.Backend
 /web/client/FastLabel.Client/docker/wwwroot/
 /dist/*
+FodyWeavers.xsd
