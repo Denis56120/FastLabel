@@ -13,7 +13,7 @@ public static class ProgramHelpers
                 Env.Load(envPath);
             }
         }
-        
+
         EnvironmentVariablesExtensions.AddEnvironmentVariables(builder.Configuration);
     }
 
@@ -75,16 +75,20 @@ public static class ProgramHelpers
             });
 
         services.AddHostedService<DailyScheduledTasksService>();
-        
+
         services.AddScoped<IEmailService, EmailService>();
 
-        services.AddScoped<IStripeService, StripeService>();        
+        services.AddScoped<IStripeService, StripeService>();
 
         services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
         services.AddSingleton<PrintBrokerService>();
 
-        services.AddSingleton<ILoggerProvider>(_ =>new FileLoggerProvider(Path.Combine(builder.Environment.ContentRootPath, "logs"), builder.Environment.IsProduction() ? LogLevel.Warning : LogLevel.Debug));   
+        services.AddSingleton<ILoggerProvider>(sp =>
+            new FileLoggerProvider(
+                Path.Combine(builder.Environment.ContentRootPath, "logs"),
+                sp.GetRequiredService<IConfiguration>(),
+                builder.Environment.IsProduction() ? LogLevel.Warning : LogLevel.Debug));
 
         services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
             .AddCookie(options =>
@@ -163,7 +167,7 @@ public static class ProgramHelpers
     }
 
     public static async Task ConfigurePipelineAsync(WebApplicationBuilder builder)
-    {       
+    {
         var app = builder.Build();
 
         AppLog.Configure(app);

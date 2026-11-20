@@ -3,23 +3,61 @@ namespace FastLabel.Backend.Helpers;
 public sealed class FileLoggerProvider : ILoggerProvider
 {
     private readonly string _logDirectory;
-    private readonly LogLevel _minLevel;
+    private readonly IReadOnlyDictionary<string, LogLevel> _rules;
+    private readonly LogLevel _defaultLevel;
     private readonly object _lock = new();
 
-    public FileLoggerProvider(string logDirectory, LogLevel minLevel = LogLevel.Information)
+    public FileLoggerProvider(string logDirectory, IConfiguration? configuration = null, LogLevel fallbackDefaultLevel = LogLevel.Warning)
     {
         _logDirectory = logDirectory;
-        _minLevel = minLevel;
         Directory.CreateDirectory(_logDirectory);
+
+        var rules = new Dictionary<string, LogLevel>(StringComparer.OrdinalIgnoreCase);
+        var section = configuration?.GetSection("Logging:LogLevel");
+        if (section is not null)
+        {
+            foreach (var child in section.GetChildren())
+            {
+                if (!string.IsNullOrWhiteSpace(child.Value) && Enum.TryParse<LogLevel>(child.Value, true, out var parsedLevel))
+                {
+                    rules[child.Key] = parsedLevel;
+                }
+            }
+        }
+
+        _defaultLevel = rules.TryGetValue("Default", out var defaultLevel) ? defaultLevel : fallbackDefaultLevel;
+        rules.Remove("Default");
+        _rules = rules;
     }
 
     public ILogger CreateLogger(string categoryName)
     {
-        return new FileLogger(categoryName, _logDirectory, _minLevel, _lock);
+        var minLevel = ResolveMinLevel(categoryName);
+        return new FileLogger(categoryName, _logDirectory, minLevel, _lock);
     }
 
     public void Dispose()
     {
+    }
+
+    private LogLevel ResolveMinLevel(string categoryName)
+    {
+        string? matchedKey = null;
+        LogLevel matchedLevel = _defaultLevel;
+
+        foreach (var rule in _rules)
+        {
+            if (categoryName.StartsWith(rule.Key, StringComparison.OrdinalIgnoreCase))
+            {
+                if (matchedKey is null || rule.Key.Length > matchedKey.Length)
+                {
+                    matchedKey = rule.Key;
+                    matchedLevel = rule.Value;
+                }
+            }
+        }
+
+        return matchedLevel;
     }
 
     private sealed class FileLogger : ILogger
