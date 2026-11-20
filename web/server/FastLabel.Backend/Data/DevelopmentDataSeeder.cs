@@ -11,7 +11,7 @@ public class DevelopmentDataSeeder(AppDbContext context, IPasswordHasher<User> p
         if (!await _context.Users.AnyAsync())
         {
             int statusId = await DbHelpers.GetStatusIdByTagAsync(_context, "status.active");
-            var language = await DbHelpers.GetLanguageByCodeAsync(_context, "en")?? throw new InvalidOperationException("La langue anglaise ne peut pas être trouvée");
+            var language = await DbHelpers.GetLanguageByCodeAsync(_context, "en") ?? throw new InvalidOperationException("La langue anglaise ne peut pas être trouvée");
 
             var adminUser = new User
             {
@@ -64,10 +64,10 @@ public class DevelopmentDataSeeder(AppDbContext context, IPasswordHasher<User> p
                     var pastsubscription = await DbHelpers.CreateSubscription(_context, user.Id, "free", 0, null, DateTime.UtcNow.AddMonths(-1), null, 0);
                     _context.Subscriptions.Add(pastsubscription);
                 }
-                
-                var subscription = 
+
+                var subscription =
                     user.IsAdmin ? await DbHelpers.CreateSubscription(_context, user.Id, "enterprise", 12, null, DateTime.UtcNow, DateTime.UtcNow.AddMonths(12), 0)
-                    : await DbHelpers.CreateSubscription(_context, user.Id, "free", 0, null, DateTime.UtcNow, null, 0);        
+                    : await DbHelpers.CreateSubscription(_context, user.Id, "free", 0, null, DateTime.UtcNow, null, 0);
                 _context.Subscriptions.Add(subscription);
 
             }
@@ -83,7 +83,7 @@ public class DevelopmentDataSeeder(AppDbContext context, IPasswordHasher<User> p
             {
                 var windowsAgent = await DbHelpers.CreateAgent(_context, user.Id, "agenttype.windows");
                 var linuxAgent = await DbHelpers.CreateAgent(_context, user.Id, "agenttype.linux");
-                
+
                 _context.Agents.AddRange(windowsAgent, linuxAgent);
             }
             await _context.SaveChangesAsync();
@@ -107,16 +107,20 @@ public class DevelopmentDataSeeder(AppDbContext context, IPasswordHasher<User> p
         // 5. Modèle d'étiquette par défaut ("Label Test") pour chaque utilisateur
         if (!await _context.Templates.AnyAsync())
         {
-            var users = await _context.Users.ToListAsync();
-            foreach (var user in users)
+            var demoTemplate = FileHelpers.GetFile("Embedded/demo-label.json");
+            if (!string.IsNullOrEmpty(demoTemplate))
             {
-                for (int i = 1; i <= 100; i++)
+                var users = await _context.Users.ToListAsync();
+                foreach (var user in users)
                 {
-                    var testtemplate = await DbHelpers.CreateTemplate(_context, user.Id, $"Test Label #{i}");
-                    _context.Templates.Add(testtemplate);
+                    for (int i = 1; i <= 100; i++)
+                    {
+                        var testTemplate = await DbHelpers.CreateTemplate(_context, user.Id, $"Test Label #{i}", demoTemplate);
+                        _context.Templates.Add(testTemplate);
+                    }
                 }
+                await _context.SaveChangesAsync();
             }
-            await _context.SaveChangesAsync();
         }
     }
 }

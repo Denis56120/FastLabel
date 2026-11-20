@@ -28,4 +28,8 @@
     <ProjectReference Include="..\..\client\FastLabel.Client\FastLabel.Client.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Embedded\demo-label.json" />
+  </ItemGroup>
+
 </Project>

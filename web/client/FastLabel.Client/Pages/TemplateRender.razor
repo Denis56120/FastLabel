@@ -9,7 +9,6 @@
 @inject IJSRuntime JS
 
 <div class="container-fluid px-4">
-    <!-- En-tête principal de la page -->
     <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
         <div>
             <h2>@Translation.GetString("templates.render.title")</h2>
@@ -41,67 +40,75 @@
     }
     else
     {
-        <!-- Barre d'outils globale d'insertion -->
         <div class="card shadow-sm mb-3">
             <div class="bg-white border-bottom px-3 py-2 d-flex gap-2 align-items-center flex-wrap">
-                <span class="text-muted small fw-bold me-1">Ajouter :</span>
-                <button class="btn btn-outline-primary btn-sm" @onclick="AddTextElement" title="Ajouter du texte">
-                    <i class="bi bi-type fs-5"></i> Texte
+                <span class="text-muted small fw-bold me-1">@Translation.GetString("templates.render.add_label")</span>
+                <button class="btn btn-outline-primary btn-sm" @onclick="AddTextElement" title="@Translation.GetString("templates.render.add_text")">
+                    <i class="bi bi-type fs-5"></i> @Translation.GetString("templates.render.element_text")
                 </button>
-                <button class="btn btn-outline-primary btn-sm" @onclick="AddRectangleElement" title="Ajouter un rectangle">
-                    <i class="bi bi-square fs-5"></i> Rectangle
+                <button class="btn btn-outline-primary btn-sm" @onclick="AddLineElement" title="@Translation.GetString("templates.render.add_line")">
+                    <i class="bi bi-dash-lg fs-5"></i> @Translation.GetString("templates.render.element_line")
                 </button>
-                <button class="btn btn-outline-primary btn-sm" @onclick="AddBarcodeElement" title="Ajouter un code-barres">
-                    <i class="bi bi-upc fs-5"></i> Code-barres
+                <button class="btn btn-outline-primary btn-sm" @onclick="AddRectangleElement" title="@Translation.GetString("templates.render.add_rect")">
+                    <i class="bi bi-square fs-5"></i> @Translation.GetString("templates.render.element_rect")
                 </button>
-                <button class="btn btn-outline-primary btn-sm" @onclick="AddQrCodeElement" title="Ajouter un QR code">
-                    <i class="bi bi-qr-code fs-5"></i> QR Code
+                <button class="btn btn-outline-primary btn-sm" @onclick="AddBarcodeElement" title="@Translation.GetString("templates.render.add_barcode")">
+                    <i class="bi bi-upc fs-5"></i> @Translation.GetString("templates.render.element_barcode")
                 </button>
-                <button class="btn btn-outline-primary btn-sm" @onclick="TriggerImageUpload" title="Ajouter une image">
-                    <i class="bi bi-file-image fs-5"></i> Image
+                <button class="btn btn-outline-primary btn-sm" @onclick="AddQrCodeElement" title="@Translation.GetString("templates.render.add_qr")">
+                    <i class="bi bi-qr-code fs-5"></i> @Translation.GetString("templates.render.element_qr")
+                </button>
+                <button class="btn btn-outline-primary btn-sm" @onclick="TriggerImageUpload" title="@Translation.GetString("templates.render.add_image")">
+                    <i class="bi bi-file-image fs-5"></i> @Translation.GetString("templates.render.element_image")
                 </button>
                 <InputFile id="imageFileInput" OnChange="HandleImageSelected" hidden accept="image/*" />
 
                 <div class="vr mx-2"></div>
 
-                <!-- Contrôle de la taille du Canvas / Étiquette -->
                 <div class="d-flex align-items-center gap-2">
-                    <span class="text-muted small">Format Étiquette:</span>
-                    <div class="input-group input-group-sm" style="width: 105px;" title="Largeur (px)">
+                    <span class="text-muted small">@Translation.GetString("templates.render.size_mm_label")</span>
+                    <div class="input-group input-group-sm" style="width: 115px;" title="@Translation.GetString("templates.render.width_mm")">
                         <span class="input-group-text">L</span>
-                        <input type="number" class="form-control" @bind="_canvasWidth" @bind:event="oninput"
-                               @onchange="UpdateCanvasSize" min="50" max="2000" />
+                        <input type="number" class="form-control" @bind="_widthMm" @bind:event="oninput"
+                               @onchange="UpdateLabelSizeMmAsync" min="10" max="500" step="0.5" />
                     </div>
-                    <div class="input-group input-group-sm" style="width: 105px;" title="Hauteur (px)">
+                    <div class="input-group input-group-sm" style="width: 115px;" title="@Translation.GetString("templates.render.height_mm")">
                         <span class="input-group-text">H</span>
-                        <input type="number" class="form-control" @bind="_canvasHeight" @bind:event="oninput"
-                               @onchange="UpdateCanvasSize" min="50" max="2000" />
+                        <input type="number" class="form-control" @bind="_heightMm" @bind:event="oninput"
+                               @onchange="UpdateLabelSizeMmAsync" min="10" max="500" step="0.5" />
                     </div>
+                </div>
+
+                <div class="vr mx-2"></div>
+
+                <div class="d-flex align-items-center gap-2">
+                    <select class="form-select form-select-sm" style="width: 105px;" @bind="_printerDpi" @bind:after="UpdateLabelSizeMmAsync" title="@Translation.GetString("templates.render.dpi_title")">
+                        <option value="203">203 DPI</option>
+                        <option value="300">300 DPI</option>
+                        <option value="600">600 DPI</option>
+                    </select>
                 </div>
             </div>
         </div>
 
-        <!-- Layout Éditeur + Prop Inspector -->
         <div class="row">
-            <!-- Zone Canvas -->
             <div class="col-lg-8 mb-4">
                 <div class="card shadow-sm h-100">
                     <div class="card-header bg-light d-flex justify-content-between align-items-center">
                         <strong>@Translation.GetString("templates.render.preview")</strong>
-                        <!-- Alignements rapides globaux pour l'objet sélectionné -->
                         @if (!string.IsNullOrEmpty(_selectedObjectType))
                         {
                             <div class="btn-group btn-group-sm" role="group">
                                 <button class="btn btn-outline-secondary" @onclick="CenterHorizontal"
-                                        title="Centrer horizontalement">
-                                    <i class="bi bi-align-center"></i> Centrer H
+                                        title="@Translation.GetString("templates.render.center_h")">
+                                    <i class="bi bi-align-center"></i> @Translation.GetString("templates.render.center_h")
                                 </button>
                                 <button class="btn btn-outline-secondary" @onclick="CenterVertical"
-                                        title="Centrer verticalement">
-                                    <i class="bi bi-align-middle"></i> Centrer V
+                                        title="@Translation.GetString("templates.render.center_v")">
+                                    <i class="bi bi-align-middle"></i> @Translation.GetString("templates.render.center_v")
                                 </button>
                                 <button class="btn btn-outline-secondary text-danger" @onclick="DeleteSelectedElement"
-                                        title="Supprimer">
+                                        title="@Translation.GetString("common.delete")">
                                     <i class="bi bi-trash"></i>
                                 </button>
                             </div>
@@ -109,39 +116,39 @@
                     </div>
                     <div class="card-body d-flex justify-content-center align-items-center bg-white p-4 overflow-auto"
                          style="min-height: 400px;">
-                        <canvas id="label-canvas" class="border shadow-sm"></canvas>
+                        <div style="@GetLabelDisplayStyle()">
+                            <canvas id="label-canvas" class="border shadow-sm" style="@GetCanvasInnerStyle()"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Prop Inspector (Panneau de propriétés contextuel) -->
             <div class="col-lg-4 mb-4">
                 <div class="card shadow-sm h-100">
                     <div class="card-header bg-light">
-                        <i class="bi bi-sliders"></i> <strong>Propriétés de l'élément</strong>
+                        <i class="bi bi-sliders"></i> <strong>@Translation.GetString("templates.render.properties_title")</strong>
                     </div>
                     <div class="card-body">
                         @if (string.IsNullOrEmpty(_selectedObjectType))
                         {
                             <div class="text-muted text-center my-5 py-5">
                                 <i class="bi bi-cursor fs-1 d-block mb-2 text-secondary"></i>
-                                Sélectionne un élément sur l'étiquette pour modifier ses propriétés.
+                                @Translation.GetString("templates.render.select_element_hint")
                             </div>
                         }
                         else
                         {
-                            <!-- PROPRIÉTÉS COMMUNES : Calques & Inversion -->
                             <div class="mb-3">
-                                <label class="form-label small text-muted fw-bold">Ordre et Apparence</label>
+                                <label class="form-label small text-muted fw-bold">@Translation.GetString("templates.render.layer_appearance")</label>
                                 <div class="d-flex gap-2">
                                     <button class="btn btn-outline-secondary btn-sm flex-fill" @onclick="BringForwardElement">
-                                        <i class="bi bi-layers"></i> Avancer
+                                        <i class="bi bi-layers"></i> @Translation.GetString("templates.render.bring_forward")
                                     </button>
                                     <button class="btn btn-outline-secondary btn-sm flex-fill" @onclick="SendBackwardsElement">
-                                        <i class="bi bi-layers-half"></i> Reculer
+                                        <i class="bi bi-layers-half"></i> @Translation.GetString("templates.render.send_backwards")
                                     </button>
                                     <button class="btn btn-outline-secondary btn-sm" @onclick="InvertSelectedElement"
-                                            title="Inverser / Négatif">
+                                            title="@Translation.GetString("templates.render.invert")">
                                         <i class="bi bi-circle-half"></i>
                                     </button>
                                 </div>
@@ -149,74 +156,77 @@
 
                             <hr />
 
-                            <!-- PROPRIÉTÉS SPÉCIFIQUES : TEXTE / TEXT-RECTANGLE -->
                             @if (_selectedObjectType == "textbox" || _selectedObjectType == "i-text" || _selectedObjectType ==
-  "text" || _selectedObjectType == "text-rectangle" || _selectedObjectType == "group")
+                                "text" || _selectedObjectType == "text-rectangle" || _selectedObjectType == "group")
                             {
                                 <div class="mb-3">
-                                    <label class="form-label small text-muted fw-bold">Police de caractères</label>
+                                    <label class="form-label small text-muted fw-bold">@Translation.GetString("templates.render.font_family")</label>
                                     <select class="form-select form-select-sm" @onchange="ChangeFontFamily">
-                                        <option value="Inter, sans-serif">Inter (Moderne)</option>
-                                        <option value="Lora, serif">Lora (Élégant)</option>
-                                        <option value="JetBrains Mono, monospace">JetBrains Mono (Technique)</option>
-                                        <option value="Share Tech Mono, monospace">Share Tech Mono (ZPL)</option>
+                                        <option value="Inter, sans-serif">Inter</option>
+                                        <option value="Lora, serif">Lora</option>
+                                        <option value="JetBrains Mono, monospace">JetBrains Mono</option>
+                                        <option value="Share Tech Mono, monospace">Share Tech Mono</option>
                                     </select>
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label small text-muted fw-bold">Styles de texte</label>
+                                    <label class="form-label small text-muted fw-bold">@Translation.GetString("templates.render.text_styles")</label>
                                     <div class="btn-group w-100 btn-group-sm" role="group">
                                         <button type="button" class="btn btn-outline-secondary" @onclick="ToggleBold"><i
                                             class="bi bi-type-bold"></i></button>
-                                            <button type="button" class="btn btn-outline-secondary" @onclick="ToggleItalic"><i
-                                                class="bi bi-type-italic"></i></button>
-                                                <button type="button" class="btn btn-outline-secondary" @onclick="ToggleUnderline"><i
-                                                    class="bi bi-type-underline"></i></button>
-                                                    <button type="button" class="btn btn-outline-secondary" @onclick="ToggleLinethrough"><i
-                                                        class="bi bi-type-strikethrough"></i></button>
-                                                    </div>
-                                                </div>
-
-                                                <div class="mb-3">
-                                                    <button class="btn btn-outline-dark btn-sm w-100" @onclick="ToggleTextRectangle">
-                                                        <i class="bi bi-square-fill"></i> Basculer le rectangle de fond
-                                                    </button>
-                                                </div>
-                                            }
-
-                                            <!-- PROPRIÉTÉS SPÉCIFIQUES : RECTANGLE -->
-                                            @if (_selectedObjectType == "rect")
-                                            {
-                                                <div class="mb-3">
-                                                    <label class="form-label small text-muted fw-bold">Rayon des coins arrondis (px)</label>
-                                                    <div class="btn-group w-100 btn-group-sm" role="group">
-                                                        <button type="button" class="btn btn-outline-secondary"
-                                                                @onclick="() => ChangeCornerRadiusValue(0)">0</button>
-                                                        <button type="button" class="btn btn-outline-secondary"
-                                                                @onclick="() => ChangeCornerRadiusValue(4)">4</button>
-                                                        <button type="button" class="btn btn-outline-secondary"
-                                                                @onclick="() => ChangeCornerRadiusValue(8)">8</button>
-                                                        <button type="button" class="btn btn-outline-secondary"
-                                                                @onclick="() => ChangeCornerRadiusValue(16)">16</button>
-                                                    </div>
-                                                </div>
-                                            }
-
-                                            <!-- PROPRIÉTÉS SPÉCIFIQUES : IMAGE / CODE-BARRES / QR -->
-                                            @if (_selectedObjectType == "image")
-                                            {
-                                                <div class="alert alert-light border small text-muted mb-0">
-                                                    <i class="bi bi-info-circle"></i> Redimensionnez l'image directement depuis les poignées du
-                                                    cadre ou inversez ses couleurs avec le bouton de contraste.
-                                                </div>
-                                            }
-                                        }
+                                        <button type="button" class="btn btn-outline-secondary" @onclick="ToggleItalic"><i
+                                            class="bi bi-type-italic"></i></button>
+                                        <button type="button" class="btn btn-outline-secondary" @onclick="ToggleUnderline"><i
+                                            class="bi bi-type-underline"></i></button>
+                                        <button type="button" class="btn btn-outline-secondary" @onclick="ToggleLinethrough"><i
+                                            class="bi bi-type-strikethrough"></i></button>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    }
+
+                                <div class="mb-3">
+                                    <button class="btn btn-outline-dark btn-sm w-100" @onclick="ToggleTextRectangle">
+                                        <i class="bi bi-square-fill"></i> @Translation.GetString("templates.render.toggle_text_rect")
+                                    </button>
+                                </div>
+                            }
+
+                            @if (_selectedObjectType == "rect")
+                            {
+                                <div class="mb-3">
+                                    <label class="form-label small text-muted fw-bold">@Translation.GetString("templates.render.corner_radius")</label>
+                                    <div class="btn-group w-100 btn-group-sm" role="group">
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                @onclick="() => ChangeCornerRadiusValue(0)">0</button>
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                @onclick="() => ChangeCornerRadiusValue(4)">4</button>
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                @onclick="() => ChangeCornerRadiusValue(8)">8</button>
+                                        <button type="button" class="btn btn-outline-secondary"
+                                                @onclick="() => ChangeCornerRadiusValue(16)">16</button>
+                                    </div>
+                                </div>
+                            }
+
+                            @if (_selectedObjectType == "line")
+                            {
+                                <div class="alert alert-light border small text-muted mb-0">
+                                    <i class="bi bi-info-circle"></i> @Translation.GetString("templates.render.line_hint")
+                                </div>
+                            }
+
+                            @if (_selectedObjectType == "image")
+                            {
+                                <div class="alert alert-light border small text-muted mb-0">
+                                    <i class="bi bi-info-circle"></i> @Translation.GetString("templates.render.image_hint")
+                                </div>
+                            }
+                        }
+                    </div>
                 </div>
+            </div>
+        </div>
+    }
+</div>
 
 @code {
     [Parameter] public int Id { get; set; }
@@ -229,9 +239,13 @@
     private IJSObjectReference? _editorInstance;
     private bool _isEditorInitialized = false;
 
-    private int _canvasWidth = 500;
-    private int _canvasHeight = 300;
+    private double _widthMm = 100.0;
+    private double _heightMm = 150.0;
+    private int _printerDpi = 203;
     private string? _selectedObjectType;
+
+    private int CanvasWidthDots => Math.Max(1, (int)Math.Round(_widthMm * _printerDpi / 25.4));
+    private int CanvasHeightDots => Math.Max(1, (int)Math.Round(_heightMm * _printerDpi / 25.4));
 
     protected override async Task OnInitializedAsync()
     {
@@ -249,8 +263,10 @@
             try
             {
                 _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/fabricLoader.js");
+                var initialJson = SyncDimensionsToJson(_template.JsonData);
+                _template.JsonData = initialJson;
                 _editorInstance = await _module.InvokeAsync<IJSObjectReference>(
-                    "initEditor", _dotNetRef, "label-canvas", _template.JsonData, _canvasWidth, _canvasHeight);
+                    "initEditor", _dotNetRef, "label-canvas", initialJson, CanvasWidthDots, CanvasHeightDots);
             }
             catch (Exception ex)
             {
@@ -272,8 +288,29 @@
                 {
                     using var doc = System.Text.Json.JsonDocument.Parse(_template.JsonData);
                     var root = doc.RootElement;
-                    if (root.TryGetProperty("canvasWidth", out var wEl) && wEl.TryGetInt32(out int w)) _canvasWidth = w;
-                    if (root.TryGetProperty("canvasHeight", out var hEl) && hEl.TryGetInt32(out int h)) _canvasHeight = h;
+
+                    if (root.TryGetProperty("printerDpi", out var dpiEl) && dpiEl.TryGetInt32(out int dpi) && dpi > 0)
+                    {
+                        _printerDpi = dpi;
+                    }
+
+                    if (root.TryGetProperty("widthMm", out var wMmEl) && wMmEl.TryGetDouble(out double wMm) && wMm > 0)
+                    {
+                        _widthMm = wMm;
+                    }
+                    else if (root.TryGetProperty("canvasWidth", out var wEl) && wEl.TryGetInt32(out int w) && w > 0)
+                    {
+                        _widthMm = Math.Round(w * 25.4 / _printerDpi, 2);
+                    }
+
+                    if (root.TryGetProperty("heightMm", out var hMmEl) && hMmEl.TryGetDouble(out double hMm) && hMm > 0)
+                    {
+                        _heightMm = hMm;
+                    }
+                    else if (root.TryGetProperty("canvasHeight", out var hEl) && hEl.TryGetInt32(out int h) && h > 0)
+                    {
+                        _heightMm = Math.Round(h * 25.4 / _printerDpi, 2);
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -297,6 +334,34 @@
         }
     }
 
+    private string SyncDimensionsToJson(string? rawJson)
+    {
+        var normalizedWidthMm = Math.Round(Math.Max(1.0, _widthMm), 2);
+        var normalizedHeightMm = Math.Round(Math.Max(1.0, _heightMm), 2);
+
+        System.Text.Json.Nodes.JsonObject rootObj;
+        if (!string.IsNullOrWhiteSpace(rawJson))
+        {
+            try
+            {
+                rootObj = System.Text.Json.Nodes.JsonNode.Parse(rawJson)?.AsObject() ?? new System.Text.Json.Nodes.JsonObject();
+            }
+            catch
+            {
+                rootObj = new System.Text.Json.Nodes.JsonObject();
+            }
+        }
+        else
+        {
+            rootObj = new System.Text.Json.Nodes.JsonObject();
+        }
+
+        rootObj["widthMm"] = normalizedWidthMm;
+        rootObj["heightMm"] = normalizedHeightMm;
+        rootObj["printerDpi"] = _printerDpi;
+        return rootObj.ToJsonString();
+    }
+
     [JSInvokable]
     public void OnObjectSelected(string? type)
     {
@@ -309,11 +374,29 @@
     {
         if (_template != null)
         {
-            _template.JsonData = json;
+            _template.JsonData = SyncDimensionsToJson(json);
         }
     }
 
-    private async Task AddTextElement() => await CallEditor("addText", "Nouveau texte");
+    private string GetLabelDisplayStyle()
+    {
+        return $"width: {_widthMm.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}mm; " +
+               $"height: {_heightMm.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture)}mm; " +
+               "display: inline-block; overflow: hidden;";
+    }
+
+    private string GetCanvasInnerStyle()
+    {
+        var scaleX = (_widthMm * 96.0 / 25.4) / CanvasWidthDots;
+        var scaleY = (_heightMm * 96.0 / 25.4) / CanvasHeightDots;
+
+        return $"transform: scale({scaleX.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture)}, " +
+               $"{scaleY.ToString("0.####", System.Globalization.CultureInfo.InvariantCulture)}); " +
+               "transform-origin: top left;";
+    }
+
+    private async Task AddTextElement() => await CallEditor("addText", Translation.GetString("templates.render.default_text"));
+    private async Task AddLineElement() => await CallEditor("addLine");
     private async Task AddRectangleElement() => await CallEditor("addRectangle");
     private async Task AddBarcodeElement() => await CallEditor("addBarcode", "12345678");
     private async Task AddQrCodeElement() => await CallEditor("addQrCode", "https://fastlabel");
@@ -327,7 +410,7 @@
     }
 
     private async Task TriggerImageUpload() => await JS.InvokeVoidAsync("eval",
-"document.getElementById('imageFileInput').click();");
+        "document.getElementById('imageFileInput').click();");
 
     private async Task HandleImageSelected(InputFileChangeEventArgs e)
     {
@@ -354,7 +437,7 @@
     }
 
     private async Task ChangeFontFamily(ChangeEventArgs e) => await CallEditor("setFontFamily", e.Value?.ToString() ??
-"Inter");
+        "Inter");
     private async Task ToggleBold() => await CallEditor("toggleBold");
     private async Task ToggleItalic() => await CallEditor("toggleItalic");
     private async Task ToggleUnderline() => await CallEditor("toggleUnderline");
@@ -367,7 +450,16 @@
     private async Task CenterHorizontal() => await CallEditor("centerHorizontal");
     private async Task CenterVertical() => await CallEditor("centerVertical");
     private async Task CenterBoth() => await CallEditor("centerBoth");
-    private async Task UpdateCanvasSize() => await CallEditor("resizeCanvas", _canvasWidth, _canvasHeight);
+
+    private async Task UpdateLabelSizeMmAsync()
+    {
+        if (_template != null)
+        {
+            _template.JsonData = SyncDimensionsToJson(_template.JsonData);
+        }
+        await CallEditor("resizeCanvas", CanvasWidthDots, CanvasHeightDots);
+    }
+
     private async Task DeleteSelectedElement() => await CallEditor("deleteSelected");
 
     private async Task SaveTemplateAsync()
@@ -376,7 +468,18 @@
         if (_editorInstance != null)
         {
             var json = await _editorInstance.InvokeAsync<string>("save");
-            if (!string.IsNullOrEmpty(json)) _template.JsonData = json;
+            if (!string.IsNullOrEmpty(json))
+            {
+                _template.JsonData = SyncDimensionsToJson(json);
+            }
+            else
+            {
+                _template.JsonData = SyncDimensionsToJson(_template.JsonData);
+            }
+        }
+        else
+        {
+            _template.JsonData = SyncDimensionsToJson(_template.JsonData);
         }
 
         _isSaving = true;

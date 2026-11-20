@@ -395,8 +395,8 @@ public static class DbHelpers
         var testPrinter = await CreatePrinter(db, user.Id, printerName);
         db.Printers.Add(testPrinter);
 
-        var demonstrationlabel = "{}"; //TODO
-        var testlabel = await CreateTemplate(db, user.Id, templateName, demonstrationlabel);
+        var demoTemplate = FileHelpers.GetFile("Embedded/demo-label.json");
+        var testlabel = await CreateTemplate(db, user.Id, templateName, demoTemplate);
         db.Templates.Add(testlabel);
 
         await db.SaveChangesAsync();
