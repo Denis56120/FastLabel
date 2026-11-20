@@ -495,7 +495,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             ["printers.ip"] = ("IP Address", new() { { "fr", "Adresse IP" }, { "en", "IP Address" } }),
             ["printers.port"] = ("Port", new() { { "fr", "Port" }, { "en", "Port" } }),
 
-            ["template.activation.name"] = ("My first label", new() { { "fr", "Ma première étiquette" }, { "en", "My first label" } }),
+            ["templates.activation.name"] = ("My first label", new() { { "fr", "Ma première étiquette" }, { "en", "My first label" } }),
             ["templates.render.title"] = ("Label Renderer Editor", new() { { "fr", "Éditeur de rendu d'étiquette" }, { "en", "Label Renderer Editor" } }),
             ["templates.render.preview"] = ("Preview", new() { { "fr", "Prévisualisation" }, { "en", "Preview" } }),
             ["templates.edit_renderer"] = ("Edit Label Renderer", new() { { "fr", "Éditer le rendu de l'étiquette" }, { "en", "Edit Label Renderer" } }),
@@ -581,6 +581,9 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             ["error.not_found_title"] = ("Page not found", new() { { "fr", "Page non trouvée" }, { "en", "Page not found" } }),
             ["error.not_found_message"] = ("Sorry, the page you are looking for does not exist.", new() { { "fr", "Désolé, la page que vous recherchez n'existe pas." }, { "en", "Sorry, the page you are looking for does not exist." } }),
 
+            ["auth.success.logout"] = ("Logged out successfully.", new() { { "fr", "Déconnexion réussie." }, { "en", "Logged out successfully." } }),
+            ["auth.success.forgot_password"] = ("If an account matches this email, a recovery link has been sent.", new() { { "fr", "Si un compte correspond à cet e-mail, un lien de réinitialisation a été envoyé." }, { "en", "If an account matches this email, a recovery link has been sent." } }),
+            ["auth.success.registered_check_email"] = ("Registration successful. Please check your email to activate your account.", new() { { "fr", "Inscription réussie. Veuillez vérifier votre e-mail pour activer votre compte." }, { "en", "Registration successful. Please check your email to activate your account." } }),
             ["auth.submitting"] = ("Submitting...", new() { { "fr", "En cours..." }, { "en", "Submitting..." } }),
             ["auth.processing"] = ("Processing...", new() { { "fr", "Traitement en cours..." }, { "en", "Processing..." } }),
             ["auth.success.email_sent"] = ("Recovery email sent successfully.", new() { { "fr", "Email de récupération envoyé avec succès." }, { "en", "Recovery email sent successfully." } }),
@@ -688,6 +691,8 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             ["label.error.description_max_length"] = ("Description cannot exceed 500 characters", new() { { "fr", "La description ne peut pas dépasser 500 caractères" }, { "en", "Description cannot exceed 500 characters" } }),
 
             // 4. Endpoints
+            ["reseller.error.stripe_update_failed"] = ("Failed to update Stripe subscription.", new() { { "fr", "Échec de la mise à jour de l'abonnement Stripe." }, { "en", "Failed to update Stripe subscription." } }),
+
             ["smtp.error.server_missing"] = ("SMTP server is missing", new() { { "fr", "Le serveur SMTP est manquant" }, { "en", "SMTP server is missing" } }),
             ["smtp.error.port_invalid"] = ("Invalid SMTP port", new() { { "fr", "Port SMTP invalide" }, { "en", "Invalid SMTP port" } }),
             ["smtp.error.sender_missing"] = ("SMTP sender email is missing", new() { { "fr", "L'adresse expéditeur SMTP est manquante" }, { "en", "SMTP sender email is missing" } }),
@@ -703,6 +708,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             ["admin.smtp.error.email_invalid"] = ("Invalid email address", new() { { "fr", "Adresse e-mail invalide" }, { "en", "Invalid email address" } }),
 
             ["common.error.no_ids_selected"] = ("Please select at least one item.", new() { { "fr", "Veuillez sélectionner au moins un élément." }, { "en", "Please select at least one item." } }),
+            ["common.error.empty_selection"] = ("No items selected.", new() { { "fr", "Aucun élément sélectionné." }, { "en", "No items selected." } }),
 
             ["stripe.webhook.error.invalid_signature"] = ("Invalid Stripe webhook signature.", new() { { "fr", "Signature du webhook Stripe invalide." }, { "en", "Invalid Stripe webhook signature." } }),
             ["stripe.error.invalid_interval"] = ("Invalid billing interval.", new() { { "fr", "Intervalle de facturation invalide." }, { "en", "Invalid billing interval." } }),
@@ -723,6 +729,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
 
             ["user.error.email_already_taken"] = ("This email is already in use", new() { { "fr", "Cet e-mail est déjà utilisé" }, { "en", "This email is already in use" } }),
             ["user.error.not_found"] = ("User not found", new() { { "fr", "Utilisateur introuvable" }, { "en", "User not found" } }),
+            ["user.error.language_not_found"] = ("Selected language not found.", new() { { "fr", "Langue sélectionnée introuvable." }, { "en", "Selected language not found." } }),
 
             ["template.error.name_required"] = ("Template name is required", new() { { "fr", "Le nom du modèle est requis" }, { "en", "Template name is required" } }),
             ["template.error.name_max_length"] = ("Template name cannot exceed 150 characters", new() { { "fr", "Le nom du modèle ne peut pas dépasser 150 caractères" }, { "en", "Template name cannot exceed 150 characters" } }),

@@ -90,7 +90,7 @@
             <InputText class="form-control" @bind-Value="user.Email" />
         </div>
         <div class="mb-3">
-            <label class="form-label">@Translation.GetString("users.password")</label>
+            <label class="form-label">@Translation.GetString("common.password")</label>
             <div class="input-group">
                 <InputText type="@(_showPassword ? "text" : "password")" class="form-control" @bind-Value="user.Password" />
                 <button type="button" class="btn btn-outline-secondary" style="border-color: #ced4da;" @onclick="TogglePasswordVisibility">

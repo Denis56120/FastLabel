@@ -104,7 +104,7 @@ public static class ClientEndpoints
                 catch (Exception ex)
                 {
                     AppLog.Error(ex);
-                    return Results.BadRequest(new ErrorResponseDto { Message = "client.error.stripe_update_failed" });
+                    return Results.BadRequest(new ErrorResponseDto { Message = "reseller.error.stripe_update_failed" });
                 }
             }
 
@@ -161,7 +161,7 @@ public static class ClientEndpoints
                 catch (Exception ex)
                 {
                     AppLog.Error(ex);
-                    return Results.BadRequest(new ErrorResponseDto { Message = "client.error.stripe_update_failed" });
+                    return Results.BadRequest(new ErrorResponseDto { Message = "reseller.error.stripe_update_failed" });
                 }
             }
 
@@ -209,7 +209,7 @@ public static class ClientEndpoints
                 catch (Exception ex)
                 {
                     AppLog.Error(ex);
-                    return Results.BadRequest(new ErrorResponseDto { Message = "client.error.stripe_update_failed" });
+                    return Results.BadRequest(new ErrorResponseDto { Message = "reseller.error.stripe_update_failed" });
                 }
             }
 

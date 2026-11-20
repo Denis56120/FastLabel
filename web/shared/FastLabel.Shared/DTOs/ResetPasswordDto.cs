@@ -10,6 +10,6 @@ public class ResetPasswordDto
     public string Token { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "auth.error.password_required")]
-    [MinLength(8, ErrorMessage = "Password must be at least 8 characters long")]
+    [MinLength(8, ErrorMessage = "auth.error.password_min_length")]
     public string NewPassword { get; set; } = string.Empty;
 }
