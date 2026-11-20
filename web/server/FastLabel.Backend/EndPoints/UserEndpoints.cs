@@ -27,7 +27,6 @@ public static class UserEndpoints
             httpContext.SetLanguageCookie(userLangCode);
 
             var userDto = await db.Users
-                .Include(u => u.Reseller)
                 .Where(u => u.Id == userId)
                 .Select(u => new UserDto
                 {
@@ -63,11 +62,11 @@ public static class UserEndpoints
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
-            var user = await DbHelpers.GetUserByIdAsync(db, userId);  
+            var user = await DbHelpers.GetUserByIdAsync(db, userId);
             if (user == null)
                 return Results.NotFound(new ErrorResponseDto { Message = "user.error.not_found" });
 
-            var language = await DbHelpers.GetLanguageByIdAsync(db, updatedDto.LanguageId); 
+            var language = await DbHelpers.GetLanguageByIdAsync(db, updatedDto.LanguageId);
             if (language == null)
             {
                 return Results.BadRequest(new ErrorResponseDto { Message = "user.error.language_not_found" });
@@ -130,22 +129,17 @@ public static class UserEndpoints
 
             httpContext.SetLanguageCookie(language.Code);
 
+            if (emailChanged)
+            {
+                await httpContext.SignOutAsync();
+            }
+
             return Results.Ok(new { emailChanged });
         }).RequireAuthorization();
 
         var adminGroup = routes.MapGroup("/api/users").RequireAuthorization("AdminOnly");
 
-        adminGroup.MapGet("/", async (
-            int page, 
-            int pageSize, 
-            string? sortBy, 
-            bool? sortAscending, 
-            string? filterByName,
-            string? filterByEmail,
-            string? filterByReseller,
-            AppDbContext db, 
-            ClaimsPrincipal claimsUser, 
-            HttpContext httpContext) =>
+        adminGroup.MapGet("/", async (int page, int pageSize, string? sortBy, bool? sortAscending, string? filterByName, string? filterByEmail, string? filterByReseller, AppDbContext db, ClaimsPrincipal claimsUser, HttpContext httpContext) =>
         {
             var (adminId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (adminId == 0) return Results.Unauthorized();
@@ -213,7 +207,7 @@ public static class UserEndpoints
                     "resellername" => ascending ? items.OrderBy(x => x.ResellerName, naturalComparer) : items.OrderByDescending(x => x.ResellerName, naturalComparer),
                     "basicstatusname" => ascending ? items.OrderBy(x => x.BasicStatusName, naturalComparer) : items.OrderByDescending(x => x.BasicStatusName, naturalComparer),
                     "createdat" => ascending ? items.OrderBy(x => x.CreatedAt) : items.OrderByDescending(x => x.CreatedAt),
-                    _ => items.OrderBy(x => x.Id) 
+                    _ => items.OrderBy(x => x.Id)
                 }
             );
 
@@ -228,13 +222,7 @@ public static class UserEndpoints
             var (languageId, language) = await DbHelpers.GetUserLanguageByUserIdAsync(httpContext, db, adminId);
 
             var dto = await db.Users
-                .Include(u => u.BasicStatus)
-                    .ThenInclude(s => s.Name)
-                        .ThenInclude(n => n.Translations)
-                            .ThenInclude(tr => tr.Language)
-                .Include(u => u.Reseller)
                 .Where(u => u.Id == id)
-                .OrderBy(u => u.Id)
                 .Select(u => new UserDto
                 {
                     Id = u.Id,
@@ -268,11 +256,25 @@ public static class UserEndpoints
                 return errorResult!;
             }
 
-            var language = await DbHelpers.GetLanguageByIdAsync(db, dto.LanguageId); 
+            var language = await DbHelpers.GetLanguageByIdAsync(db, dto.LanguageId);
             if (language == null)
             {
                 return Results.BadRequest(new ErrorResponseDto { Message = "user.error.language_not_found" });
             }
+
+            bool emailExists = await db.Users.AnyAsync(u => u.Email == dto.Email);
+            if (emailExists)
+            {
+                return Results.BadRequest(new ErrorResponseDto { Message = "user.error.email_already_taken" });
+            }
+
+            var activeStatusId = await db.BasicStatuses
+                .Join(db.Texts, bs => bs.NameTextId, t => t.Id, (bs, t) => new { bs.Id, t.Tag })
+                .Where(x => x.Tag == "status.active")
+                .Select(x => (int?)x.Id)
+                .FirstOrDefaultAsync()
+                ?? await db.BasicStatuses.OrderBy(s => s.Id).Select(s => (int?)s.Id).FirstOrDefaultAsync()
+                ?? 1;
 
             var user = new User
             {
@@ -281,7 +283,7 @@ public static class UserEndpoints
                 IsAdmin = dto.IsAdmin,
                 IsReseller = dto.IsReseller,
                 LanguageId = dto.LanguageId,
-                BasicStatusId = 1,
+                BasicStatusId = activeStatusId,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -293,24 +295,44 @@ public static class UserEndpoints
             db.Users.Add(user);
             await db.SaveChangesAsync();
 
-            dto.Id = user.Id;
-            dto.Password = null;
-            return Results.Created($"/api/users/{user.Id}", dto);
+            var createdDto = new UserDto
+            {
+                Id = user.Id,
+                Name = user.Name,
+                Email = user.Email,
+                IsAdmin = user.IsAdmin,
+                IsReseller = user.IsReseller,
+                ResellerId = user.ResellerId,
+                LanguageId = user.LanguageId,
+                CreatedAt = user.CreatedAt
+            };
+
+            return Results.Created($"/api/users/{user.Id}", createdDto);
         });
 
-        adminGroup.MapPut("/{id:int}", async (int id, UserDto updatedDto, AppDbContext db, IPasswordHasher<User> passwordHasher) =>
+        adminGroup.MapPut("/{id:int}", async (int id, UserDto updatedDto, AppDbContext db, IPasswordHasher<User> passwordHasher, ClaimsPrincipal claimsUser, HttpContext httpContext) =>
         {
             if (!ValidationHelpers.TryValidateModel(updatedDto, out var errorResult))
             {
                 return errorResult!;
             }
+
+            var (adminId, _, _) = claimsUser.GetUserInfo();
+            if (adminId == 0) return Results.Unauthorized();
+
             var user = await DbHelpers.GetUserByIdAsync(db, id);
             if (user == null) return Results.NotFound(new ErrorResponseDto { Message = "user.error.not_found" });
 
-            var language = await DbHelpers.GetLanguageByIdAsync(db, updatedDto.LanguageId); 
+            var language = await DbHelpers.GetLanguageByIdAsync(db, updatedDto.LanguageId);
             if (language == null)
             {
                 return Results.BadRequest(new ErrorResponseDto { Message = "user.error.language_not_found" });
+            }
+
+            bool emailExists = await db.Users.AnyAsync(u => u.Email == updatedDto.Email && u.Id != id);
+            if (emailExists)
+            {
+                return Results.BadRequest(new ErrorResponseDto { Message = "user.error.email_already_taken" });
             }
 
             user.Name = updatedDto.Name;
@@ -325,7 +347,33 @@ public static class UserEndpoints
             }
 
             await db.SaveChangesAsync();
-            return Results.Ok(user);
+
+            var (_, langCode) = await DbHelpers.GetUserLanguageByUserIdAsync(httpContext, db, adminId);
+
+            var responseDto = await db.Users
+                .Where(u => u.Id == id)
+                .Select(u => new UserDto
+                {
+                    Id = u.Id,
+                    Name = u.Name,
+                    Email = u.Email,
+                    IsAdmin = u.IsAdmin,
+                    IsReseller = u.IsReseller,
+                    ResellerId = u.ResellerId,
+                    ResellerName = u.Reseller != null ? u.Reseller.Name : null,
+                    LanguageId = u.LanguageId,
+                    BasicStatusName = u.BasicStatus != null && u.BasicStatus.Name != null
+                        ? (u.BasicStatus.Name.Translations
+                            .Where(tr => tr.Language.Code == langCode)
+                            .Select(tr => tr.TranslatedValue)
+                            .FirstOrDefault()
+                        ?? u.BasicStatus.Name.DefaultTranslation)
+                        : string.Empty,
+                    CreatedAt = u.CreatedAt
+                })
+                .FirstOrDefaultAsync();
+
+            return Results.Ok(responseDto);
         });
 
         adminGroup.MapDelete("/{id:int}", async (int id, AppDbContext db) =>
@@ -336,6 +384,29 @@ public static class UserEndpoints
             db.Users.Remove(user);
             await db.SaveChangesAsync();
             return Results.NoContent();
+        });
+
+        adminGroup.MapPost("/delete-batch", async (List<int>? ids, AppDbContext db) =>
+        {
+            if (ids == null || ids.Count == 0)
+            {
+                return Results.BadRequest(new ErrorResponseDto { Message = "common.error.no_ids_selected" });
+            }
+
+            var distinctIds = ids.Distinct().ToList();
+            var users = await db.Users
+                .Where(u => distinctIds.Contains(u.Id))
+                .ToListAsync();
+
+            if (users.Count == 0)
+            {
+                return Results.NotFound(new ErrorResponseDto { Message = "user.error.not_found" });
+            }
+
+            db.Users.RemoveRange(users);
+            await db.SaveChangesAsync();
+
+            return Results.Ok(new { deletedCount = users.Count });
         });
     }
 }

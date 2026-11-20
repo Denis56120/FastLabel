@@ -7,15 +7,15 @@ public static class TemplateEndpoints
         var group = routes.MapGroup("/api/templates").RequireAuthorization();
 
         group.MapGet("/", async (
-            int page, 
-            int pageSize, 
-            string? sortBy, 
-            bool? sortAscending, 
+            int page,
+            int pageSize,
+            string? sortBy,
+            bool? sortAscending,
             string? filterByUser,
             string? filterByName,
             string? filterByStatus,
-            AppDbContext db, 
-            ClaimsPrincipal claimsUser, 
+            AppDbContext db,
+            ClaimsPrincipal claimsUser,
             HttpContext httpContext) =>
         {
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
@@ -71,12 +71,12 @@ public static class TemplateEndpoints
                 {
                     Id = t.Id,
                     Name = t.Name ?? string.Empty,
-                    BasicStatusName = t.BasicStatus != null && t.BasicStatus.Name != null 
+                    BasicStatusName = t.BasicStatus != null && t.BasicStatus.Name != null
                         ? (t.BasicStatus.Name.Translations
                             .Where(tr => tr.Language.Code == language)
                             .Select(tr => tr.TranslatedValue)
-                            .FirstOrDefault() 
-                           ?? t.BasicStatus.Name.DefaultTranslation) 
+                            .FirstOrDefault()
+                           ?? t.BasicStatus.Name.DefaultTranslation)
                         : string.Empty,
                     UserName = t.User != null ? t.User.Name : string.Empty,
                     JsonData = t.JsonData ?? string.Empty,
@@ -123,12 +123,12 @@ public static class TemplateEndpoints
                 {
                     Id = t.Id,
                     Name = t.Name ?? string.Empty,
-                    BasicStatusName = t.BasicStatus != null && t.BasicStatus.Name != null 
+                    BasicStatusName = t.BasicStatus != null && t.BasicStatus.Name != null
                         ? (t.BasicStatus.Name.Translations
                             .Where(tr => tr.Language.Code == language)
                             .Select(tr => tr.TranslatedValue)
-                            .FirstOrDefault() 
-                           ?? t.BasicStatus.Name.DefaultTranslation) 
+                            .FirstOrDefault()
+                           ?? t.BasicStatus.Name.DefaultTranslation)
                         : string.Empty,
                     UserName = t.User != null ? t.User.Name : string.Empty,
                     JsonData = t.JsonData ?? string.Empty,
@@ -137,8 +137,8 @@ public static class TemplateEndpoints
                 })
                 .FirstOrDefaultAsync();
 
-            return template is not null 
-                ? Results.Ok(template) 
+            return template is not null
+                ? Results.Ok(template)
                 : Results.NotFound(new ErrorResponseDto { Message = "template.error.not_found" });
         });
 
@@ -195,7 +195,7 @@ public static class TemplateEndpoints
             template.UpdatedAt = DateTime.UtcNow;
 
             await db.SaveChangesAsync();
-            
+
             updatedDto.CreatedAt = template.CreatedAt;
             updatedDto.UpdatedAt = template.UpdatedAt;
             return Results.Ok(updatedDto);
@@ -217,6 +217,36 @@ public static class TemplateEndpoints
             db.Templates.Remove(template);
             await db.SaveChangesAsync();
             return Results.NoContent();
+        });
+
+        group.MapPost("/delete-batch", async (List<int>? ids, AppDbContext db, ClaimsPrincipal claimsUser) =>
+        {
+            var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
+            if (userId == 0) return Results.Unauthorized();
+
+            if (ids == null || ids.Count == 0)
+            {
+                return Results.BadRequest(new ErrorResponseDto { Message = "common.error.no_ids_selected" });
+            }
+
+            var distinctIds = ids.Distinct().ToList();
+
+            var query = db.Templates.Where(t => distinctIds.Contains(t.Id));
+            if (!isAdmin)
+            {
+                query = query.Where(t => t.UserId == userId);
+            }
+
+            var templates = await query.ToListAsync();
+            if (templates.Count == 0)
+            {
+                return Results.NotFound(new ErrorResponseDto { Message = "template.error.not_found" });
+            }
+
+            db.Templates.RemoveRange(templates);
+            await db.SaveChangesAsync();
+
+            return Results.Ok(new { deletedCount = templates.Count });
         });
     }
 }

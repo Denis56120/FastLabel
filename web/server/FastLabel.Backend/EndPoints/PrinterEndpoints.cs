@@ -7,15 +7,15 @@ public static class PrinterEndpoints
         var group = routes.MapGroup("/api/printers").RequireAuthorization();
 
         group.MapGet("/", async (
-            int page, 
-            int pageSize, 
-            string? sortBy, 
-            bool? sortAscending, 
+            int page,
+            int pageSize,
+            string? sortBy,
+            bool? sortAscending,
             string? filterByUser,
             string? filterByName,
             string? filterByLocation,
-            AppDbContext db, 
-            ClaimsPrincipal claimsUser, 
+            AppDbContext db,
+            ClaimsPrincipal claimsUser,
             HttpContext httpContext) =>
         {
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
@@ -84,12 +84,12 @@ public static class PrinterEndpoints
                     ResolutionDpiId = p.ResolutionDpiId,
                     ResolutionDpiName = p.ResolutionDpi != null ? $"{p.ResolutionDpi.Value} DPI" : string.Empty,
                     BasicStatusId = p.BasicStatusId,
-                    StatusName = p.BasicStatus != null && p.BasicStatus.Name != null 
+                    StatusName = p.BasicStatus != null && p.BasicStatus.Name != null
                         ? (p.BasicStatus.Name.Translations
                             .Where(tr => tr.Language.Code == language)
                             .Select(tr => tr.TranslatedValue)
-                            .FirstOrDefault() 
-                           ?? p.BasicStatus.Name.DefaultTranslation) 
+                            .FirstOrDefault()
+                           ?? p.BasicStatus.Name.DefaultTranslation)
                         : string.Empty,
                     UserName = p.User != null ? p.User.Name : string.Empty,
                     CreatedAt = p.CreatedAt
@@ -155,20 +155,20 @@ public static class PrinterEndpoints
                     ResolutionDpiId = p.ResolutionDpiId,
                     ResolutionDpiName = p.ResolutionDpi != null ? $"{p.ResolutionDpi.Value} DPI" : string.Empty,
                     BasicStatusId = p.BasicStatusId,
-                    StatusName = p.BasicStatus != null && p.BasicStatus.Name != null 
+                    StatusName = p.BasicStatus != null && p.BasicStatus.Name != null
                         ? (p.BasicStatus.Name.Translations
                             .Where(tr => tr.Language.Code == language)
                             .Select(tr => tr.TranslatedValue)
-                            .FirstOrDefault() 
-                           ?? p.BasicStatus.Name.DefaultTranslation) 
+                            .FirstOrDefault()
+                           ?? p.BasicStatus.Name.DefaultTranslation)
                         : string.Empty,
                     UserName = p.User != null ? p.User.Name : string.Empty,
                     CreatedAt = p.CreatedAt
                 })
                 .FirstOrDefaultAsync();
 
-            return printer is not null 
-                ? Results.Ok(printer) 
+            return printer is not null
+                ? Results.Ok(printer)
                 : Results.NotFound(new ErrorResponseDto { Message = "printer.error.not_found" });
         });
 
@@ -182,11 +182,23 @@ public static class PrinterEndpoints
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
-            var protocol = await DbHelpers.GetProtocolByIdAsync(db, dto.ProtocolId); 
+            var protocol = await DbHelpers.GetProtocolByIdAsync(db, dto.ProtocolId);
             if (protocol == null) return Results.BadRequest(new ErrorResponseDto { Message = "printer.error.invalid_protocol" });
 
-            var resolutiondpi = await DbHelpers.GetResolutionDpiByIdAsync(db, dto.ResolutionDpiId); 
+            var resolutiondpi = await DbHelpers.GetResolutionDpiByIdAsync(db, dto.ResolutionDpiId);
             if (resolutiondpi == null) return Results.BadRequest(new ErrorResponseDto { Message = "printer.error.invalid_resolution" });
+
+            var activeStatusId = await db.BasicStatuses
+                .Join(db.Texts, bs => bs.NameTextId, t => t.Id, (bs, t) => new { bs.Id, t.Tag })
+                .Where(x => x.Tag == "status.active")
+                .Select(x => (int?)x.Id)
+                .FirstOrDefaultAsync()
+                ?? await db.BasicStatuses.OrderBy(s => s.Id).Select(s => (int?)s.Id).FirstOrDefaultAsync()
+                ?? 1;
+
+            var statusId = dto.BasicStatusId > 0
+                ? (await db.BasicStatuses.AnyAsync(s => s.Id == dto.BasicStatusId) ? dto.BasicStatusId : activeStatusId)
+                : activeStatusId;
 
             var printer = new Printer
             {
@@ -197,7 +209,7 @@ public static class PrinterEndpoints
                 Port = dto.Port,
                 ProtocolId = dto.ProtocolId,
                 ResolutionDpiId = dto.ResolutionDpiId,
-                BasicStatusId = dto.BasicStatusId > 0 ? dto.BasicStatusId : 1,
+                BasicStatusId = statusId,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -205,6 +217,7 @@ public static class PrinterEndpoints
             await db.SaveChangesAsync();
 
             dto.Id = printer.Id;
+            dto.BasicStatusId = printer.BasicStatusId;
             dto.CreatedAt = printer.CreatedAt;
             return Results.Created($"/api/printers/{printer.Id}", dto);
         });
@@ -219,7 +232,7 @@ public static class PrinterEndpoints
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
-            var printer = await DbHelpers.GetPrinterByIdAsync(db, id);  
+            var printer = await DbHelpers.GetPrinterByIdAsync(db, id);
             if (printer == null) return Results.NotFound(new ErrorResponseDto { Message = "printer.error.not_found" });
 
             if (!isAdmin && printer.UserId != userId)
@@ -227,10 +240,10 @@ public static class PrinterEndpoints
                 return Results.Forbid();
             }
 
-            var protocol = await DbHelpers.GetProtocolByIdAsync(db, updatedDto.ProtocolId); 
+            var protocol = await DbHelpers.GetProtocolByIdAsync(db, updatedDto.ProtocolId);
             if (protocol == null) return Results.BadRequest(new ErrorResponseDto { Message = "printer.error.invalid_protocol" });
 
-            var resolutiondpi = await DbHelpers.GetResolutionDpiByIdAsync(db, updatedDto.ResolutionDpiId); 
+            var resolutiondpi = await DbHelpers.GetResolutionDpiByIdAsync(db, updatedDto.ResolutionDpiId);
             if (resolutiondpi == null) return Results.BadRequest(new ErrorResponseDto { Message = "printer.error.invalid_resolution" });
 
             printer.Name = updatedDto.Name;
@@ -241,6 +254,10 @@ public static class PrinterEndpoints
             printer.ResolutionDpiId = updatedDto.ResolutionDpiId;
 
             await db.SaveChangesAsync();
+
+            updatedDto.Id = printer.Id;
+            updatedDto.BasicStatusId = printer.BasicStatusId;
+            updatedDto.CreatedAt = printer.CreatedAt;
             return Results.Ok(updatedDto);
         });
 
@@ -249,7 +266,7 @@ public static class PrinterEndpoints
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
-            var printer = await DbHelpers.GetPrinterByIdAsync(db, id);  
+            var printer = await DbHelpers.GetPrinterByIdAsync(db, id);
             if (printer == null) return Results.NotFound(new ErrorResponseDto { Message = "printer.error.not_found" });
 
             if (!isAdmin && printer.UserId != userId)
@@ -260,6 +277,36 @@ public static class PrinterEndpoints
             db.Printers.Remove(printer);
             await db.SaveChangesAsync();
             return Results.NoContent();
+        });
+
+        group.MapPost("/delete-batch", async (List<int>? ids, AppDbContext db, ClaimsPrincipal claimsUser) =>
+        {
+            var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
+            if (userId == 0) return Results.Unauthorized();
+
+            if (ids == null || ids.Count == 0)
+            {
+                return Results.BadRequest(new ErrorResponseDto { Message = "common.error.no_ids_selected" });
+            }
+
+            var distinctIds = ids.Distinct().ToList();
+
+            var query = db.Printers.Where(p => distinctIds.Contains(p.Id));
+            if (!isAdmin)
+            {
+                query = query.Where(p => p.UserId == userId);
+            }
+
+            var printers = await query.ToListAsync();
+            if (printers.Count == 0)
+            {
+                return Results.NotFound(new ErrorResponseDto { Message = "printer.error.not_found" });
+            }
+
+            db.Printers.RemoveRange(printers);
+            await db.SaveChangesAsync();
+
+            return Results.Ok(new { deletedCount = printers.Count });
         });
     }
 }

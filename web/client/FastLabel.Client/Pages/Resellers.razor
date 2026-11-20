@@ -7,6 +7,7 @@
                TItem="UserDto" 
                TKey="int"
                ApiEndpoint="api/reseller/clients"
+               DisableEdit="true"
                IdSelector="u => u.Id"
                CreateNewItem="@(() => new UserDto())"
                Title="@Translation.GetString("reseller.clients.title")"

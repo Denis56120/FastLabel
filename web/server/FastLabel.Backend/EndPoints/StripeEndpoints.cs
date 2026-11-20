@@ -6,8 +6,15 @@ public static class StripeEndpoints
 
     public static void MapStripeEndpoints(this IEndpointRouteBuilder routes)
     {
-        routes.MapPost("api/stripe/create-checkout-session", async ([FromBody] StripeDto request, AppDbContext db, IConfiguration configuration, ClaimsPrincipal claimsUser) =>
+        routes.MapPost("api/stripe/create-checkout-session", async (
+            [FromBody] StripeDto request,
+            AppDbContext db,
+            IConfiguration configuration,
+            ClaimsPrincipal claimsUser) =>
         {
+            var (userId, _, _) = claimsUser.GetUserInfo();
+            if (userId == 0) return Results.Unauthorized();
+
             if (string.IsNullOrWhiteSpace(request.BillingInterval) || !AllowedIntervals.Contains(request.BillingInterval))
             {
                 return Results.BadRequest(new ErrorResponseDto { Message = "stripe.error.invalid_interval" });
@@ -19,10 +26,9 @@ public static class StripeEndpoints
             }
 
             string normalizedCode = request.Plan.Trim().ToLowerInvariant();
-            string expectedTextTag = $"plan.{normalizedCode}.name";
 
-            var plan = await DbHelpers.GetPlanByTagAsync(db, expectedTextTag)
-                ?? await db.Plans.FirstOrDefaultAsync(p => p.Code.ToLower() == normalizedCode);
+            var plan = await db.Plans
+                .FirstOrDefaultAsync(p => p.Code.ToLower() == normalizedCode);
 
             if (plan == null)
             {
@@ -47,7 +53,6 @@ public static class StripeEndpoints
             }
 
             var clientUrl = ConfigurationHelpers.GetClientUrl(configuration);
-            var (userId, _, _) = claimsUser.GetUserInfo();
 
             var options = new Stripe.Checkout.SessionCreateOptions
             {
@@ -60,7 +65,7 @@ public static class StripeEndpoints
                     },
                 ],
                 Mode = "subscription",
-                ClientReferenceId = userId > 0 ? userId.ToString() : null,
+                ClientReferenceId = userId.ToString(),
                 SuccessUrl = $"{clientUrl}/dashboard/subscription/success?session_id={{CHECKOUT_SESSION_ID}}",
                 CancelUrl = $"{clientUrl}/dashboard/subscription/cancel",
             };
@@ -77,7 +82,7 @@ public static class StripeEndpoints
                 AppLog.Error(ex);
                 return Results.BadRequest(new ErrorResponseDto { Message = "stripe.error.checkout_failed" });
             }
-        });
+        }).RequireAuthorization();
 
         routes.MapPost("api/stripe/webhook", async (HttpRequest request, AppDbContext db, IConfiguration configuration) =>
         {
@@ -90,13 +95,18 @@ public static class StripeEndpoints
                 Stripe.StripeConfiguration.ApiKey = secretKey;
             }
 
+            var signatureHeader = request.Headers["Stripe-Signature"].FirstOrDefault();
+            if (string.IsNullOrWhiteSpace(webhookSecret) || string.IsNullOrWhiteSpace(signatureHeader))
+            {
+                var ex = new InvalidOperationException("Webhook Stripe rejeté : signature ou secret manquant.");
+                AppLog.Error(ex);
+                return Results.BadRequest(new ErrorResponseDto { Message = "stripe.webhook.error.invalid_signature" });
+            }
+
             Stripe.Event stripeEvent;
             try
             {
-                var signatureHeader = request.Headers["Stripe-Signature"].FirstOrDefault();
-                stripeEvent = !string.IsNullOrWhiteSpace(webhookSecret) && !string.IsNullOrWhiteSpace(signatureHeader)
-                    ? Stripe.EventUtility.ConstructEvent(json, signatureHeader, webhookSecret, throwOnApiVersionMismatch: false)
-                    : Stripe.EventUtility.ParseEvent(json, throwOnApiVersionMismatch: false);
+                stripeEvent = Stripe.EventUtility.ConstructEvent(json, signatureHeader, webhookSecret, throwOnApiVersionMismatch: false);
             }
             catch (Stripe.StripeException ex)
             {
@@ -173,7 +183,9 @@ public static class StripeEndpoints
                 return;
             }
 
-            var periodMonths = string.Equals(plan.Code, "yearly", StringComparison.OrdinalIgnoreCase) ? 12 : 1;
+            bool isYearly = !string.IsNullOrWhiteSpace(plan.StripeYearlyPriceId) &&
+                            string.Equals(plan.StripeYearlyPriceId, priceId, StringComparison.OrdinalIgnoreCase);
+            int periodMonths = isYearly ? 12 : 1;
 
             subscription = await DbHelpers.CreateSubscription(
                 db,

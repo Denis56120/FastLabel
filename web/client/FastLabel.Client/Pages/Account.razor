@@ -5,7 +5,6 @@
 @inject ApiClient ApiClient
 @inject ToastService ToastService
 @inject NavigationManager Navigation
-@inject AuthenticationStateProvider AuthStateProvider
 
 <div class="container mt-4 mb-5">
     <h2>@Translation.GetString("account.title")</h2>
@@ -46,8 +45,7 @@
                             </div>
 
                             <div class="mb-3">
-                                <label
-                                class="form-label text-muted">@Translation.GetString("account.language_label")</label>
+                                <label class="form-label text-muted">@Translation.GetString("account.language_label")</label>
                                 <InputSelect class="form-select" @bind-Value="_userModel.LanguageId">
                                     @if (_languages != null)
                                     {
@@ -224,26 +222,10 @@
             var (isSuccess, errorKey) = await ApiClient.PutAsync("api/users/me", _userModel);
             if (isSuccess)
             {
-                if (AuthStateProvider is CustomAuthenticationStateProvider customAuthStateProvider)
+                if (languageChanged)
                 {
-                    customAuthStateProvider.NotifyUserAuthentication();
-                }
-
-                if (languageChanged && _languages != null)
-                {
-                    var selectedLang = _languages.FirstOrDefault(l => l.Id == _userModel.LanguageId);
-                    if (selectedLang != null && !string.IsNullOrEmpty(selectedLang.Code))
-                    {
-                        try
-                        {
-                            await Translation.InitializeAsync();
-                        }
-                        catch (Exception ex)
-                        {
-                            AppLog.Error(ex);
-                            ToastService.ShowError(Translation.GetString("app.error.unknown"));
-                        }
-                    }
+                    await Translation.InitializeAsync();
+                    _originalLanguageId = _userModel.LanguageId;
                 }
 
                 ToastService.ShowSuccess(Translation.GetString("account.success.updated"));
@@ -251,6 +233,8 @@
                 if (emailChanged)
                 {
                     ToastService.ShowWarning(Translation.GetString("account.warning.email_changed_inactive"));
+                    Navigation.NavigateTo("/");
+                    return;
                 }
 
                 _userModel.Password = null;

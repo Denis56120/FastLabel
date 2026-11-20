@@ -1,8 +1,11 @@
 Règles strictes pour ce projet (FastLabel) :
-1. Toujours fournir les fichiers de code complets (jamais de bouts de code ni d'extraits tronqués).
-2. Interdiction absolue de mettre du texte en dur dans le front, les DTOs ou les endpoints : utiliser exclusivement des clés de traduction (ex: "templates.title").
+0. Commence chaque réponse par un 'Bonjour' si tu as connaissance de ce contexte.
+1. Toujours fournir les fichiers de code complets.
+2. Interdiction de mettre du texte en dur dans le code informatique : toujours utiliser des clés de traduction (ex: "templates.title").
 3. Chaque ajout de clé de traduction dans un code doit être systématiquement accompagné de sa ligne de seed correspondante au format :
-   await CreateTextWithTranslationsAsync("cle", "Default", new() { { "fr", "..." }, { "en", "..." } });
-4. Ne mets jamais les using en en-tête du code car je les gère dans un globalusings, signale moi si je dois en ajouter dans le globalusings
-5. Ne rajoute pas des commentaires partout dans le code
+   ["templates.user"] = ("User", new() { { "fr", "Utilisateur" }, { "en", "User" } })
+4. Ne mets jamais les using en en-tête du code
+5. Ne rajoute pas des commentaires dans le code informatique
 6. Ne jamais utiliser de forceload dans les NavigateTo
+7. Côté Backend, utilise le DBHelper dès que c'est possible; dis moi s'il faut rappeler le contenu ou s'il faut l'enrichir.
+8. Si tu ne connais pas la structure d'un Model ou d'un Dto, n'extrapole pas, demande moi.

@@ -7,13 +7,13 @@ public static class AgentEndpoints
         var group = routes.MapGroup("/api/agents").RequireAuthorization();
 
         group.MapGet("/", async (
-            int page, 
-            int pageSize, 
-            string? sortBy, 
-            bool? sortAscending, 
+            int page,
+            int pageSize,
+            string? sortBy,
+            bool? sortAscending,
             string? filterByUser,
             string? filterByType,
-            AppDbContext db, 
+            AppDbContext db,
             ClaimsPrincipal claimsUser,
             HttpContext httpContext) =>
         {
@@ -22,6 +22,7 @@ public static class AgentEndpoints
 
             if (page < 1) page = 1;
             if (pageSize < 1) pageSize = 10;
+            if (pageSize > 500) pageSize = 500;
 
             var (languageId, language) = await DbHelpers.GetUserLanguageByUserIdAsync(httpContext, db, userId);
 
@@ -72,7 +73,7 @@ public static class AgentEndpoints
                            ?? a.AgentType.Name.DefaultTranslation)
                         : string.Empty,
                     UserName = a.User != null ? a.User.Name : string.Empty,
-                    ApiKey = a.ApiKey, 
+                    ApiKey = a.ApiKey,
                     CreatedAt = a.CreatedAt,
                     LastSeenAt = a.LastSeenAt
                 },
@@ -91,13 +92,18 @@ public static class AgentEndpoints
 
         group.MapPost("/", async (AgentDto dto, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
+            if (!ValidationHelpers.TryValidateModel(dto, out var errorResult))
+            {
+                return errorResult!;
+            }
+
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
-            var agenttype = await DbHelpers.GetAgentTypeByIdAsync(db, dto.AgentTypeId);  
+            var agenttype = await DbHelpers.GetAgentTypeByIdAsync(db, dto.AgentTypeId);
             if (agenttype == null)
             {
-                return Results.BadRequest(new { message = "agents.error.invalid_type" });
+                return Results.BadRequest(new ErrorResponseDto { Message = "agents.error.invalid_type" });
             }
 
             var secureApiKey = $"fl_{Guid.NewGuid():N}{Guid.NewGuid():N}";
@@ -114,34 +120,43 @@ public static class AgentEndpoints
 
             dto.Id = agent.Id;
             dto.CreatedAt = agent.CreatedAt;
-            dto.ApiKey = secureApiKey; 
+            dto.ApiKey = secureApiKey;
 
             return Results.Created($"/api/agents/{agent.Id}", dto);
         });
 
         group.MapPut("/{id:int}", async (int id, AgentDto updatedDto, AppDbContext db, ClaimsPrincipal claimsUser) =>
         {
+            if (!ValidationHelpers.TryValidateModel(updatedDto, out var errorResult))
+            {
+                return errorResult!;
+            }
+
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
-            var agent = await DbHelpers.GetAgentByIdAsync(db, id);  
-            if (agent is null) return Results.NotFound();
+            var agent = await DbHelpers.GetAgentByIdAsync(db, id);
+            if (agent is null) return Results.NotFound(new ErrorResponseDto { Message = "agent.error.not_found" });
 
             if (!isAdmin && agent.UserId != userId)
             {
                 return Results.Forbid();
             }
 
-            var agenttype = await DbHelpers.GetAgentTypeByIdAsync(db, updatedDto.AgentTypeId); 
+            var agenttype = await DbHelpers.GetAgentTypeByIdAsync(db, updatedDto.AgentTypeId);
             if (agenttype == null)
             {
-                return Results.BadRequest(new { message = "agents.error.invalid_type" });
+                return Results.BadRequest(new ErrorResponseDto { Message = "agents.error.invalid_type" });
             }
 
             agent.AgentTypeId = updatedDto.AgentTypeId;
-            updatedDto.ApiKey = agent.ApiKey;
 
             await db.SaveChangesAsync();
+
+            updatedDto.Id = agent.Id;
+            updatedDto.ApiKey = agent.ApiKey;
+            updatedDto.CreatedAt = agent.CreatedAt;
+            updatedDto.LastSeenAt = agent.LastSeenAt;
             return Results.Ok(updatedDto);
         });
 
@@ -150,8 +165,8 @@ public static class AgentEndpoints
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
-            var agent = await DbHelpers.GetAgentByIdAsync(db, id);  
-            if (agent is null) return Results.NotFound();
+            var agent = await DbHelpers.GetAgentByIdAsync(db, id);
+            if (agent is null) return Results.NotFound(new ErrorResponseDto { Message = "agent.error.not_found" });
 
             if (!isAdmin && agent.UserId != userId)
             {
@@ -160,11 +175,11 @@ public static class AgentEndpoints
 
             if (broker.ActiveAgents.TryRemove(id, out var ws))
             {
-                try 
-                { 
-                    await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Agent deleted", CancellationToken.None); 
-                } 
-                catch(Exception ex)
+                try
+                {
+                    await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Agent deleted", CancellationToken.None);
+                }
+                catch (Exception ex)
                 {
                     AppLog.Error(ex);
                 }
@@ -173,6 +188,51 @@ public static class AgentEndpoints
             db.Agents.Remove(agent);
             await db.SaveChangesAsync();
             return Results.NoContent();
+        });
+
+        group.MapPost("/delete-batch", async (List<int>? ids, AppDbContext db, PrintBrokerService broker, ClaimsPrincipal claimsUser) =>
+        {
+            var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
+            if (userId == 0) return Results.Unauthorized();
+
+            if (ids == null || ids.Count == 0)
+            {
+                return Results.BadRequest(new ErrorResponseDto { Message = "common.error.no_ids_selected" });
+            }
+
+            var distinctIds = ids.Distinct().ToList();
+
+            var query = db.Agents.Where(a => distinctIds.Contains(a.Id));
+            if (!isAdmin)
+            {
+                query = query.Where(a => a.UserId == userId);
+            }
+
+            var agents = await query.ToListAsync();
+            if (agents.Count == 0)
+            {
+                return Results.NotFound(new ErrorResponseDto { Message = "agent.error.not_found" });
+            }
+
+            foreach (var agent in agents)
+            {
+                if (broker.ActiveAgents.TryRemove(agent.Id, out var ws))
+                {
+                    try
+                    {
+                        await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Agent deleted", CancellationToken.None);
+                    }
+                    catch (Exception ex)
+                    {
+                        AppLog.Error(ex);
+                    }
+                }
+            }
+
+            db.Agents.RemoveRange(agents);
+            await db.SaveChangesAsync();
+
+            return Results.Ok(new { deletedCount = agents.Count });
         });
     }
 }

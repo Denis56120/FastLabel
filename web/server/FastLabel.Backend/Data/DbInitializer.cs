@@ -11,7 +11,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
     {
         await SeedReferenceDataAsync();
 
-        await CreateTranslationsAsync();
+        await SeedTranslationsAsync();
     }
 
     private async Task SyncTranslationsAsync(Dictionary<string, (string DefaultTranslation, Dictionary<string, string> Translations)> entries)
@@ -356,7 +356,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
         }
     }
 
-    private async Task CreateTranslationsAsync()
+    private async Task SeedTranslationsAsync()
     {
         var translations = new Dictionary<string, (string DefaultTranslation, Dictionary<string, string> Translations)>
         {
@@ -377,7 +377,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             ["common.cancel"] = ("Cancel", new() { { "fr", "Annuler" }, { "en", "Cancel" } }),
             ["common.loading"] = ("Loading...", new() { { "fr", "Chargement en cours..." }, { "en", "Loading..." } }),
             ["common.currency"] = ("€", new() { { "fr", "€" }, { "en", "€" } }),
-
+            
             ["nav.reseller_clients"] = ("My clients", new() { { "fr", "Mes clients" }, { "en", "My clients" } }),
             ["reseller.clients.title"] = ("Client Management", new() { { "fr", "Gestion des clients" }, { "en", "Client Management" } }),
             ["reseller.clients.description"] = ("Manage your end-clients and track your associated licenses.", new() { { "fr", "Gérez vos clients finaux et suivez vos licences associées." }, { "en", "Manage your end-clients and track your associated licenses." } }),
@@ -664,6 +664,8 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             ["label.error.description_max_length"] = ("Description cannot exceed 500 characters", new() { { "fr", "La description ne peut pas dépasser 500 caractères" }, { "en", "Description cannot exceed 500 characters" } }),
 
             // 4. Endpoints
+            ["common.error.no_ids_selected"] = ("Please select at least one item.", new() { { "fr", "Veuillez sélectionner au moins un élément." }, { "en", "Please select at least one item." } }),
+
             ["stripe.webhook.error.invalid_signature"] = ("Invalid Stripe webhook signature.", new() { { "fr", "Signature du webhook Stripe invalide." }, { "en", "Invalid Stripe webhook signature." } }),
             ["stripe.error.invalid_interval"] = ("Invalid billing interval.", new() { { "fr", "Intervalle de facturation invalide." }, { "en", "Invalid billing interval." } }),
             ["stripe.error.plan_not_found"] = ("Plan not found.", new() { { "fr", "Offre introuvable." }, { "en", "Plan not found." } }),
@@ -709,6 +711,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             ["auth.error.account_inactive"] = ("Account is inactive", new() { { "fr", "Votre compte est inactif" }, { "en", "Account is inactive" } }),
             ["auth.error.invalid_token"] = ("Invalid token", new() { { "fr", "Jeton invalide" }, { "en", "Invalid token" } }),
 
+            ["agents.error.invalid_type"] = ("Invalid agent type selected", new() { { "fr", "Type d'agent sélectionné invalide" }, { "en", "Invalid agent type selected" } }),
             ["agent.error.not_found"] = ("Agent not found", new() { { "fr", "Agent introuvable" }, { "en", "Agent not found" } })
         };
 

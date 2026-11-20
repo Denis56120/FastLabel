@@ -105,11 +105,6 @@
 
             if (success)
             {
-                if (AuthStateProvider is CustomAuthenticationStateProvider customAuthProvider)
-                {
-                    customAuthProvider.NotifyUserAuthentication();
-                }
-
                 ToastService.ShowSuccess(Translation.GetString("auth.success.login"));
                 Navigation.NavigateTo("/dashboard");
             }
