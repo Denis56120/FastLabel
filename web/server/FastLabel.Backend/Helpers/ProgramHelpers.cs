@@ -74,9 +74,11 @@ public static class ProgramHelpers
                 };
             });
 
+        services.AddHostedService<DailyScheduledTasksService>();
+        
         services.AddScoped<IEmailService, EmailService>();
 
-        services.AddScoped<IStripeService, StripeService>();
+        services.AddScoped<IStripeService, StripeService>();        
 
         services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
