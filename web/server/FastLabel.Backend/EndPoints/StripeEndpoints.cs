@@ -60,8 +60,8 @@ public static class StripeEndpoints
                 ],
                 Mode = "subscription",
                 ClientReferenceId = userId.ToString(),
-                SuccessUrl = $"{clientUrl}/dashboard/subscription/success?session_id={{CHECKOUT_SESSION_ID}}",
-                CancelUrl = $"{clientUrl}/dashboard/subscription/cancel",
+                SuccessUrl = $"{clientUrl}/home/subscription/success?session_id={{CHECKOUT_SESSION_ID}}",
+                CancelUrl = $"{clientUrl}/home/subscription/cancel",
             };
 
             try

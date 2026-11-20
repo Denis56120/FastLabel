@@ -22,7 +22,7 @@ else
                         @onclick="ToggleSidebar">
                     <i class="bi bi-list fs-5"></i>
                 </button>
-                <NavLink class="navbar-brand fw-bold text-white text-decoration-none" href="/dashboard">
+                <NavLink class="navbar-brand fw-bold text-white text-decoration-none" href="/home">
                     FastLabel
                 </NavLink>
             </div>
@@ -140,7 +140,7 @@ else
     {
         var uri = Navigation.Uri.ToLower();
 
-        if (uri.Contains("/dashboard")) return Translation.GetString("nav.home");
+        if (uri.Contains("/home")) return Translation.GetString("nav.home");
         if (uri.Contains("/account")) return Translation.GetString("nav.my_account");
         if (uri.Contains("/templates")) return Translation.GetString("nav.templates");
         if (uri.Contains("/printers")) return Translation.GetString("nav.printers");
