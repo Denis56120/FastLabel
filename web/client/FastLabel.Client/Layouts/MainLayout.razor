@@ -28,10 +28,6 @@ else
             </div>
             
             <div class="d-flex align-items-center gap-3">
-                <NavLink class="btn btn-outline-light btn-sm" href="/account">
-                    <i class="bi bi-person-circle"></i> @Translation.GetString("nav.my_account")
-                </NavLink>
-
                 <AuthorizeView Roles="Admin">
                     <NavLink class="btn btn-outline-light btn-sm" href="/admin">
                         <i class="bi bi-shield-lock me-1"></i> @Translation.GetString("nav.admin_dashboard")
@@ -141,6 +137,7 @@ else
         var uri = Navigation.Uri.ToLower();
 
         if (uri.Contains("/home")) return Translation.GetString("nav.home");
+        if (uri.Contains("/admin")) return Translation.GetString("nav.admin_dashboard");
         if (uri.Contains("/account")) return Translation.GetString("nav.my_account");
         if (uri.Contains("/templates")) return Translation.GetString("nav.templates");
         if (uri.Contains("/printers")) return Translation.GetString("nav.printers");
