@@ -340,7 +340,7 @@ public static class DbHelpers
         };
     }
 
-    public static async Task<Template> CreateTemplate(AppDbContext db, int userid, string name = "Test")
+    public static async Task<Template> CreateTemplate(AppDbContext db, int userid, string name = "Test", string jsondata = "{}")
     {
         int statusId = await GetStatusIdByTagAsync(db, "status.active");
 
@@ -349,7 +349,7 @@ public static class DbHelpers
             UserId = userid,
             Name = name,
             BasicStatusId = statusId,
-            JsonData = "{}",
+            JsonData = jsondata,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -392,10 +392,11 @@ public static class DbHelpers
         var templateName = activationTexts.GetValueOrDefault("templates.activation.name", string.Empty);
         var printerName = activationTexts.GetValueOrDefault("printers.activation.name", string.Empty);
 
-        var testprinter = await CreatePrinter(db, user.Id, printerName);
-        db.Printers.Add(testprinter);
+        var testPrinter = await CreatePrinter(db, user.Id, printerName);
+        db.Printers.Add(testPrinter);
 
-        var testlabel = await CreateTemplate(db, user.Id, templateName);
+        var demonstrationlabel = "{}"; //TODO
+        var testlabel = await CreateTemplate(db, user.Id, templateName, demonstrationlabel);
         db.Templates.Add(testlabel);
 
         await db.SaveChangesAsync();
