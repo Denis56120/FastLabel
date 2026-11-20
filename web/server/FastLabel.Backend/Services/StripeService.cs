@@ -10,12 +10,9 @@ public interface IStripeService
 
 public class StripeService : IStripeService
 {
-    private readonly IConfiguration _configuration;
-
-    public StripeService(IConfiguration configuration)
+    public static void SetApiKey(IConfiguration configuration)
     {
-        _configuration = configuration;
-        var apiKey = ConfigurationHelpers.GetStripeKey(_configuration);
+        var apiKey = ConfigurationHelpers.GetStripeKey(configuration);
         if (string.IsNullOrWhiteSpace(apiKey))
             throw new InvalidOperationException("stripe.error.api_key_missing");
         Stripe.StripeConfiguration.ApiKey = apiKey;
