@@ -16,13 +16,13 @@
                     <DataAnnotationsValidator />
 
                     <div class="mb-3">
-                        <label class="form-label">@Translation.GetString("auth.email")</label>
+                        <label class="form-label">@Translation.GetString("common.email")</label>
                         <InputText @bind-Value="_loginModel.Email" class="form-control"
                                    placeholder="@Translation.GetString("auth.email_placeholder")" />
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">@Translation.GetString("auth.password")</label>
+                        <label class="form-label">@Translation.GetString("common.password")</label>
                         <div class="input-group">
                             <input type="@PasswordInputType" @bind="_loginModel.Password" @bind:event="oninput"
                                    class="form-control" placeholder="••••••••" />

@@ -29,13 +29,13 @@
                             <DataAnnotationsValidator />
 
                             <div class="mb-3">
-                                <label class="form-label text-muted">@Translation.GetString("account.name_label")</label>
+                                <label class="form-label text-muted">@Translation.GetString("common.name")</label>
                                 <InputText class="form-control" @bind-Value="_userModel.Name" />
                                 <ValidationMessage For="@(() => _userModel.Name)" class="text-danger small" />
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label text-muted">@Translation.GetString("account.email_label")</label>
+                                <label class="form-label text-muted">@Translation.GetString("common.email")</label>
                                 <InputText class="form-control" @bind-Value="_userModel.Email" />
                                 <ValidationMessage For="@(() => _userModel.Email)" class="text-danger small" />
                                 <div class="form-text text-warning small">
@@ -58,12 +58,12 @@
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label text-muted">@Translation.GetString("account.role_label")</label>
+                                <label class="form-label text-muted">@Translation.GetString("common.role")</label>
                                 <input type="text" class="form-control" value="@DisplayUserRole" disabled />
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label text-muted">@Translation.GetString("users.status")</label>
+                                <label class="form-label text-muted">@Translation.GetString("common.status")</label>
                                 <input type="text" class="form-control" value="@_userModel.BasicStatusName" disabled />
                             </div>
 
@@ -114,7 +114,7 @@
                                             <th>@Translation.GetString("account.subscription.period")</th>
                                             <th>@Translation.GetString("account.subscription.currentperiodstart")</th>
                                             <th>@Translation.GetString("account.subscription.currentperiodend")</th>
-                                            <th>@Translation.GetString("account.subscription.date")</th>
+                                            <th>@Translation.GetString("common.created_at")</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -208,8 +208,8 @@
     private string FormatPeriod(int months) => months switch
     {
         0 => Translation.GetString("account.subscription.period_free"),
-        1 => Translation.GetString("account.subscription.period_monthly"),
-        12 => Translation.GetString("account.subscription.period_yearly"),
+        1 => Translation.GetString("common.monthly"),
+        12 => Translation.GetString("common.yearly"),
         _ => $"{months} {Translation.GetString("account.subscription.months")}"
     };
 

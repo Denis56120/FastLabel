@@ -21,11 +21,11 @@
         @if (_isAdmin)
         {
             <th role="button" @onclick='() => SortAsync("UserName")'>
-                @Translation.GetString("printers.user") <i class="bi bi-arrow-down-up small text-muted"></i>
+                @Translation.GetString("common.user") <i class="bi bi-arrow-down-up small text-muted"></i>
             </th>
         }
         <th role="button" @onclick='() => SortAsync("Name")'>
-            @Translation.GetString("printers.name") <i class="bi bi-arrow-down-up small text-muted"></i>
+            @Translation.GetString("common.name") <i class="bi bi-arrow-down-up small text-muted"></i>
         </th>
         <th role="button" @onclick='() => SortAsync("Location")'>
             @Translation.GetString("printers.location") <i class="bi bi-arrow-down-up small text-muted"></i>
@@ -38,10 +38,10 @@
             @Translation.GetString("printers.resolution") <i class="bi bi-arrow-down-up small text-muted"></i>
         </th>
         <th role="button" @onclick='() => SortAsync("StatusName")'>
-            @Translation.GetString("printers.status") <i class="bi bi-arrow-down-up small text-muted"></i>
+            @Translation.GetString("common.status") <i class="bi bi-arrow-down-up small text-muted"></i>
         </th>
         <th role="button" @onclick='() => SortAsync("CreatedAt")'>
-            @Translation.GetString("printers.created_at") <i class="bi bi-arrow-down-up small text-muted"></i>
+            @Translation.GetString("common.created_at") <i class="bi bi-arrow-down-up small text-muted"></i>
         </th>
     </TableHeader>
 
@@ -84,7 +84,7 @@
 
     <FormFields Context="printer">
         <div class="mb-3">
-            <label class="form-label">@Translation.GetString("printers.name")</label>
+            <label class="form-label">@Translation.GetString("common.name")</label>
             <InputText class="form-control" @bind-Value="printer.Name" />
         </div>
         <div class="mb-3">

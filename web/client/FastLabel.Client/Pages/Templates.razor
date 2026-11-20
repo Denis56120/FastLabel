@@ -20,20 +20,20 @@
         @if (_isAdmin)
         {
             <th role="button" @onclick='() => SortAsync("UserName")'>
-                @Translation.GetString("templates.user") <i class="bi bi-arrow-down-up small text-muted"></i>
+                @Translation.GetString("common.user") <i class="bi bi-arrow-down-up small text-muted"></i>
             </th>
         }
         <th role="button" @onclick='() => SortAsync("Name")'>
-            @Translation.GetString("templates.name") <i class="bi bi-arrow-down-up small text-muted"></i>
+            @Translation.GetString("common.name") <i class="bi bi-arrow-down-up small text-muted"></i>
         </th>
         <th role="button" @onclick='() => SortAsync("BasicStatusName")'>
-            @Translation.GetString("templates.status") <i class="bi bi-arrow-down-up small text-muted"></i>
+            @Translation.GetString("common.status") <i class="bi bi-arrow-down-up small text-muted"></i>
         </th>
         <th role="button" @onclick='() => SortAsync("CreatedAt")'>
-            @Translation.GetString("templates.created_at") <i class="bi bi-arrow-down-up small text-muted"></i>
+            @Translation.GetString("common.created_at") <i class="bi bi-arrow-down-up small text-muted"></i>
         </th>
         <th role="button" @onclick='() => SortAsync("UpdatedAt")'>
-            @Translation.GetString("templates.updated_at") <i class="bi bi-arrow-down-up small text-muted"></i>
+            @Translation.GetString("common.updated_at") <i class="bi bi-arrow-down-up small text-muted"></i>
         </th>
         <th class="text-end">Actions</th>
     </TableHeader>
@@ -77,7 +77,7 @@
 
     <FormFields Context="template">
         <div class="mb-3">
-            <label class="form-label">@Translation.GetString("templates.name")</label>
+            <label class="form-label">@Translation.GetString("common.name")</label>
             <InputText class="form-control" @bind-Value="template.Name" />
         </div>
         <div class="mb-3">

@@ -22,14 +22,14 @@
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">@Translation.GetString("auth.email")</label>
+                        <label class="form-label">@Translation.GetString("common.email")</label>
                         <InputText @bind-Value="_registerModel.Email" class="form-control"
                                    placeholder="@Translation.GetString("auth.email_placeholder")" />
                         <ValidationMessage For="@(() => _registerModel.Email)" />
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label">@Translation.GetString("auth.password")</label>
+                        <label class="form-label">@Translation.GetString("common.password")</label>
                         <div class="input-group">
                             <input type="@PasswordInputType" @bind="_registerModel.Password" @bind:event="oninput"
                                    class="form-control" placeholder="••••••••" />

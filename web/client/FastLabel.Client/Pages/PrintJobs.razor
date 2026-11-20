@@ -17,7 +17,7 @@
         @if (_isAdmin)
         {
             <th role="button" @onclick='() => SortAsync("UserName")'>
-                @Translation.GetString("printjobs.user") <i class="bi bi-arrow-down-up small text-muted"></i>
+                @Translation.GetString("common.user") <i class="bi bi-arrow-down-up small text-muted"></i>
             </th>
         }
         <th role="button" @onclick='() => SortAsync("PrinterName")'>
@@ -29,7 +29,7 @@
         <th role="button" @onclick='() => SortAsync("Quantity")'>
             @Translation.GetString("printjobs.quantity") <i class="bi bi-arrow-down-up small text-muted"></i>
         </th>
-        <th>@Translation.GetString("printjobs.status")</th>
+        <th>@Translation.GetString("common.status")</th>
         <th role="button" @onclick='() => SortAsync("CreatedAt")'>
             @Translation.GetString("printjobs.date") <i class="bi bi-arrow-down-up small text-muted"></i>
         </th>
@@ -66,7 +66,7 @@
         <td>@item.Quantity</td>
         <td>
             <span class="badge bg-@(string.IsNullOrEmpty(item.ResponseMessage) ? "success" : "warning")">
-                @(string.IsNullOrEmpty(item.ResponseMessage) ? Translation.GetString("printjobs.status.success") : Translation.GetString("printjobs.status.error"))
+                @(string.IsNullOrEmpty(item.ResponseMessage) ? Translation.GetString("common.success") : Translation.GetString("common.error"))
             </span>
         </td>
         <td>@(item.ProcessedAt?.ToLocalTime().ToString("d") ?? item.CreatedAt.ToLocalTime().ToString("d"))</td>

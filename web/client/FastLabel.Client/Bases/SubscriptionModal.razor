@@ -24,11 +24,11 @@
                              aria-label="@Translation.GetString("subscription.modal.billing_cycle")">
                             <button type="button" class="btn btn-sm @(!_isYearly ? "btn-primary" : "btn-outline-primary")"
                                     @onclick="() => SetBillingCycle(false)">
-                                @Translation.GetString("subscription.modal.monthly")
+                                @Translation.GetString("common.monthly")
                             </button>
                             <button type="button" class="btn btn-sm @(_isYearly ? "btn-primary" : "btn-outline-primary")"
                                     @onclick="() => SetBillingCycle(true)">
-                                @Translation.GetString("subscription.modal.yearly")
+                                @Translation.GetString("common.yearly")
                             </button>
                         </div>
                     </div>
