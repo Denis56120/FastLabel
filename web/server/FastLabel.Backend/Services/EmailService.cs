@@ -44,6 +44,7 @@ public class EmailService(IConfiguration configuration): IEmailService
         }
         catch (Exception ex)
         {
+            AppLog.Error(ex);
             throw new InvalidOperationException($"Échec de l'envoi de l'e-mail à {toEmail}: {ex.Message}", ex);
         }
         finally

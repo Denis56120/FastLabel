@@ -25,8 +25,9 @@ public class TranslationService(IHttpClientFactory httpClientFactory)
                 OnChange?.Invoke();
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            AppLog.Error(ex);
         }
     }
 

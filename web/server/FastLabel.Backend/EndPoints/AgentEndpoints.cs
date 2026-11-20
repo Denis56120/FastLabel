@@ -164,7 +164,10 @@ public static class AgentEndpoints
                 { 
                     await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "Agent deleted", CancellationToken.None); 
                 } 
-                catch {}
+                catch(Exception ex)
+                {
+                    AppLog.Error(ex);
+                }
             }
 
             db.Agents.Remove(agent);

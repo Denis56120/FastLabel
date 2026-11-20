@@ -95,8 +95,9 @@ public static class ResellerEndpoints
                 {
                     await stripeService.IncrementSubscriptionQuantityAsync(reseller.StripeRecord.StripeSubscriptionId);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    AppLog.Error(ex);
                     return Results.BadRequest(new ErrorResponseDto { Message = "reseller.error.stripe_update_failed" });
                 }
             }
@@ -147,8 +148,9 @@ public static class ResellerEndpoints
                 {
                     await stripeService.DecrementSubscriptionQuantityAsync(reseller.StripeRecord.StripeSubscriptionId);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    AppLog.Error(ex);
                     return Results.BadRequest(new ErrorResponseDto { Message = "reseller.error.stripe_update_failed" });
                 }
             }

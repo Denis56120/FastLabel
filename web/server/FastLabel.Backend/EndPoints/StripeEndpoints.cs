@@ -72,8 +72,9 @@ public static class StripeEndpoints
 
                 return Results.Ok(new { session.Url });
             }
-            catch (Stripe.StripeException)
+            catch (Stripe.StripeException ex)
             {
+                AppLog.Error(ex);
                 return Results.BadRequest(new ErrorResponseDto { Message = "stripe.error.checkout_failed" });
             }
         });
@@ -97,8 +98,9 @@ public static class StripeEndpoints
                     ? Stripe.EventUtility.ConstructEvent(json, signatureHeader, webhookSecret, throwOnApiVersionMismatch: false)
                     : Stripe.EventUtility.ParseEvent(json, throwOnApiVersionMismatch: false);
             }
-            catch (Stripe.StripeException)
+            catch (Stripe.StripeException ex)
             {
+                AppLog.Error(ex);
                 return Results.BadRequest(new ErrorResponseDto { Message = "stripe.webhook.error.invalid_signature" });
             }
 

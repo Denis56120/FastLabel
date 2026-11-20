@@ -26,7 +26,7 @@ public static class AgentWebSocketEndpoints
                 agent = await db.Agents
                     .OrderBy(a => a.Id)
                     .FirstOrDefaultAsync(a => a.ApiKey == apiKey);
-                
+
                 if (agent != null)
                 {
                     agent.LastSeenAt = DateTime.UtcNow;
@@ -41,7 +41,7 @@ public static class AgentWebSocketEndpoints
             }
 
             using var webSocket = await context.WebSockets.AcceptWebSocketAsync();
-            
+
             broker.ActiveAgents[agent.Id] = webSocket;
 
             var buffer = new byte[8192];
@@ -55,21 +55,21 @@ public static class AgentWebSocketEndpoints
                     if (result.MessageType == WebSocketMessageType.Text)
                     {
                         string responseJson = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                        
+
                         using var doc = JsonDocument.Parse(responseJson);
                         var root = doc.RootElement;
-                        
+
                         int jobId = root.TryGetProperty("jobId", out var jProp) && jProp.TryGetInt32(out var parsedId) ? parsedId : 0;
                         string status = root.TryGetProperty("status", out var sProp) ? sProp.GetString() ?? "error" : "error";
                         string message = root.TryGetProperty("message", out var mProp) ? mProp.GetString() ?? "" : "";
 
                         using var scope = context.RequestServices.CreateScope();
                         var dbScoped = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-                        
+
                         var job = await dbScoped.PrintJobs
                             .OrderBy(j => j.Id)
                             .FirstOrDefaultAsync(j => j.Id == jobId);
-                        
+
                         if (job != null)
                         {
                             job.ResponseMessage = message;
@@ -85,8 +85,9 @@ public static class AgentWebSocketEndpoints
                     }
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                AppLog.Error(ex);
             }
             finally
             {

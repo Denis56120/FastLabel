@@ -148,8 +148,7 @@ public static class ProgramHelpers
         }
         catch (Exception ex)
         {
-            var logger = services.GetRequiredService<ILogger<Program>>();
-            logger.LogError(ex, "Une erreur s'est produite lors de la migration de la base de données.");
+            AppLog.Error(ex);
             throw;
         }
 
