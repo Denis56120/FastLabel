@@ -742,6 +742,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             ["printer.error.invalid_protocol"] = ("Invalid protocol selected", new() { { "fr", "Protocole sélectionné invalide" }, { "en", "Invalid protocol selected" } }),
             ["printer.error.invalid_resolution"] = ("Invalid resolution selected", new() { { "fr", "Résolution sélectionnée invalide" }, { "en", "Invalid resolution selected" } }),
             ["printer.error.not_found"] = ("Printer not found", new() { { "fr", "Imprimante introuvable" }, { "en", "Printer not found" } }),
+            ["printer.error.invalid_ip"] = ("Invalid IP address format.", new() { { "fr", "Format d'adresse IP invalide." }, { "en", "Invalid IP address format." } }),
 
             ["language.error.invalid"] = ("Unsupported language", new() { { "fr", "Langue non supportée" }, { "en", "Unsupported language" } }),
 

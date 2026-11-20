@@ -179,6 +179,11 @@ public static class PrinterEndpoints
                 return errorResult!;
             }
 
+            if (!NetworkHelpers.IsValidIpAddress(dto.IP))
+            {
+                return Results.BadRequest(new ErrorResponseDto { Message = "printer.error.invalid_ip" });
+            }
+
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
             if (userId == 0) return Results.Unauthorized();
 
@@ -200,12 +205,14 @@ public static class PrinterEndpoints
                 ? (await db.BasicStatuses.AnyAsync(s => s.Id == dto.BasicStatusId) ? dto.BasicStatusId : activeStatusId)
                 : activeStatusId;
 
+            var trimmedIp = dto.IP.Trim();
+
             var printer = new Printer
             {
                 UserId = userId,
                 Name = dto.Name,
                 Location = dto.Location,
-                IP = dto.IP,
+                IP = trimmedIp,
                 Port = dto.Port,
                 ProtocolId = dto.ProtocolId,
                 ResolutionDpiId = dto.ResolutionDpiId,
@@ -217,6 +224,7 @@ public static class PrinterEndpoints
             await db.SaveChangesAsync();
 
             dto.Id = printer.Id;
+            dto.IP = trimmedIp;
             dto.BasicStatusId = printer.BasicStatusId;
             dto.CreatedAt = printer.CreatedAt;
             return Results.Created($"/api/printers/{printer.Id}", dto);
@@ -227,6 +235,11 @@ public static class PrinterEndpoints
             if (!ValidationHelpers.TryValidateModel(updatedDto, out var errorResult))
             {
                 return errorResult!;
+            }
+
+            if (!NetworkHelpers.IsValidIpAddress(updatedDto.IP))
+            {
+                return Results.BadRequest(new ErrorResponseDto { Message = "printer.error.invalid_ip" });
             }
 
             var (userId, isAdmin, isReseller) = claimsUser.GetUserInfo();
@@ -246,9 +259,11 @@ public static class PrinterEndpoints
             var resolutiondpi = await DbHelpers.GetResolutionDpiByIdAsync(db, updatedDto.ResolutionDpiId);
             if (resolutiondpi == null) return Results.BadRequest(new ErrorResponseDto { Message = "printer.error.invalid_resolution" });
 
+            var trimmedIp = updatedDto.IP.Trim();
+
             printer.Name = updatedDto.Name;
             printer.Location = updatedDto.Location;
-            printer.IP = updatedDto.IP;
+            printer.IP = trimmedIp;
             printer.Port = updatedDto.Port;
             printer.ProtocolId = updatedDto.ProtocolId;
             printer.ResolutionDpiId = updatedDto.ResolutionDpiId;
@@ -256,6 +271,7 @@ public static class PrinterEndpoints
             await db.SaveChangesAsync();
 
             updatedDto.Id = printer.Id;
+            updatedDto.IP = trimmedIp;
             updatedDto.BasicStatusId = printer.BasicStatusId;
             updatedDto.CreatedAt = printer.CreatedAt;
             return Results.Ok(updatedDto);
