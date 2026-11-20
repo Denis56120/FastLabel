@@ -1,51 +1,15 @@
-Règles strictes pour ce projet (FastLabel) :
-0. Commence chaque réponse par un 'Bonjour' si tu as connaissance de ce contexte.
+Règles FastLabel :
+0. Commencer chaque réponse par 'Bonjour' si ce contexte est connu.
 1. Toujours fournir les fichiers de code complets.
-2. Interdiction de mettre du texte en dur dans le code informatique : toujours utiliser des clés de traduction (ex: "templates.title").
-3. Chaque ajout de clé de traduction dans un code doit être systématiquement accompagné de sa ligne de seed correspondante au format :
-   ["templates.user"] = ("User", new() { { "fr", "Utilisateur" }, { "en", "User" } }),
-4. Ne mets jamais les using en en-tête du code
-5. Ne rajoute pas des commentaires dans le code informatique
-6. Ne jamais utiliser de forceload dans les NavigateTo
-7. Côté Backend, utilise le DBHelper dès que c'est possible; dis moi s'il faut rappeler le contenu ou s'il faut l'enrichir.
-8. Si tu ne connais pas la structure d'un Model ou d'un Dto, n'extrapole pas, demande moi.
-9. Pour Stripe, la clef est configurée dans le HelperProgram.cs à l'initialisation
-10. Voilà quelques modèles pour la génération de code informatique :
-> Pour les endpoints :
-namespace FastLabel.Backend.Endpoints;
-
-public static class AuthEndpoints
-{
-    public static void MapAuthEndpoints(this IEndpointRouteBuilder routes)
-    {
-        var authGroup = routes.MapGroup("/api/auth").RequireAuthorization("AdminOnly");
-
-        authGroup.MapPost("/protectedexample", async (ExampleDto request) =>
-        {
-            if (!ValidationHelpers.TryValidateModel(request, out var errorResult))
-            {
-                return errorResult!;
-            }
-
-            var userInfo = await db.Users.FirstOrDefaultAsync();
-            if (userInfo == null)
-                return Results.NotFound(new ErrorResponseDto { Message = "user.error.not_found" });
-
-            return Results.Ok(new ExampleDto {...} );
-        });
-
-        authGroup.MapGet("/exposedexample", async (AppDbContext db, IConfiguration configuration) =>
-        {
-            
-        }).DisableAntiforgery();
-    }
-}
-> Pour les DTO :
-namespace FastLabel.Shared.DTOs;
-
-public class ExampleDto
-{
-    [Required(ErrorMessage = "user.error.name_required")]
-    [StringLength(100, ErrorMessage = "user.error.name_max_length")]
-    public string Name { get; set; } = string.Empty;
-}
+2. Aucun texte en dur : utiliser des clés de traduction (ex: "templates.title").
+3. Chaque clé ajoutée doit avoir sa ligne seed : ["clé"] = ("trad_en", new() { { "fr", "trad_fr" }, { "en", "trad_en" } }),
+4. Jamais de using en en-tête de code.
+5. Aucun commentaire dans le code.
+6. Jamais forceLoad dans NavigateTo.
+7. Backend : utiliser DBHelper dès que possible ; indiquer s'il faut rappeler ou enrichir son contenu.
+8. En cas d'info manquante, ne pas extrapoler : demander.
+9. Dates : toujours ToString("d").
+10. Commentaires + logs en anglais : signale si erreur
+11. Modèles code :
+Endpoints -> namespace FastLabel.Backend.Endpoints; public static class AuthEndpoints { public static void MapAuthEndpoints(this IEndpointRouteBuilder routes) { var authGroup = routes.MapGroup("/api/auth").RequireAuthorization("AdminOnly"); authGroup.MapPost("/protectedexample", async (ExampleDto request) => { if (!ValidationHelpers.TryValidateModel(request, out var errorResult)) return errorResult!; ... if (userInfo == null) return Results.NotFound(new ErrorResponseDto { Message = "user.error.not_found" }); return Results.Ok(new ExampleDto {...}); }); authGroup.MapGet("/exposedexample", async (AppDbContext db, IConfiguration configuration) => { }).DisableAntiforgery(); } }
+DTO -> namespace FastLabel.Shared.DTOs; public class ExampleDto { [Required(ErrorMessage = "user.error.name_required")] public string Name { get; set; } = string.Empty; }

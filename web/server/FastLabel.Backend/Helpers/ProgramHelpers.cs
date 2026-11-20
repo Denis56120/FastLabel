@@ -22,8 +22,6 @@ public static class ProgramHelpers
         IServiceCollection services = builder.Services;
         ConfigurationManager configuration = builder.Configuration;
 
-        Stripe.StripeConfiguration.ApiKey = ConfigurationHelpers.GetStripeKey(configuration);
-
         var clientUrl = ConfigurationHelpers.GetClientUrl(configuration);
         var connectionString = configuration.GetConnectionString("DefaultConnection")
                        ?? $"Host=localhost;Port=5432;Database={ConfigurationHelpers.GetDBName(configuration)};Username={ConfigurationHelpers.GetDBUser(configuration)};Password={ConfigurationHelpers.GetDBPassword(configuration)}";

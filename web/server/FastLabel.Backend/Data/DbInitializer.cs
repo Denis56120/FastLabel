@@ -733,6 +733,8 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             ["stripe.error.checkout_failed"] = ("Unable to create Stripe checkout session.", new() { { "fr", "Impossible de créer la session de paiement Stripe." }, { "en", "Unable to create Stripe checkout session." } }),
             ["stripe.webhook.error.missing_signature_or_secret"] = ("Missing Stripe signature or webhook secret", new() { { "fr", "Signature Stripe ou secret de webhook manquant" }, { "en", "Missing Stripe signature or webhook secret" } }),
             ["stripe.webhook.error.invalid_plan_upgrade"] = ("Invalid subscription plan upgrade", new() { { "fr", "Changement d'offre ou de durée d'abonnement non autorisé" }, { "en", "Invalid subscription plan upgrade" } }),
+            ["stripe.error.api_key_missing"] = ("Stripe API key is missing.", new() { { "fr", "La clé API Stripe est manquante." }, { "en", "Stripe API key is missing." } }),
+            ["stripe.error.subscription_item_not_found"] = ("No Stripe subscription item found.", new() { { "fr", "Aucun élément d'abonnement Stripe trouvé." }, { "en", "No Stripe subscription item found." } }),
 
             ["subscription.notification.payment_failed"] = ("Your payment failed. Your current plan is in a grace period.", new() { { "fr", "Votre paiement a échoué. Votre offre actuelle est en période de grâce." }, { "en", "Your payment failed. Your current plan is in a grace period." } }),
             ["subscription.notification.subscription_ended"] = ("Your subscription has ended. You have been switched to the free plan.", new() { { "fr", "Votre souscription a pris fin. Vous êtes repassé sur l'offre gratuite." }, { "en", "Your subscription has ended. You have been switched to the free plan." } }),

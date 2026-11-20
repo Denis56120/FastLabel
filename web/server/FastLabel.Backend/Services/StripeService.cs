@@ -8,9 +8,17 @@ public interface IStripeService
     Task DecrementSubscriptionQuantityAsync(string subscriptionId);
 }
 
-public class StripeService(IConfiguration configuration) : IStripeService
+public class StripeService : IStripeService
 {
-    private readonly IConfiguration _configuration = configuration;
+    private readonly IConfiguration _configuration;
+
+    public StripeService(IConfiguration configuration)
+    {
+        _configuration = configuration;
+        var apiKey = ConfigurationHelpers.GetStripeKey(_configuration);
+        if (string.IsNullOrWhiteSpace(apiKey))
+            throw new InvalidOperationException("stripe.error.api_key_missing");
+    }
 
     public async Task<string> CreateCustomerAsync(string email, string name)
     {
@@ -55,7 +63,7 @@ public class StripeService(IConfiguration configuration) : IStripeService
     {
         var subscriptionService = new Stripe.SubscriptionService();
         var subscription = await subscriptionService.GetAsync(subscriptionId);
-        
+
         var subscriptionItem = subscription.Items.Data.FirstOrDefault();
         if (subscriptionItem == null)
             throw new Exception("Aucun élément d'abonnement Stripe trouvé.");
@@ -73,7 +81,7 @@ public class StripeService(IConfiguration configuration) : IStripeService
     {
         var subscriptionService = new Stripe.SubscriptionService();
         var subscription = await subscriptionService.GetAsync(subscriptionId);
-        
+
         var subscriptionItem = subscription.Items.Data.FirstOrDefault();
         if (subscriptionItem == null)
             throw new Exception("Aucun élément d'abonnement Stripe trouvé.");
