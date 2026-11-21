@@ -480,6 +480,8 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             ["agents.copy_api_key"] = ("Copy API key", new() { { "fr", "Copier la clé API" }, { "en", "Copy API key" } }),
             ["agents.success.api_key_copied"] = ("API key copied to clipboard", new() { { "fr", "Clé API copiée dans le presse-papiers" }, { "en", "API key copied to clipboard" } }),
             ["agents.error.copy_api_key_failed"] = ("Unable to copy API key", new() { { "fr", "Impossible de copier la clé API" }, { "en", "Unable to copy API key" } }),
+            ["agents.download"] = ("Download", new() { { "fr", "Télécharger" }, { "en", "Download" } }),
+            ["agents.download_tooltip"] = ("Download agent binary", new() { { "fr", "Télécharger le binaire de l'agent" }, { "en", "Download agent binary" } }),
 
             ["printers.activation.name"] = ("My first printer", new() { { "fr", "Ma première imprimante" }, { "en", "My first printer" } }),
             ["printers.select_protocol"] = ("Select a protocol...", new() { { "fr", "Sélectionner un protocole..." }, { "en", "Select a protocol..." } }),

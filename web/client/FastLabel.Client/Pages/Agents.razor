@@ -36,6 +36,7 @@
         <th role="button" @onclick='() => SortAsync("LastSeenAt")'>
             @Translation.GetString("agents.last_seen") <i class="bi bi-arrow-down-up small text-muted"></i>
         </th>
+        <th>@Translation.GetString("agents.download")</th>
     </TableHeader>
 
     <TableFilters>
@@ -50,6 +51,7 @@
             <input type="text" class="form-control form-control-sm" placeholder="@Translation.GetString("common.filter_placeholder")" 
                    @oninput='e => FilterAsync("filterByType", e.Value?.ToString())' />
         </th>
+        <th></th>
         <th></th>
         <th></th>
         <th></th>
@@ -74,6 +76,25 @@
         </td>
         <td>@agent.CreatedAt.ToLocalTime().ToString("d")</td>
         <td>@(agent.LastSeenAt?.ToLocalTime().ToString("d") ?? "-")</td>
+        <td>
+            @{
+                var downloadUrl = GetDownloadUrl(agent.AgentTypeName);
+            }
+            @if (!string.IsNullOrEmpty(downloadUrl))
+            {
+                <a href="@downloadUrl"
+                   class="btn btn-sm btn-outline-primary"
+                   download
+                   title="@Translation.GetString("agents.download_tooltip")">
+                    <i class="bi bi-download"></i>
+                    <span class="ms-1">@Translation.GetString("agents.download")</span>
+                </a>
+            }
+            else
+            {
+                <span>-</span>
+            }
+        </td>
     </RowTemplate>
 
     <FormFields Context="agent">
@@ -149,6 +170,26 @@
             AppLog.Error(ex);
             ToastService.ShowError(Translation.GetString("agents.error.copy_api_key_failed"));
         }
+    }
+
+    private static string? GetDownloadUrl(string? agentTypeName)
+    {
+        if (string.IsNullOrWhiteSpace(agentTypeName))
+        {
+            return null;
+        }
+
+        if (agentTypeName.Contains("windows", StringComparison.OrdinalIgnoreCase))
+        {
+            return "/downloads/setup.exe";
+        }
+
+        if (agentTypeName.Contains("linux", StringComparison.OrdinalIgnoreCase))
+        {
+            return "/downloads/FastLabel.DockerAgent.tar.gz";
+        }
+
+        return null;
     }
 
     private async Task SortAsync(string columnName)
