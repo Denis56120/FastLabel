@@ -95,10 +95,15 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             textEntity = new Text
             {
                 Tag = tag,
-                DefaultTranslation = defaultEnglishVal
+                DefaultTranslation = defaultEnglishVal,
+                Translations = new List<Translation>()
             };
             _context.Texts.Add(textEntity);
             await _context.SaveChangesAsync();
+        }
+        else
+        {
+            textEntity.Translations ??= new List<Translation>();
         }
 
         foreach (var kvp in translations)
@@ -136,26 +141,26 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
 
     private async Task SeedReferenceDataAsync()
     {
-        // 1. Textes de description des langues
-        var descFr = await CreateTextWithTranslationsAsync("lang.fr.desc", "French", new() { { "fr", "Français" }, { "en", "French" } });
-        var descEn = await CreateTextWithTranslationsAsync("lang.en.desc", "English", new() { { "fr", "Anglais" }, { "en", "English" } });
-
-        // 2. Langues
+        // 1. Langues
         if (!await _context.Languages.AnyAsync())
         {
+            var descFrInit = new Text { Tag = "lang.fr.desc", DefaultTranslation = "French" };
+            var descEnInit = new Text { Tag = "lang.en.desc", DefaultTranslation = "English" };
+            _context.Texts.AddRange(descFrInit, descEnInit);
+            await _context.SaveChangesAsync();
+
             _context.Languages.AddRange(
-                new Language { Code = "fr", DescriptionTextId = descFr.Id, Flag = "🇫🇷" },
-                new Language { Code = "en", DescriptionTextId = descEn.Id, Flag = "🇬🇧" }
+                new Language { Code = "fr", DescriptionTextId = descFrInit.Id, Flag = "🇫🇷" },
+                new Language { Code = "en", DescriptionTextId = descEnInit.Id, Flag = "🇬🇧" }
             );
+            await _context.SaveChangesAsync();
+
+            await CreateTextWithTranslationsAsync("lang.fr.desc", "French", new() { { "fr", "Français" }, { "en", "French" } });
+            await CreateTextWithTranslationsAsync("lang.en.desc", "English", new() { { "fr", "Anglais" }, { "en", "English" } });
             await _context.SaveChangesAsync();
         }
 
-        var englishLanguage = await _context.Languages
-            .FirstOrDefaultAsync(l => l.Code == "en")
-            ?? throw new InvalidOperationException("La langue anglaise ('en') est introuvable.");
-        int englishLanguageId = englishLanguage.Id;
-
-        // 3. Protocoles d'impression
+        // 2. Protocoles d'impression
         if (!await _context.Protocols.AnyAsync())
         {
             var p1 = await CreateTextWithTranslationsAsync("protocol.rasterized_zpl", "Hybrid (ZPL + Raster)", new() { { "fr", "Hybride (ZPL + Raster)" }, { "en", "Hybrid (ZPL + Raster)" } });
@@ -168,11 +173,11 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             await _context.SaveChangesAsync();
         }
 
-        // 4. Résolutions DPI
+        // 3. Résolutions DPI
         if (!await _context.ResolutionDpis.AnyAsync())
         {
             _context.ResolutionDpis.AddRange(
-                new ResolutionDpi { Value = 152 },      
+                new ResolutionDpi { Value = 152 },
                 new ResolutionDpi { Value = 203 },
                 new ResolutionDpi { Value = 300 },
                 new ResolutionDpi { Value = 600 }
@@ -180,7 +185,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             await _context.SaveChangesAsync();
         }
 
-        // 5. Types d'agents
+        // 4. Types d'agents
         if (!await _context.AgentTypes.AnyAsync())
         {
             var a1 = await CreateTextWithTranslationsAsync("agenttype.windows", "Windows Agent", new() { { "fr", "Agent Windows" }, { "en", "Windows Agent" } });
@@ -193,7 +198,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             await _context.SaveChangesAsync();
         }
 
-        // 6. Statuts de base
+        // 5. Statuts de base
         if (!await _context.BasicStatuses.AnyAsync())
         {
             var s1 = await CreateTextWithTranslationsAsync("status.active", "Active", new() { { "fr", "Actif" }, { "en", "Active" } });
@@ -218,7 +223,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
 
         int activeStatusId = activeStatus.Id;
 
-        // 7. Statuts des tâches d'impression
+        // 6. Statuts des tâches d'impression
         if (!await _context.PrintJobStatuses.AnyAsync())
         {
             var j1 = await CreateTextWithTranslationsAsync("jobstatus.created", "Created", new() { { "fr", "Créé" }, { "en", "Created" } });
@@ -235,7 +240,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             await _context.SaveChangesAsync();
         }
 
-        // 8. Plans d'abonnement
+        // 7. Plans d'abonnement
         if (!await _context.Plans.AnyAsync())
         {
             var planFreeText = await CreateTextWithTranslationsAsync("plan.free", "Free", new() { { "fr", "Gratuit" }, { "en", "Free" } });
@@ -326,9 +331,14 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             await _context.SaveChangesAsync();
         }
 
-        // 9. Compte Administrateur par défaut
+        // 8. Compte Administrateur par défaut
         if (!await _context.Users.AnyAsync() && _env.IsProduction())
         {
+            var englishLanguage = await _context.Languages
+                .FirstOrDefaultAsync(l => l.Code == "en")
+                ?? throw new InvalidOperationException("La langue anglaise ('en') est introuvable.");
+            int englishLanguageId = englishLanguage.Id;
+
             var adminName = _configuration["ADMIN_USER_NAME"];
             var adminEmail = _configuration["ADMIN_USER_EMAIL"];
             var adminPassword = _configuration["ADMIN_USER_PASSWORD"];
@@ -435,7 +445,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             ["common.role"] = ("Role", new() { { "fr", "Rôle" }, { "en", "Role" } }),
             ["common.monthly"] = ("Monthly", new() { { "fr", "Mensuel" }, { "en", "Monthly" } }),
             ["common.yearly"] = ("Yearly", new() { { "fr", "Annuel" }, { "en", "Yearly" } }),
-            
+
             ["clients.title"] = ("Clients", new() { { "fr", "Clients" }, { "en", "Clients" } }),
             ["clients.description"] = ("Manage your end-clients and track your associated licenses.", new() { { "fr", "Gérez vos clients finaux et suivez vos licences associées." }, { "en", "Manage your end-clients and track your associated licenses." } }),
             ["clients.no_clients"] = ("No clients found.", new() { { "fr", "Aucun client trouvé." }, { "en", "No clients found." } }),
@@ -457,7 +467,7 @@ public class DbInitializer(AppDbContext context, IConfiguration configuration, I
             ["users.role_admin"] = ("Admin", new() { { "fr", "Admin" }, { "en", "Admin" } }),
             ["users.role_user"] = ("User", new() { { "fr", "Utilisateur" }, { "en", "User" } }),
 
-            ["users.title"] = ("Users", new() { { "fr", "Utilisateurs" }, { "en", "Users" } }),            
+            ["users.title"] = ("Users", new() { { "fr", "Utilisateurs" }, { "en", "Users" } }),
             ["users.password_help"] = ("Leave blank to keep the current password when editing.", new() { { "fr", "Laisser vide pour conserver le mot de passe actuel lors d'une modification." }, { "en", "Leave blank to keep the current password when editing." } }),
             ["users.description"] = ("Manage your application users.", new() { { "fr", "Gérez vos utilisateurs." }, { "en", "Manage your application users." } }),
             ["users.no_users"] = ("No users found.", new() { { "fr", "Aucun utilisateur trouvé." }, { "en", "No users found." } }),
