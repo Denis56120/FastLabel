@@ -159,16 +159,12 @@ else
         try
         {
             await Translation.SetLanguageAsync(languageCode);
+            await LoadLanguagesAsync();
         }
         catch (Exception ex)
         {
             AppLog.Error(ex);
             ToastService.ShowError(Translation.GetString("app.error.unknown"));
-        }
-
-        if (_languages is null or { Count: 0 })
-        {
-            await LoadLanguagesAsync();
         }
     }
 }
